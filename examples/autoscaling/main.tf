@@ -25,10 +25,10 @@ module "red5pro_stream_manager" {
   # VCN Configuration
   vcn_create           = true                                                                                # true - create new VCN, false - use existing VCN
   vcn_id_existing      = "ocid1.vcn.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"    # VCN OCID for existing VCN Network
-  vcn_name_existing    = "red5pro-autoscaling-vcn"                                                               # VCN name for existing VCN Network
+  vcn_name_existing    = "red5pro-autoscaling-vcn"                                                           # VCN name for existing VCN Network
   vcn_dns_label        = "vcnexample"                                                                        # Should contains chanraters only for VCN DNS Labels, No special characters and white spaces allowed                                        
   subnet_id_existing   = "ocid1.subnet.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Subnet OCID for existing VCN Subnet
-  subnet_name_existing = "red5pro-autoscaling-public-subnet"                                                     # Subnet name for existing VCN Subnet
+  subnet_name_existing = "red5pro-autoscaling-public-subnet"                                                 # Subnet name for existing VCN Subnet
 
   # Network Security Group configuration
   network_security_group_create      = true                                                                                              # true - create new Network Security Group, false - use existing Network Security Group
@@ -49,15 +49,15 @@ module "red5pro_stream_manager" {
   terra_parallelism           = "20"
 
   # Stream Manager Reserved IP Address configuration
-  elastic_ip_create       = true                                              # true - create new Reserved IP, false - use existing Reserved IP
-  elastic_ip_existing     = "1.2.3.4"                                         # Reserved IP Address for existing Oracle Cloud Reserved IP
+  elastic_ip_create   = true      # true - create new Reserved IP, false - use existing Reserved IP
+  elastic_ip_existing = "1.2.3.4" # Reserved IP Address for existing Oracle Cloud Reserved IP
 
   # Load Balancer HTTPS/SSL certificate configuration
   https_oci_certificates_use_existing     = false                # If you want to use SSL certificate set it to true
   https_oci_certificates_certificate_name = "rk-ops.red5pro.net" # Domain name for your SSL certificate
-  cert_fullchain   = "D:/BrittonDevOps/SCM/GitHub/terraform-oci-red5pro/certs/wildcard_cert_red5pro.net/fullchain.pem"
-  cert_private_key = "D:/BrittonDevOps/SCM/GitHub/terraform-oci-red5pro/certs/wildcard_cert_red5pro.net/privkey.pem"
-  cert_public_cert = "D:/BrittonDevOps/SCM/GitHub/terraform-oci-red5pro/certs/wildcard_cert_red5pro.net/cert.pem"
+  cert_fullchain                          = "D:/BrittonDevOps/SCM/GitHub/terraform-oci-red5pro/certs/wildcard_cert_red5pro.net/fullchain.pem"
+  cert_private_key                        = "D:/BrittonDevOps/SCM/GitHub/terraform-oci-red5pro/certs/wildcard_cert_red5pro.net/privkey.pem"
+  cert_public_cert                        = "D:/BrittonDevOps/SCM/GitHub/terraform-oci-red5pro/certs/wildcard_cert_red5pro.net/cert.pem"
 
   # Stream Manager configuration
   stream_manager_instance_type   = "VM.Standard.E4.Flex" # OCI Instance type for Stream Manager

@@ -394,8 +394,8 @@ resource "oci_core_instance" "red5pro_sm" {
 ################################################################################
 # SM Load Balancer
 data "oci_core_public_ip" "red5pro_reserved_ip_by_ip" {
-  count          = local.autoscaling && var.reserved_public_ip_address_create ? 0 : 1
-  ip_address = var.reserved_public_ip_address_existing 
+  count      = local.autoscaling && var.reserved_public_ip_address_create ? 0 : 1
+  ip_address = var.reserved_public_ip_address_existing
 }
 
 resource "oci_core_public_ip" "red5pro_reserved_ip" {

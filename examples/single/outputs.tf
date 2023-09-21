@@ -23,6 +23,6 @@ output "red5pro_server_http_url" {
   value       = module.red5pro_single.single_red5pro_server_http_url
 }
 output "red5pro_server_https_url" {
-    description = "Red5 Pro Server HTTPS URL"
-    value = module.red5pro_single.single_red5pro_server_https_url
+  description = "Red5 Pro Server HTTPS URL"
+  value       = module.red5pro_single.single_red5pro_server_https_url
 }
