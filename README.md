@@ -313,10 +313,10 @@ module "red5pro_stream_manager" {
 
   # Load Balancer HTTPS/SSL certificate configuration
   https_oci_certificates_use_existing     = false                # If you want to use SSL certificate set it to true
-  https_oci_certificates_certificate_name = "rk-ops.red5pro.net" # Domain name for your SSL certificate
-  cert_fullchain   = "D:/BrittonDevOps/SCM/GitHub/terraform-oci-red5pro/certs/wildcard_cert_red5pro.net/fullchain.pem"
-  cert_private_key = "D:/BrittonDevOps/SCM/GitHub/terraform-oci-red5pro/certs/wildcard_cert_red5pro.net/privkey.pem"
-  cert_public_cert = "D:/BrittonDevOps/SCM/GitHub/terraform-oci-red5pro/certs/wildcard_cert_red5pro.net/cert.pem"
+  https_oci_certificates_certificate_name = "red5pro.example.com" # Domain name for your SSL certificate
+  cert_fullchain   = "/PATH/TO/EXISTING/SSL/CERTS/fullchain.pem"
+  cert_private_key = "/PATH/TO/EXISTING/SSL/CERTS/privkey.pem"
+  cert_public_cert = "/PATH/TO/EXISTING/SSL/CERTS/cert.pem"
 
   # Stream Manager configuration
   stream_manager_instance_type   = "VM.Standard.E4.Flex" # OCI Instance type for Stream Manager
