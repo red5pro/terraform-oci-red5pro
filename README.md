@@ -308,7 +308,7 @@ module "red5pro_stream_manager" {
   elastic_ip_existing     = "1.2.3.4"                                         # Reserved IP Address for existing Oracle Cloud Reserved IP
 
   # Load Balancer HTTPS/SSL certificate configuration
-  https_oci_certificates_use_existing     = false                # If you want to use SSL certificate set it to true
+  https_oci_certificates_use_existing     = true                  # If you want to use SSL certificate set it to true
   https_oci_certificates_certificate_name = "red5pro.example.com" # Domain name for your SSL certificate
   cert_fullchain   = "/PATH/TO/EXISTING/SSL/CERTS/fullchain.pem"
   cert_private_key = "/PATH/TO/EXISTING/SSL/CERTS/privkey.pem"

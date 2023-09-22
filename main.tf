@@ -412,15 +412,13 @@ resource "oci_load_balancer_load_balancer" "red5pro_lb" {
   count                      = local.autoscaling ? 1 : 0
   display_name               = "${var.name}-lb"
   compartment_id             = var.compartment_id
-  network_security_group_ids = []
+  subnet_ids                 = [local.subnet_id]
+  network_security_group_ids = [var.network_security_group_create ? oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id : var.network_security_group_id_existing]
   shape                      = "flexible"
   shape_details {
     maximum_bandwidth_in_mbps = 100
     minimum_bandwidth_in_mbps = 10
   }
-
-  subnet_ids = [local.subnet_id]
-
   reserved_ips {
     id = local.autoscaling && var.reserved_public_ip_address_create ? oci_core_public_ip.red5pro_reserved_ip[0].id : data.oci_core_public_ip.red5pro_reserved_ip_by_ip[0].id
   }
