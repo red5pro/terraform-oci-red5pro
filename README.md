@@ -31,7 +31,7 @@ Terraform Red5 Pro Oracle Cloud(OCI) module for Red5 Pro resources.
         * Follow the documentation for generating keys on OCI Documentation - https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#two
     * Upload your API keys to Oracle Cloud 
         * Follow the documentation for uploading your keys on OCI Documentation - https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#two
-        * After uploading the keys to Oracle Cloud, get API key's fingerprint displayed (for example, 12:34:56:78:90:1a:cd:ef:12:34:56:78:90:b1:cd:ef)
+        * After uploading the keys to Oracle Cloud, get API key's fingerprint displayed (for example, 12:34:56:78:90:11:cd:ef:12:34:56:78:90:ba:cd:ef)
     * Create an OCI compartment for creating resources in Oracle Cloud Account 
         * Follow the documentation for creating a compartment - https://docs.oracle.com/en-us/iaas/Content/Identity/Tasks/managingcompartments.htm#two
     * Get the necessary OCIDs from Oracle Cloud Account
