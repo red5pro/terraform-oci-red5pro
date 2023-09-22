@@ -56,7 +56,7 @@ resource "oci_core_route_table" "red5pro_route_table" {
   }
 }
 
-# Oracle Cloud Network Security Default Red5 Pro (Port 22)
+# Oracle Cloud Default VCN Network Security List
 resource "oci_core_security_list" "red5pro_security_list" {
   count          = var.vcn_create ? 1 : 0
   compartment_id = var.compartment_id
@@ -76,6 +76,14 @@ resource "oci_core_security_list" "red5pro_security_list" {
       max = 22
     }
   }
+  ingress_security_rules {
+    protocol = "6"
+    source   = "10.5.0.0/16"
+    tcp_options {
+      min = 3306
+      max = 3306
+    }
+  }
 }
 
 # Create a new Public Subnet if input variable vcn_create is true
@@ -88,6 +96,7 @@ resource "oci_core_subnet" "red5pro_vcn_subnet_public" {
   display_name               = "${var.name}-subnet-public"
   prohibit_public_ip_on_vnic = false
   route_table_id             = oci_core_route_table.red5pro_route_table[0].id
+  security_list_ids          = [oci_core_security_list.red5pro_security_list[0].id]
   defined_tags               = var.defined_tags
 
   lifecycle {

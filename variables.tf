@@ -220,16 +220,6 @@ variable "mysql_shape_name" {
   description = "OCI managed MySQL DB System shape that determines the resources allocated including CPU cores and memory"
   default     = "MySQL.VM.Standard.E3.1.8GB"
 }
-variable "mysql_db_system_admin_username" {
-  description = "Administrative username for OCI managed MySQL DB System."
-  type        = string
-  default     = ""
-}
-variable "mysql_db_system_admin_password" {
-  description = "Administrative password for OCI managed MySQL DB System. The password must be between 8 and 32 characters long, and must contain at least 1 numeric character, 1 lowercase character, 1 uppercase character, and 1 special (nonalphanumeric) character."
-  type        = string
-  default     = ""
-}
 variable "mysql_db_system_backup_policy_is_enabled" {
   description = "Boolean that defines if either backup is enabled or not"
   default     = false

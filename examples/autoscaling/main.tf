@@ -35,13 +35,11 @@ module "red5pro_stream_manager" {
   network_security_group_id_existing = "ocid1.networksecuritygroup.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Network Security Group OCID for existing Network Security Group
 
   # MySQL DB configuration
-  mysql_db_system_create         = false                        # true - create new MySQL DB System, false - install local MySQL server on the Stream Manager OCI instance
-  mysql_shape_name               = "MySQL.VM.Standard.E3.1.8GB" # Instance type for Oracle Cloud MySQL DB system instance
-  mysql_db_system_admin_username = "smadmin"                    # MySQL admin username
-  mysql_db_system_admin_password = "mY5QLp@55W4rDABC123"        # MySQL admin password
-  mysql_user_name                = "exampleuser"                # MySQL username
-  mysql_password                 = "examplepass"                # MySQL password
-  mysql_port                     = 3306                         # MySQL port
+  mysql_db_system_create = false                        # true - create new MySQL DB System, false - install local MySQL server on the Stream Manager OCI instance
+  mysql_shape_name       = "MySQL.VM.Standard.E3.1.8GB" # Instance type for Oracle Cloud MySQL DB system instance
+  mysql_user_name        = "exampleuser"                # MySQL username
+  mysql_password         = "examplepass"                # MySQL password
+  mysql_port             = 3306                         # MySQL port
 
   # Terraform Service configuration
   dedicated_terra_host_create = true
@@ -53,7 +51,7 @@ module "red5pro_stream_manager" {
   elastic_ip_existing = "1.2.3.4" # Reserved IP Address for existing Oracle Cloud Reserved IP
 
   # Load Balancer HTTPS/SSL certificate configuration
-  https_oci_certificates_use_existing     = false                # If you want to use SSL certificate set it to true
+  https_oci_certificates_use_existing     = false                 # If you want to use SSL certificate set it to true
   https_oci_certificates_certificate_name = "red5pro.example.com" # Domain name for your SSL certificate
   cert_fullchain                          = "/PATH/TO/EXISTING/SSL/CERTS/fullchain.pem"
   cert_private_key                        = "/PATH/TO/EXISTING/SSL/CERTS/privkey.pem"

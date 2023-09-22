@@ -38,8 +38,8 @@ resource "oci_mysql_mysql_db_system" "red5pro_mysql_db_system" {
   subnet_id           = local.subnet_id
 
   #Optional
-  admin_password          = var.mysql_db_system_admin_password
-  admin_username          = var.mysql_db_system_admin_username
+  admin_username          = var.mysql_user_name
+  admin_password          = var.mysql_password
   configuration_id        = oci_mysql_mysql_configuration.red5pro_mds_mysql_configuration[0].id
   data_storage_size_in_gb = var.mysql_db_system_data_storage_size_in_gb
   defined_tags            = var.defined_tags

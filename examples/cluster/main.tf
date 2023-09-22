@@ -36,13 +36,11 @@ module "red5pro_stream_manager" {
   network_security_group_id_existing = "ocid1.networksecuritygroup.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Network Security Group OCID for existing Network Security Group
 
   # MySQL DB configuration
-  mysql_db_system_create         = false                        # true - create new MySQL DB System instance, false - install local MySQL server on the Stream Manager OCI instance
-  mysql_shape_name               = "MySQL.VM.Standard.E3.1.8GB" # Instance type for Oracle Cloud MySQL DB system instance
-  mysql_db_system_admin_username = "smadmin"                    # MySQL admin username
-  mysql_db_system_admin_password = "mY5QLp@55W4rDABC123"        # MySQL admin password
-  mysql_user_name                = "exampleuser"                # MySQL username
-  mysql_password                 = "examplepass"                # MySQL password
-  mysql_port                     = 3306                         # MySQL port
+  mysql_db_system_create = false                        # true - create new MySQL DB System instance, false - install local MySQL server on the Stream Manager OCI instance
+  mysql_shape_name       = "MySQL.VM.Standard.E3.1.8GB" # Instance type for Oracle Cloud MySQL DB system instance
+  mysql_user_name        = "exampleuser"                # MySQL username
+  mysql_password         = "examplepass"                # MySQL password
+  mysql_port             = 3306                         # MySQL port
 
   # Terraform Service configuration
   dedicated_terra_host_create = true
