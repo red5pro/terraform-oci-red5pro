@@ -488,10 +488,8 @@ resource "oci_core_image" "red5pro_sm_image" {
   count          = local.autoscaling ? 1 : 0
   compartment_id = var.compartment_id
   instance_id    = oci_core_instance.red5pro_sm[0].id
-
-  display_name = "${var.name}-stream-manager"
-
-  depends_on = [oci_core_instance.red5pro_sm]
+  display_name   = "${var.name}-stream-manager"
+  depends_on     = [oci_core_instance.red5pro_sm]
 }
 
 resource "oci_core_instance_configuration" "red5pro_instance_configuration" {
