@@ -12,7 +12,7 @@ This example illustrates how to create a simple Red5 Pro deployment in OCI with 
 
 * Install **terraform** https://developer.hashicorp.com/terraform/downloads
 * Install **OCI CLI** https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
-* Install **jq** Linux or Mac OS only - `apt install jq` or `brew install jq` (It is using in bash scripts to create/delete Stream Manager node group using API)
+* Install **jq** Linux or Mac OS only - `apt install jq` or `brew install jq` (It is used in bash scripts to create/delete Stream Manager node group using API) https://jqlang.github.io/jq/
 * Download Red5 Pro server build: (Example: red5pro-server-0.0.0.b0-release.zip) https://account.red5pro.com/downloads
 * Get Red5 Pro License key: (Example: 1111-2222-3333-4444) https://account.red5pro.com
 * Prepare Oracle Cloud access user for Terraform

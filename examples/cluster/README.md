@@ -19,7 +19,7 @@ This example illustrates how to create a simple Red5 Pro Stream Manager cluster 
 
 * Install **terraform** https://developer.hashicorp.com/terraform/downloads
 * Install **OCI CLI** https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
-* Install **jq** Linux or Mac OS only - `apt install jq` or `brew install jq` (It is using in bash scripts to create/delete Stream Manager node group using API)
+* Install **jq** Linux or Mac OS only - `apt install jq` or `brew install jq` (It is used in bash scripts to create/delete Stream Manager node group using API) https://jqlang.github.io/jq/
 * Download Red5 Pro server build: (Example: red5pro-server-0.0.0.b0-release.zip) https://account.red5pro.com/downloads
 * Download Red5 Pro Autoscale controller for Terraform: (Example: terraform-cloud-controller-0.0.0.jar) https://account.red5pro.com/downloads
 * Download Red5 Pro Terraform Service : (Example: terraform-service-0.0.0.zip) https://account.red5pro.com/downloads
