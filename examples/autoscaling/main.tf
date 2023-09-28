@@ -1,7 +1,7 @@
 ####################################################################################
 # Example: Red5 Pro Stream Manager Autoscaling (OCI Load Balancer + Autoscaling)
 ####################################################################################
-module "red5pro_stream_manager" {
+module "red5pro_stream_manager_autoscaling" {
   source                                = "../../"
   type                                  = "autoscaling"                            # Deployment type: single, cluster, autoscaling
   name                                  = "red5pro-autoscaling"                    # Name to be used on all the resources as identifier
@@ -109,5 +109,5 @@ module "red5pro_stream_manager" {
 }
 
 output "module_output" {
-  value = module.red5pro_stream_manager
+  value = module.red5pro_stream_manager_autoscaling
 }

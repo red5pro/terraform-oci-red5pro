@@ -11,9 +11,9 @@ Terraform Red5 Pro Oracle Cloud(OCI) module for Red5 Pro resources.
 
 ## Preparation
 
-* Install **terraform** https://registry.terraform.io/providers/oracle/oci/latest/docs
+* Install **terraform** https://developer.hashicorp.com/terraform/downloads
 * Install **OCI CLI** https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
-* Install **jq** Linux or Mac OS only - `apt install jq` or `brew install jq` (It is using in bash scripts to create/delete Stream Manager node group using API)
+* Install **jq** Linux or Mac OS only - `apt install jq` or `brew install jq` (It is used in bash scripts to create/delete Stream Manager node group using API) https://jqlang.github.io/jq/download/
 * Download Red5 Pro server build: (Example: red5pro-server-0.0.0.b0-release.zip) https://account.red5pro.com/downloads
 * Download Red5 Pro Autoscale controller for Terraform: (Example: terraform-cloud-controller-0.0.0.jar) https://account.red5pro.com/downloads
 * Download Red5 Pro Terraform Service : (Example: terraform-service-0.0.0.zip) https://account.red5pro.com/downloads
@@ -120,7 +120,7 @@ output "module_output" {
 ## Red5 Pro Stream Manager cluster deployment (cluster) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/main/examples/cluster)
 
 * VCN create or use existing
-* Network Security groups will be created automatically or user existing (Stream Manager, Terraform Service, Nodes, MySQL DB System and others)
+* Network Security groups will be created automatically or use existing (Stream Manager, Terraform Service, Nodes, MySQL DB System and others)
 * MySQL DB create in Oracle Cloud MySQL DB System or install it locally on the Stream Manager
 * Create a dedicated OCI instance for Terraform Server or install it locally on the Stream Manager
 * Stream Manager instance will be created automatically
