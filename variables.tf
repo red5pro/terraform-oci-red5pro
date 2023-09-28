@@ -410,7 +410,7 @@ variable "cert_public_cert" {
 variable "origin_image_create" {
   description = "Create new Origin node image true/false. (Default:true) (https://www.red5pro.com/docs/special/relays/overview/#origin-and-edge-nodes)"
   type        = bool
-  default     = false
+  default     = true
 }
 variable "origin_image_instance_type" {
   description = "Origin node image - instance type"
