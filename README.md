@@ -1,6 +1,8 @@
-# Oracle Cloud(OCI) Red5 Pro Terraform module
+# Oracle Cloud Infrastructure(OCI) Terraform module for Red5 Pro
 
-Terraform Red5 Pro Oracle Cloud(OCI) module for Red5 Pro resources.
+[Red5 Pro](https://www.red5.net/) is a real-time video streaming server plaform known for its low-latency streaming capabilities, making it ideal for interactive applications like online gaming, streaming events and video conferencing etc.
+
+This a reusable Terraform installer module for [Red5 Pro](https://www.red5pro.com/docs/installation/auto-oci/overview/) that provisions infrastucture over [Oracle Cloud Infrastructure(OCI)](https://www.oracle.com/cloud/).
 
 ## This module has 3 variants of Red5 Pro deployments
 
@@ -8,18 +10,32 @@ Terraform Red5 Pro Oracle Cloud(OCI) module for Red5 Pro resources.
 * **cluster** - Stream Manager cluster (MySQL DB + Stream Manager instance + Autoscaling Node group with Origin, Edge, Transcoder, Relay instances)
 * **autoscaling** - Autoscaling Stream Managers (MySQL Oracle Cloud MySQL DB System  + Load Balancer + Autoscaling Stream Managers + Autoscaling Node group with Origin, Edge, Transcoder, Relay instances)
 
-
 ## Preparation
 
 * Install **terraform** https://developer.hashicorp.com/terraform/downloads
-* Install **OCI CLI** https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
+  * Open your web browser and visit the [Terraform download page](https://developer.hashicorp.com/terraform/downloads), ensuring you get version 1.0.0 or higher. 
+  * Download the suitable version for your operating system, 
+  * Extract the compressed file, and then copy the Terraform binary to a location within your system's path
+    * Configure path on Linux/macOS 
+      * Open a terminal and type the following:
+
+        ```$ sudo mv /path/to/terraform /usr/local/bin```
+    * Configure path on Windows OS
+      * Click 'Start', search for 'Control Panel', and open it.
+      * Navigate to System > Advanced System Settings > Environment Variables.
+      * Under System variables, find 'PATH' and click 'Edit'.
+      * Click 'New' and paste the directory location where you extracted the terraform.exe file.
+      * Confirm changes by clicking 'OK' and close all open windows.
+      * Open a new terminal and verify that Terraform has been successfully installed.
+
+* Install **Authenticating Oracle Cloud Infrastructure(OCI) CLI** https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
 * Install **jq** Linux or Mac OS only - `apt install jq` or `brew install jq` (It is used in bash scripts to create/delete Stream Manager node group using API) https://jqlang.github.io/jq/download/
 * Download Red5 Pro server build: (Example: red5pro-server-0.0.0.b0-release.zip) https://account.red5pro.com/downloads
 * Download Red5 Pro Autoscale controller for Terraform: (Example: terraform-cloud-controller-0.0.0.jar) https://account.red5pro.com/downloads
 * Download Red5 Pro Terraform Service : (Example: terraform-service-0.0.0.zip) https://account.red5pro.com/downloads
 * Get Red5 Pro License key: (Example: 1111-2222-3333-4444) https://account.red5pro.com
-* Prepare Oracle Cloud access user for Terraform
-    * Identity and Access Management Rights (management access rights)
+* Prepare [Oracle Cloud Infrastructure(OCI)](https://www.oracle.com/cloud/) Account and create a User for Terraform module. User must have permission to create and manage the following services:
+    * Identity and Access Management Rights
         * Virtual Cloud Networks
         * Compute Instances
         * Instance Configurations
@@ -27,23 +43,23 @@ Terraform Red5 Pro Oracle Cloud(OCI) module for Red5 Pro resources.
         * Load balancers
         * MySQL DB Systems 
         * OCI Certificates
-    * Generate API keys for Oracle Cloud user(Required for Oracle Cloud CLI support)
+    * Generate API keys for Oracle Cloud Infrastructure(OCI) user(Required for Oracle Cloud CLI support)
         * Follow the documentation for generating keys on OCI Documentation - https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#two
-    * Upload your API keys to Oracle Cloud 
+    * Upload your API keys to Oracle Cloud Infrastructure(OCI)
         * Follow the documentation for uploading your keys on OCI Documentation - https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#two
         * After uploading the keys to Oracle Cloud, get API key's fingerprint displayed (for example, `12:34:56:78:90:11:cd:ef:12:34:56:78:90:ba:cd:ef`)
-    * Create an OCI compartment for creating resources in Oracle Cloud Account 
+    * Create an OCI compartment for creating resources in Oracle Cloud Infrastructure(OCI) Account 
         * Follow the documentation for creating a compartment - https://docs.oracle.com/en-us/iaas/Content/Identity/Tasks/managingcompartments.htm#two
-    * Get the necessary OCIDs from Oracle Cloud Account
+    * Get the necessary OCIDs from Oracle Cloud Infrastructure(OCI) Account
         * Compartment OCID 
         * Tenancy OCID
         * User OCID
-    * Authenticating OCI CLI
-        * Token-based Authentication for the OCI CLI - https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/clitoken.htm
-        * Custom OCI CLI Configuration(Override the Default Configuration) - https://www.ateam-oracle.com/post/oracle-cloud-infrastructure-cli-scripting-how-to-quickly-override-the-default-configuration
+    * Authenticating Oracle Cloud Infrastructure(OCI) CLI
+        * Token-based Authentication for the Authenticating Oracle Cloud Infrastructure(OCI) CLI - https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/clitoken.htm
+        * Custom Authenticating Oracle Cloud Infrastructure(OCI) CLI Configuration(Override the Default Configuration) - https://www.ateam-oracle.com/post/oracle-cloud-infrastructure-cli-scripting-how-to-quickly-override-the-default-configuration
 * Copy Red5 Pro server build, Autoscale controller for Terraform and Terraform Service to the root folder of your project
 
-Example:  
+Example:
 
 ```bash
 cp ~/Downloads/red5pro-server-0.0.0.b0-release.zip ./
@@ -53,9 +69,12 @@ cp ~/Downloads/terraform-service-0.0.0.zip ./
 
 ## Red5 Pro Single server deployment (single) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/main/examples/single)
 
-* VCN create or use existing
-* Security group create or use existing
-* SSL certificate install Let's encrypt or use Red5Pro server without SSL certificate (HTTP only)
+In the following example, Terraform module will automates the infrastructure provisioning of the [Red5 Pro standalone server](https://www.red5pro.com/docs/installation/installation/oci-install/).
+
+* **VCN** - This Terrform module can either create a new or use your existing VCN. If you wish to create a new VCN, set `vcn_create` to `true`, and the script will ignore the other VCN configurations. To use your existing VCN, set `vcn_create` to `false` and include your existing vcn_id, name, dns label, subnet id, and subnet name.
+* **Network Security Group** - This Terrform module can either create a new or use your existing Network Security Group in Oracle Cloud Infrastructure(OCI).
+* **Instance Type** - Select the instance type based on the usecase from [Oracle Cloud Infrastructure(OCI) Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm)
+* **SSL Certificates** - User can install Let's encrypt SSL certificates or use Red5Pro server without SSL certificate (HTTP only).
 
 ```hcl
 module "red5pro_single" {
@@ -119,17 +138,20 @@ output "module_output" {
 
 ## Red5 Pro Stream Manager cluster deployment (cluster) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/main/examples/cluster)
 
-* VCN create or use existing
-* Network Security groups will be created automatically or use existing (Stream Manager, Terraform Service, Nodes, MySQL DB System and others)
-* MySQL DB create in Oracle Cloud MySQL DB System or install it locally on the Stream Manager
-* Create a dedicated OCI instance for Terraform Server or install it locally on the Stream Manager
-* Stream Manager instance will be created automatically
-* SSL certificate install Let's encrypt or use Red5 Pro Stream Manager without SSL certificate (HTTP only)
-* Origin node image create
-* Edge node image create or not (it is optional)
-* Transcoder node image create or not (it is optional)
-* Relay node image create or not (it is optional)
-* Autoscaling node group using API to Stream Manager (optional) - (https://www.red5pro.com/docs/special/concepts/nodegroup/)
+In the following example, Terraform module will automates the infrastructure provisioning of the [Stream Manager cluster on the Oracle Cloud Infrastructure(OCI)](https://www.red5pro.com/docs/installation/auto-oci/overview/).
+
+* **VCN** - This Terrform module can either create a new or use your existing VCN. If you wish to create a new VCN, set `vcn_create` to `true`, and the script will ignore the other VCN configurations. To use your existing VCN, set `vcn_create` to `false` and include your existing vcn_id, name, dns label, subnet id, and subnet name
+* **Network Security Group** - This Terrform module can either create a new or use your existing Network Security Group in Oracle Cloud Infrastructure(OCI) for Stream Manager, Terraform Service, Nodes, MySQL DB System and others
+* **Instance Type** - Select the instance type based on the usecase from [Oracle Cloud Infrastructure(OCI) Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm)
+* **MySQL Database** - Users have flexibility to create a MySQL databse server in Oracle Cloud MySQL DB System or install it locally on the Stream Manager
+* **Terraform Server** - Uesrs can choose to create a dedicated Oracle Cloud Infrastructure(OCI) instance for Terraform Server or install it locally on the Stream Manager
+* **Stream Manager** - Oracle Cloud Infrastructure(OCI) instance will be created automatically for Stream Manager
+* **SSL Certificates** - User can install Let's encrypt SSL certificates or use Red5 Pro Stream Manager without SSL certificate (HTTP only)
+* **Origin Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Orgin Node type for Stream Manager node group
+* **Edge Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Edge Node type for Stream Manager node group (optional)
+* **Transcoder Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Transcoder Node type for Stream Manager node group (optional)
+* **Relay Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Relay Node type for Stream Manager node group (optional)
+* **Autoscaling Node Group** - This is required for creating autoscaling node group using [Stream Manager APIs](https://www.red5pro.com/docs/special/concepts/nodegroup/) automatically as part of Terraform module, If users are not selecting this option then they must create a new node group using [Stream Manager APIs](https://www.red5pro.com/docs/special/concepts/nodegroup/) Manually.
 
 ```hcl
 module "red5pro_stream_manager" {
@@ -242,20 +264,24 @@ output "module_output" {
 ---
 
 ## Red5 Pro Stream Manager cluster with Oracle Cloud autoscaling Stream Managers (autoscaling) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/main/examples/autoscaling)
-* VCN create or use existing
-* Network Security groups will be created automatically or user existing (Stream Manager, Terraform Service, Nodes, MySQL DB System and others)
-* MySQL DB will be created automaticaly in Oracle Cloud MySQL DB System 
-* Create a dedicated OCI instance for Terraform Server
-* Create SSL certificate using CA certificate authority files
-* Load Balancer for Stream Managers will be created automatically
-* Autoscaling configuration for Stream Managers will be created automatically
-* Stream Manager image will be created automatically
-* Instance configuration for Stream Managers will be created automatically
-* Origin node image create or not (it is optional)
-* Edge node image create or not (it is optional)
-* Transcoder node image create or not (it is optional)
-* Relay node image create or not (it is optional)
-* Autoscaling node group using API to Stream Manager (optional) - (https://www.red5pro.com/docs/special/concepts/nodegroup/)
+
+In the following example, Terraform module will automates the infrastructure provisioning of the [Stream Manager cluster with autoscaling and loadbalancer on the Oracle Cloud Infrastructure(OCI)](https://www.red5pro.com/docs/installation/auto-oci/overview/).
+
+* **VCN** - This Terrform module can either create a new or use your existing VCN. If you wish to create a new VCN, set `vcn_create` to `true`, and the script will ignore the other VCN configurations. To use your existing VCN, set `vcn_create` to `false` and include your existing vcn_id, name, dns label, subnet id, and subnet name
+* **Network Security Group** - This Terrform module can either create a new or use your existing Network Security Group in Oracle Cloud Infrastructure(OCI) for Stream Manager, Terraform Service, Nodes, MySQL DB System and others
+* **Instance Type** - Select the instance type based on the usecase from [Oracle Cloud Infrastructure(OCI) Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm)
+* **MySQL Database** - Users need to create a MySQL databse server in Oracle Cloud MySQL DB System
+* **Terraform Server** - Uesrs can choose to create a dedicated Oracle Cloud Infrastructure(OCI) instance for Terraform Server
+* **Stream Manager OCI Custom Image** - Oracle Cloud Infrastructure(OCI) custom image will be created automatically for Stream Manager
+* **Load Balancer** - Oracle Cloud Infrastructure(OCI) load balancer for Stream Managers will be created automatically
+* **Autoscaling Configuration** - Oracle Cloud Infrastructure(OCI) autoscaling configuration for Stream Managers will be created automatically
+* **Instance Configuration** - Oracle Cloud Infrastructure(OCI) instance configuration for Stream Managers will be created automatically
+* **SSL Certificates** - Create SSL certificate using CA certificate authority files and upload certificates to OCI Certificates OR use exsting OCI Certificates
+* **Origin Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Orgin Node type for Stream Manager node group
+* **Edge Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Edge Node type for Stream Manager node group (optional)
+* **Transcoder Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Transcoder Node type for Stream Manager node group (optional)
+* **Relay Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Relay Node type for Stream Manager node group (optional)
+* **Autoscaling Node Group** - This is required for creating autoscaling node group using [Stream Manager APIs](https://www.red5pro.com/docs/special/concepts/nodegroup/) automatically as part of Terraform module, If users are not selecting this option then they must create a new node group using [Stream Manager APIs](https://www.red5pro.com/docs/special/concepts/nodegroup/) Manually.
 
 ```hcl
 module "red5pro_stream_manager" {
