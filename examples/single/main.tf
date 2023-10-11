@@ -35,7 +35,6 @@ module "red5pro_single" {
 
   # Single Red5 Pro server OCI instance configuration
   single_instance_type = "VM.Standard.E4.Flex" # Instance type for Red5 Pro server
-  single_volume_size   = 8                     # Volume size for Red5 Pro server
 
   # Red5Pro server configuration
   red5pro_license_key                         = "1111-2222-3333-4444"         # Red5 Pro license key (https://account.red5pro.com/login)
