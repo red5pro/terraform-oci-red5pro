@@ -221,7 +221,6 @@ module "red5pro_stream_manager" {
   origin_image_instance_type                               = "VM.Standard.E4.Flex"         # Instance type for Origin node image
   origin_image_instance_cpu                                = 2                             # OCI Instance OCPU Count for Origin node image(1 OCPU = 2 vCPU)
   origin_image_instance_memory                             = 4                             # OCI Instance Memory size in GB for Origin node image
-  origin_image_volume_size                                 = 16                            # Volume size for Origin node image
   origin_image_red5pro_inspector_enable                    = false                         # true - enable Red5 Pro server inspector, false - disable Red5 Pro server inspector (https://www.red5pro.com/docs/troubleshooting/inspector/overview/)
   origin_image_red5pro_restreamer_enable                   = false                         # true - enable Red5 Pro server restreamer, false - disable Red5 Pro server restreamer (https://www.red5pro.com/docs/special/restreamer/overview/)
   origin_image_red5pro_socialpusher_enable                 = false                         # true - enable Red5 Pro server socialpusher, false - disable Red5 Pro server socialpusher (https://www.red5pro.com/docs/special/social-media-plugin/overview/)
@@ -329,8 +328,8 @@ module "red5pro_stream_manager" {
   terra_parallelism           = "20"
 
   # Stream Manager Reserved IP Address configuration
-  elastic_ip_create       = true                                              # true - create new Reserved IP, false - use existing Reserved IP
-  elastic_ip_existing     = "1.2.3.4"                                         # Reserved IP Address for existing Oracle Cloud Reserved IP
+  reserved_public_ip_address_create       = true                                              # true - create new Reserved IP, false - use existing Reserved IP
+  reserved_public_ip_address_existing     = "1.2.3.4"                                         # Reserved IP Address for existing Oracle Cloud Reserved IP
 
   # Load Balancer HTTPS/SSL certificate configuration
   https_oci_certificates_use_existing     = true                  # If you want to use SSL certificate set it to true
@@ -356,7 +355,6 @@ module "red5pro_stream_manager" {
   origin_image_instance_type                               = "VM.Standard.E4.Flex"         # Instance type for Origin node image
   origin_image_instance_cpu                                = 2                             # OCI Instance OCPU Count for Origin node image(1 OCPU = 2 vCPU)
   origin_image_instance_memory                             = 4                             # OCI Instance Memory size in GB for Origin node image
-  origin_image_volume_size                                 = 8                             # Volume size for Origin node image
   origin_image_red5pro_inspector_enable                    = false                         # true - enable Red5 Pro server inspector, false - disable Red5 Pro server inspector (https://www.red5pro.com/docs/troubleshooting/inspector/overview/)
   origin_image_red5pro_restreamer_enable                   = false                         # true - enable Red5 Pro server restreamer, false - disable Red5 Pro server restreamer (https://www.red5pro.com/docs/special/restreamer/overview/)
   origin_image_red5pro_socialpusher_enable                 = false                         # true - enable Red5 Pro server socialpusher, false - disable Red5 Pro server socialpusher (https://www.red5pro.com/docs/special/social-media-plugin/overview/)
