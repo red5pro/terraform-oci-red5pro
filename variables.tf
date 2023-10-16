@@ -410,7 +410,7 @@ variable "cert_public_cert" {
 variable "origin_image_create" {
   description = "Create new Origin node image true/false. (Default:true) (https://www.red5pro.com/docs/special/relays/overview/#origin-and-edge-nodes)"
   type        = bool
-  default     = true
+  default     = false
 }
 variable "origin_image_instance_type" {
   description = "Origin node image - instance type"
@@ -426,11 +426,6 @@ variable "origin_image_instance_memory" {
   description = "Origin node image - instance memory"
   type        = number
   default     = 4
-}
-variable "origin_image_volume_size" {
-  description = "Origin node image - volume size"
-  type        = number
-  default     = 8
 }
 variable "origin_image_red5pro_inspector_enable" {
   description = "Origin node image - Inspector enable/disable (https://www.red5pro.com/docs/troubleshooting/inspector/overview/)"
@@ -509,11 +504,6 @@ variable "edge_image_instance_memory" {
   type        = number
   default     = 4
 }
-variable "edge_image_volume_size" {
-  description = "Edge node image - volume size"
-  type        = number
-  default     = 8
-}
 variable "edge_image_red5pro_inspector_enable" {
   description = "Edge node image - Inspector enable/disable (https://www.red5pro.com/docs/troubleshooting/inspector/overview/)"
   type        = bool
@@ -591,11 +581,6 @@ variable "transcoder_image_instance_memory" {
   type        = number
   default     = 4
 }
-variable "transcoder_image_volume_size" {
-  description = "Transcoder node image - volume size"
-  type        = number
-  default     = 8
-}
 variable "transcoder_image_red5pro_inspector_enable" {
   description = "Transcoder node image - Inspector enable/disable (https://www.red5pro.com/docs/troubleshooting/inspector/overview/)"
   type        = bool
@@ -672,11 +657,6 @@ variable "relay_image_instance_memory" {
   description = "Relay node image - instance memory"
   type        = number
   default     = 4
-}
-variable "relay_image_volume_size" {
-  description = "Relay node image - volume size"
-  type        = number
-  default     = 8
 }
 variable "relay_image_red5pro_inspector_enable" {
   description = "Relay node image - Inspector enable/disable (https://www.red5pro.com/docs/troubleshooting/inspector/overview/)"
