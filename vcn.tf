@@ -2,6 +2,18 @@
 # Virtual Cloud Networks - VCN, SUBNETS AND NETWORK SECURITY GROUPS
 ################################################################################
 
+# Get details of the existing VCN
+data "oci_core_vcn" "test_existing_vcn" {
+  count = var.vcn_create ? 0 : 1
+  vcn_id = var.vcn_id_existing
+}
+
+# Get details of the existing Subnet
+data "oci_core_subnet" "test_existing_subnet" {
+  count = var.vcn_create ? 0 : 1
+  subnet_id = var.subnet_id_existing
+}
+
 # Get details of the existing Network Security Groups
 data "oci_core_network_security_groups" "red5rpo_security_groups" {
   count          = var.vcn_create ? 0 : 1
