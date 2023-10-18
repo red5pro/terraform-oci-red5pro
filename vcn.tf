@@ -111,7 +111,7 @@ resource "oci_core_route_table_attachment" "red5pro_route_table_attachment" {
 resource "oci_core_network_security_group" "red5pro_single_network_security_group" {
   count          = local.single && var.network_security_group_create ? 1 : 0
   compartment_id = var.compartment_id
-  vcn_id         = oci_core_vcn.red5pro_vcn[0].id
+  vcn_id         = local.vcn_id
   display_name   = "${var.name}-single-nsg"
   defined_tags   = var.defined_tags
 }
