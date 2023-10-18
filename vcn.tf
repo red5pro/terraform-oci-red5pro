@@ -186,7 +186,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_single_nsg_sec
 
 # Oracle Cloud Network Security group for Stream Manager
 resource "oci_core_network_security_group" "red5pro_stream_manager_network_security_group" {
-  count          = local.cluster || local.autoscaling && var.network_security_group_create ? 1 : 0
+  count          = local.cluster || local.autoscaling ? 1 : 0
   compartment_id = var.compartment_id
   vcn_id         = oci_core_vcn.red5pro_vcn[0].id
   display_name   = "${var.name}-sm-nsg"
@@ -194,7 +194,7 @@ resource "oci_core_network_security_group" "red5pro_stream_manager_network_secur
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager_nsg_rule_egress" {
-  count                     = local.cluster || local.autoscaling && var.network_security_group_create ? 1 : 0
+  count                     = local.cluster || local.autoscaling ? 1 : 0
   network_security_group_id = oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id
   direction                 = "EGRESS"
   protocol                  = "all"
@@ -209,7 +209,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager_nsg_security_rule_ingress_tcp" {
-  count                     = local.cluster || local.autoscaling && var.network_security_group_create ? length(var.network_security_group_stream_manager_ingress_tcp) : 0
+  count                     = local.cluster || local.autoscaling ? length(var.network_security_group_stream_manager_ingress_tcp) : 0
   network_security_group_id = oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id
   direction                 = "INGRESS"
   protocol                  = "6"
@@ -231,7 +231,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager
 
 # Oracle Cloud Network Security group for Red5 Pro Terraform Service
 resource "oci_core_network_security_group" "red5pro_terraform_service_network_security_group" {
-  count          = local.cluster || local.autoscaling && var.network_security_group_create ? 1 : 0
+  count          = local.cluster || local.autoscaling ? 1 : 0
   compartment_id = var.compartment_id
   vcn_id         = oci_core_vcn.red5pro_vcn[0].id
   display_name   = "${var.name}-sm-nsg"
@@ -239,7 +239,7 @@ resource "oci_core_network_security_group" "red5pro_terraform_service_network_se
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_terraform_service_nsg_rule_egress" {
-  count                     = local.cluster || local.autoscaling && var.network_security_group_create ? 1 : 0
+  count                     = local.cluster || local.autoscaling ? 1 : 0
   network_security_group_id = oci_core_network_security_group.red5pro_terraform_service_network_security_group[0].id
   direction                 = "EGRESS"
   protocol                  = "all"
@@ -254,7 +254,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_terraform_serv
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_terraform_service_nsg_security_rule_ingress_tcp" {
-  count                     = local.cluster || local.autoscaling && var.network_security_group_create ? length(var.network_security_group_terraform_service_ingress_tcp) : 0
+  count                     = local.cluster || local.autoscaling ? length(var.network_security_group_terraform_service_ingress_tcp) : 0
   network_security_group_id = oci_core_network_security_group.red5pro_terraform_service_network_security_group[0].id
   direction                 = "INGRESS"
   protocol                  = "6"
@@ -276,7 +276,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_terraform_serv
 
 # Oracle Cloud Network Security group for SM Nodes
 resource "oci_core_network_security_group" "red5pro_node_network_security_group" {
-  count          = local.cluster || local.autoscaling && var.network_security_group_create ? 1 : 0
+  count          = local.cluster || local.autoscaling ? 1 : 0
   compartment_id = var.compartment_id
   vcn_id         = oci_core_vcn.red5pro_vcn[0].id
   display_name   = "${var.name}-node-nsg"
@@ -284,7 +284,7 @@ resource "oci_core_network_security_group" "red5pro_node_network_security_group"
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_node_nsg_rule_egress" {
-  count                     = local.cluster || local.autoscaling && var.network_security_group_create ? 1 : 0
+  count                     = local.cluster || local.autoscaling ? 1 : 0
   network_security_group_id = oci_core_network_security_group.red5pro_node_network_security_group[0].id
   direction                 = "EGRESS"
   protocol                  = "all"
@@ -299,7 +299,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_node_nsg_rule_
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_node_nsg_security_rule_ingress_tcp" {
-  count                     = local.cluster || local.autoscaling && var.network_security_group_create ? length(var.network_security_group_node_ingress_tcp) : 0
+  count                     = local.cluster || local.autoscaling ? length(var.network_security_group_node_ingress_tcp) : 0
   network_security_group_id = oci_core_network_security_group.red5pro_node_network_security_group[0].id
   direction                 = "INGRESS"
   protocol                  = "6"
@@ -320,7 +320,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_node_nsg_secur
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_node_nsg_security_rule_ingress_udp" {
-  count                     = local.cluster || local.autoscaling && var.network_security_group_create ? length(var.network_security_group_node_ingress_udp) : 0
+  count                     = local.cluster || local.autoscaling ? length(var.network_security_group_node_ingress_udp) : 0
   network_security_group_id = oci_core_network_security_group.red5pro_node_network_security_group[0].id
   direction                 = "INGRESS"
   protocol                  = "17"
