@@ -14,6 +14,18 @@ data "oci_core_subnet" "test_existing_subnet" {
   subnet_id = var.subnet_id_existing
 }
 
+data "oci_core_network_security_group" "test_existing_network_security_group" {
+  count = var.network_security_group_create ? 0 : 1
+  network_security_group_id = var.network_security_group_id_existing
+
+  lifecycle {
+    postcondition {
+      condition     = self.network_security_group_id != null && self.network_security_group_id != ""
+      error_message = "ERROR! Network Security Group with ID ${var.network_security_group_id_existing} does not exist in the compartment ${var.compartment_id}"
+    }
+  }
+}
+
 # Create a new VCN if input variable vcn_create is true
 resource "oci_core_vcn" "red5pro_vcn" {
   count          = var.vcn_create ? 1 : 0

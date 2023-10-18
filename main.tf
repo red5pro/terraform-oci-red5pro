@@ -42,7 +42,7 @@ resource "oci_core_instance" "red5pro_single" {
   create_vnic_details {
     assign_public_ip = true
     subnet_id        = local.subnet_id
-    nsg_ids          = [var.network_security_group_create ? oci_core_network_security_group.red5pro_single_network_security_group[0].id : var.network_security_group_id_existing]
+    nsg_ids          = [var.network_security_group_create ? oci_core_network_security_group.red5pro_single_network_security_group[0].id : data.oci_core_network_security_group.test_existing_network_security_group[0].network_security_group_id]
   }
 
   metadata = {
