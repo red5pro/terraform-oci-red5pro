@@ -14,13 +14,6 @@ data "oci_core_subnet" "test_existing_subnet" {
   subnet_id = var.subnet_id_existing
 }
 
-# Get details of the existing Network Security Groups
-data "oci_core_network_security_groups" "red5rpo_security_groups" {
-  count          = var.vcn_create ? 0 : 1
-  compartment_id = var.compartment_id
-  display_name   = var.network_security_group_id_existing
-}
-
 # Create a new VCN if input variable vcn_create is true
 resource "oci_core_vcn" "red5pro_vcn" {
   count          = var.vcn_create ? 1 : 0
