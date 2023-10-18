@@ -129,11 +129,6 @@ variable "network_security_group_id_existing" {
   type        = string
   default     = ""
 }
-variable "network_security_group_name_existing" {
-  description = "Oracle Cloud Network Security Group name, this Security group should have open default Red5Pro ports: TCP:443,5080,80,1935,8554, UDP:40000-65535"
-  type        = string
-  default     = ""
-}
 variable "network_security_group_single_ingress_tcp" {
   type        = list(number)
   description = "Oracle Cloud Network Security Group for Red5 Pro Single server  - ingress tcp ports"
