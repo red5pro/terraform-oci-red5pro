@@ -112,11 +112,6 @@ variable "vcn_id_existing" {
   type        = string
   default     = ""
 }
-variable "vcn_dns_label" {
-  description = "DNS label for Oracle Cloud VCN Network"
-  type        = string
-  default     = "red5vcn"
-}
 variable "subnet_id_existing" {
   description = "Oracle Cloud Subnet OCID of an existing VCN Subnet"
   type        = string

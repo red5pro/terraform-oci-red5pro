@@ -27,7 +27,6 @@ resource "oci_core_vcn" "red5pro_vcn" {
   cidr_blocks    = ["10.5.0.0/16"]
   compartment_id = var.compartment_id
   display_name   = "${var.name}-vcn"
-  dns_label      = var.vcn_dns_label
   is_ipv6enabled = local.enable_ipv6
   defined_tags   = var.defined_tags
 
