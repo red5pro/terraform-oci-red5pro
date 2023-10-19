@@ -3,9 +3,9 @@ locals {
   cluster                          = var.type == "cluster" ? true : false
   autoscaling                      = var.type == "autoscaling" ? true : false
   vcn_id                           = var.vcn_create ? oci_core_vcn.red5pro_vcn[0].id : var.vcn_id_existing
-  vcn_name                         = var.vcn_create ? oci_core_vcn.red5pro_vcn[0].display_name : data.oci_core_vcn.test_existing_vcn[0].display_name
+  vcn_name                         = var.vcn_create ? oci_core_vcn.red5pro_vcn[0].display_name : data.oci_core_vcn.red5pro_existing_vcn[0].display_name
   subnet_id                        = var.vcn_create ? oci_core_subnet.red5pro_vcn_subnet_public[0].id : var.subnet_id_existing
-  subnet_name                      = var.vcn_create ? oci_core_subnet.red5pro_vcn_subnet_public[0].display_name : data.oci_core_subnet.test_existing_subnet[0].display_name
+  subnet_name                      = var.vcn_create ? oci_core_subnet.red5pro_vcn_subnet_public[0].display_name : data.oci_core_subnet.red5pro_existing_subnet[0].display_name
   enable_ipv6                      = false
   mysql_db_system_create           = local.autoscaling ? true : local.cluster && var.mysql_db_system_create ? true : local.cluster && var.dedicated_terra_host_create ? true : false
   mysql_host                       = local.autoscaling ? oci_mysql_mysql_db_system.red5pro_mysql_db_system[0].ip_address : local.cluster && var.mysql_db_system_create ? oci_mysql_mysql_db_system.red5pro_mysql_db_system[0].ip_address : local.cluster && var.dedicated_terra_host_create ? oci_mysql_mysql_db_system.red5pro_mysql_db_system[0].ip_address : "localhost"

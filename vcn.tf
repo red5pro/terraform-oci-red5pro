@@ -3,7 +3,7 @@
 ################################################################################
 
 # Get details of the existing VCN
-data "oci_core_vcn" "test_existing_vcn" {
+data "oci_core_vcn" "red5pro_existing_vcn" {
   count = var.vcn_create ? 0 : 1
   vcn_id = var.vcn_id_existing
 
@@ -16,7 +16,7 @@ data "oci_core_vcn" "test_existing_vcn" {
 }
 
 # Get details of the existing Subnet
-data "oci_core_subnet" "test_existing_subnet" {
+data "oci_core_subnet" "red5pro_existing_subnet" {
   count = var.vcn_create ? 0 : 1
   subnet_id = var.subnet_id_existing
 
@@ -29,7 +29,7 @@ data "oci_core_subnet" "test_existing_subnet" {
 }
 
 # Get details of the existing Network Security Group
-data "oci_core_network_security_group" "test_existing_network_security_group" {
+data "oci_core_network_security_group" "red5pro_existing_network_security_group" {
   count = var.network_security_group_create ? 0 : 1
   network_security_group_id = var.network_security_group_id_existing
 

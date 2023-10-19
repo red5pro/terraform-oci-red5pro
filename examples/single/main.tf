@@ -22,7 +22,7 @@ module "red5pro_single" {
 
   # Network Security Group configuration
   network_security_group_create      = true         # true - create new Network Security Group, false - use existing Network Security Group
-  network_security_group_id_existing = "sg-example" # Network Security Group ID for existing security group
+  network_security_group_id_existing = "ocid1.networksecuritygroup.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Network Security Group ID for existing security group
 
   # Single Red5 Pro server HTTPS/SSL certificate configuration
   https_letsencrypt_enable                  = true                  # true - create new Let's Encrypt HTTPS/SSL certificate, false - use Red5 Pro server without HTTPS/SSL certificate
