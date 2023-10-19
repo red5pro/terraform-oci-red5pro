@@ -25,10 +25,7 @@ module "red5pro_stream_manager_autoscaling" {
   # VCN Configuration
   vcn_create           = true                                                                                # true - create new VCN, false - use existing VCN
   vcn_id_existing      = "ocid1.vcn.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"    # VCN OCID for existing VCN Network
-  vcn_name_existing    = "red5pro-autoscaling-vcn"                                                           # VCN name for existing VCN Network
-  vcn_dns_label        = "vcnexample"                                                                        # Should contains chanraters only for VCN DNS Labels, No special characters and white spaces allowed                                        
   subnet_id_existing   = "ocid1.subnet.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Subnet OCID for existing VCN Subnet
-  subnet_name_existing = "red5pro-autoscaling-public-subnet"                                                 # Subnet name for existing VCN Subnet
 
   # Network Security Group configuration
   network_security_group_create      = true                                                                                              # true - create new Network Security Group, false - use existing Network Security Group

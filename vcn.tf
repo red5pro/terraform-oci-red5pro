@@ -2,11 +2,43 @@
 # Virtual Cloud Networks - VCN, SUBNETS AND NETWORK SECURITY GROUPS
 ################################################################################
 
-# Get details of the existing Network Security Groups
-data "oci_core_network_security_groups" "red5rpo_security_groups" {
-  count          = var.vcn_create ? 0 : 1
-  compartment_id = var.compartment_id
-  display_name   = var.network_security_group_id_existing
+# Get details of the existing VCN
+data "oci_core_vcn" "red5pro_existing_vcn" {
+  count = var.vcn_create ? 0 : 1
+  vcn_id = var.vcn_id_existing
+
+  lifecycle {
+    postcondition {
+      condition     = self.vcn_id != null && self.vcn_id != ""
+      error_message = "ERROR! VCN with ID ${var.vcn_id_existing} does not exist in the compartment ${var.compartment_id}"
+    }
+  }
+}
+
+# Get details of the existing Subnet
+data "oci_core_subnet" "red5pro_existing_subnet" {
+  count = var.vcn_create ? 0 : 1
+  subnet_id = var.subnet_id_existing
+
+  lifecycle {
+    postcondition {
+      condition     = self.subnet_id != null && self.subnet_id != ""
+      error_message = "ERROR! Subnet with ID ${var.subnet_id_existing} does not exist in the compartment ${var.compartment_id}"
+    }
+  }
+}
+
+# Get details of the existing Network Security Group
+data "oci_core_network_security_group" "red5pro_existing_network_security_group" {
+  count = var.network_security_group_create ? 0 : 1
+  network_security_group_id = var.network_security_group_id_existing
+
+  lifecycle {
+    postcondition {
+      condition     = self.network_security_group_id != null && self.network_security_group_id != ""
+      error_message = "ERROR! Network Security Group with ID ${var.network_security_group_id_existing} does not exist in the compartment ${var.compartment_id}"
+    }
+  }
 }
 
 # Create a new VCN if input variable vcn_create is true
@@ -15,7 +47,6 @@ resource "oci_core_vcn" "red5pro_vcn" {
   cidr_blocks    = ["10.5.0.0/16"]
   compartment_id = var.compartment_id
   display_name   = "${var.name}-vcn"
-  dns_label      = var.vcn_dns_label
   is_ipv6enabled = local.enable_ipv6
   defined_tags   = var.defined_tags
 
@@ -111,7 +142,7 @@ resource "oci_core_route_table_attachment" "red5pro_route_table_attachment" {
 resource "oci_core_network_security_group" "red5pro_single_network_security_group" {
   count          = local.single && var.network_security_group_create ? 1 : 0
   compartment_id = var.compartment_id
-  vcn_id         = oci_core_vcn.red5pro_vcn[0].id
+  vcn_id         = local.vcn_id
   display_name   = "${var.name}-single-nsg"
   defined_tags   = var.defined_tags
 }
@@ -175,7 +206,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_single_nsg_sec
 
 # Oracle Cloud Network Security group for Stream Manager
 resource "oci_core_network_security_group" "red5pro_stream_manager_network_security_group" {
-  count          = local.cluster || local.autoscaling && var.network_security_group_create ? 1 : 0
+  count          = local.cluster || local.autoscaling ? 1 : 0
   compartment_id = var.compartment_id
   vcn_id         = oci_core_vcn.red5pro_vcn[0].id
   display_name   = "${var.name}-sm-nsg"
@@ -183,7 +214,7 @@ resource "oci_core_network_security_group" "red5pro_stream_manager_network_secur
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager_nsg_rule_egress" {
-  count                     = local.cluster || local.autoscaling && var.network_security_group_create ? 1 : 0
+  count                     = local.cluster || local.autoscaling ? 1 : 0
   network_security_group_id = oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id
   direction                 = "EGRESS"
   protocol                  = "all"
@@ -198,7 +229,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager_nsg_security_rule_ingress_tcp" {
-  count                     = local.cluster || local.autoscaling && var.network_security_group_create ? length(var.network_security_group_stream_manager_ingress_tcp) : 0
+  count                     = local.cluster || local.autoscaling ? length(var.network_security_group_stream_manager_ingress_tcp) : 0
   network_security_group_id = oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id
   direction                 = "INGRESS"
   protocol                  = "6"
@@ -220,7 +251,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager
 
 # Oracle Cloud Network Security group for Red5 Pro Terraform Service
 resource "oci_core_network_security_group" "red5pro_terraform_service_network_security_group" {
-  count          = local.cluster || local.autoscaling && var.network_security_group_create ? 1 : 0
+  count          = local.cluster || local.autoscaling ? 1 : 0
   compartment_id = var.compartment_id
   vcn_id         = oci_core_vcn.red5pro_vcn[0].id
   display_name   = "${var.name}-sm-nsg"
@@ -228,7 +259,7 @@ resource "oci_core_network_security_group" "red5pro_terraform_service_network_se
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_terraform_service_nsg_rule_egress" {
-  count                     = local.cluster || local.autoscaling && var.network_security_group_create ? 1 : 0
+  count                     = local.cluster || local.autoscaling ? 1 : 0
   network_security_group_id = oci_core_network_security_group.red5pro_terraform_service_network_security_group[0].id
   direction                 = "EGRESS"
   protocol                  = "all"
@@ -243,7 +274,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_terraform_serv
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_terraform_service_nsg_security_rule_ingress_tcp" {
-  count                     = local.cluster || local.autoscaling && var.network_security_group_create ? length(var.network_security_group_terraform_service_ingress_tcp) : 0
+  count                     = local.cluster || local.autoscaling ? length(var.network_security_group_terraform_service_ingress_tcp) : 0
   network_security_group_id = oci_core_network_security_group.red5pro_terraform_service_network_security_group[0].id
   direction                 = "INGRESS"
   protocol                  = "6"
@@ -265,7 +296,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_terraform_serv
 
 # Oracle Cloud Network Security group for SM Nodes
 resource "oci_core_network_security_group" "red5pro_node_network_security_group" {
-  count          = local.cluster || local.autoscaling && var.network_security_group_create ? 1 : 0
+  count          = local.cluster || local.autoscaling ? 1 : 0
   compartment_id = var.compartment_id
   vcn_id         = oci_core_vcn.red5pro_vcn[0].id
   display_name   = "${var.name}-node-nsg"
@@ -273,7 +304,7 @@ resource "oci_core_network_security_group" "red5pro_node_network_security_group"
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_node_nsg_rule_egress" {
-  count                     = local.cluster || local.autoscaling && var.network_security_group_create ? 1 : 0
+  count                     = local.cluster || local.autoscaling ? 1 : 0
   network_security_group_id = oci_core_network_security_group.red5pro_node_network_security_group[0].id
   direction                 = "EGRESS"
   protocol                  = "all"
@@ -288,7 +319,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_node_nsg_rule_
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_node_nsg_security_rule_ingress_tcp" {
-  count                     = local.cluster || local.autoscaling && var.network_security_group_create ? length(var.network_security_group_node_ingress_tcp) : 0
+  count                     = local.cluster || local.autoscaling ? length(var.network_security_group_node_ingress_tcp) : 0
   network_security_group_id = oci_core_network_security_group.red5pro_node_network_security_group[0].id
   direction                 = "INGRESS"
   protocol                  = "6"
@@ -309,7 +340,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_node_nsg_secur
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_node_nsg_security_rule_ingress_udp" {
-  count                     = local.cluster || local.autoscaling && var.network_security_group_create ? length(var.network_security_group_node_ingress_udp) : 0
+  count                     = local.cluster || local.autoscaling ? length(var.network_security_group_node_ingress_udp) : 0
   network_security_group_id = oci_core_network_security_group.red5pro_node_network_security_group[0].id
   direction                 = "INGRESS"
   protocol                  = "17"

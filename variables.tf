@@ -112,23 +112,8 @@ variable "vcn_id_existing" {
   type        = string
   default     = ""
 }
-variable "vcn_name_existing" {
-  description = "Oracle Cloud VCN Name of an existing VCN Network"
-  type        = string
-  default     = ""
-}
-variable "vcn_dns_label" {
-  description = "DNS label for Oracle Cloud VCN Network"
-  type        = string
-  default     = "red5vcn"
-}
 variable "subnet_id_existing" {
   description = "Oracle Cloud Subnet OCID of an existing VCN Subnet"
-  type        = string
-  default     = ""
-}
-variable "subnet_name_existing" {
-  description = "Oracle Cloud Subnet Name of an existing VCN Subnet"
   type        = string
   default     = ""
 }
@@ -141,11 +126,6 @@ variable "network_security_group_create" {
 }
 variable "network_security_group_id_existing" {
   description = "Oracle Cloud Network Security Group OCID, this Security group should have open default Red5Pro ports: TCP:443,5080,80,1935,8554, UDP:40000-65535"
-  type        = string
-  default     = ""
-}
-variable "network_security_group_name_existing" {
-  description = "Oracle Cloud Network Security Group name, this Security group should have open default Red5Pro ports: TCP:443,5080,80,1935,8554, UDP:40000-65535"
   type        = string
   default     = ""
 }

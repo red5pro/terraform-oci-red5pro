@@ -16,16 +16,13 @@ module "red5pro_single" {
   ssh_public_key_path  = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pub_key.pem" # Path to existing SSH Public key
 
   # VCN Configuration
-  vcn_create           = true                                                                                # true - create new VCN, false - use existing VCN
+  vcn_create           = false                                                                                # true - create new VCN, false - use existing VCN
   vcn_id_existing      = "ocid1.vcn.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"    # VCN OCID for existing VCN Network
-  vcn_name_existing    = "red5pro-single-vcn"                                                                # VCN name for existing VCN Network
-  vcn_dns_label        = "vcnexample"                                                                        # Should contains chanraters only for VCN DNS Labels, No special characters and white spaces allowed                                        
   subnet_id_existing   = "ocid1.subnet.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Subnet OCID for existing VCN Subnet
-  subnet_name_existing = "red5pro-single-public-subnet"                                                      # Subnet name for existing VCN Subnet
 
   # Network Security Group configuration
   network_security_group_create      = true         # true - create new Network Security Group, false - use existing Network Security Group
-  network_security_group_id_existing = "sg-example" # Network Security Group ID for existing security group
+  network_security_group_id_existing = "ocid1.networksecuritygroup.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Network Security Group ID for existing security group
 
   # Single Red5 Pro server HTTPS/SSL certificate configuration
   https_letsencrypt_enable                  = true                  # true - create new Let's Encrypt HTTPS/SSL certificate, false - use Red5 Pro server without HTTPS/SSL certificate

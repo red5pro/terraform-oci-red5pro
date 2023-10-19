@@ -42,7 +42,7 @@ resource "oci_core_instance" "red5pro_single" {
   create_vnic_details {
     assign_public_ip = true
     subnet_id        = local.subnet_id
-    nsg_ids          = [var.network_security_group_create ? oci_core_network_security_group.red5pro_single_network_security_group[0].id : var.network_security_group_id_existing]
+    nsg_ids          = [var.network_security_group_create ? oci_core_network_security_group.red5pro_single_network_security_group[0].id : data.oci_core_network_security_group.red5pro_existing_network_security_group[0].network_security_group_id]
   }
 
   metadata = {
@@ -138,7 +138,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
   create_vnic_details {
     assign_public_ip = true
     subnet_id        = local.subnet_id
-    nsg_ids          = [var.network_security_group_create ? oci_core_network_security_group.red5pro_terraform_service_network_security_group[0].id : var.network_security_group_id_existing]
+    nsg_ids          = [oci_core_network_security_group.red5pro_terraform_service_network_security_group[0].id]
   }
 
   metadata = {
@@ -208,7 +208,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
       "export PUBLIC_KEY_PATH='/home/ubuntu/${basename(var.path_to_public_key_terraform_service)}'",
       "export REGION='${var.region}'",
       "export SUBNET_NAME='${local.subnet_name}'",
-      "export NETWORK_SECURITY_GROUP='${var.network_security_group_create ? oci_core_network_security_group.red5pro_node_network_security_group[0].display_name : var.network_security_group_name_existing}'",
+      "export NETWORK_SECURITY_GROUP='${oci_core_network_security_group.red5pro_node_network_security_group[0].display_name}'",
       "export DB_HOST='${local.mysql_host}'",
       "export DB_PORT='${var.mysql_port}'",
       "export DB_USER='${var.mysql_user_name}'",
@@ -256,7 +256,7 @@ resource "oci_core_instance" "red5pro_sm" {
   create_vnic_details {
     assign_public_ip = true
     subnet_id        = local.subnet_id
-    nsg_ids          = [var.network_security_group_create ? oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id : var.network_security_group_id_existing]
+    nsg_ids          = [oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id]
   }
 
   metadata = {
@@ -349,7 +349,7 @@ resource "oci_core_instance" "red5pro_sm" {
       "export PUBLIC_KEY_PATH='/home/ubuntu/${basename(var.path_to_public_key_terraform_service)}'",
       "export REGION='${var.region}'",
       "export SUBNET_NAME='${local.subnet_name}'",
-      "export NETWORK_SECURITY_GROUP='${var.network_security_group_create ? oci_core_network_security_group.red5pro_node_network_security_group[0].display_name : var.network_security_group_name_existing}'",
+      "export NETWORK_SECURITY_GROUP='${oci_core_network_security_group.red5pro_node_network_security_group[0].display_name}'",
       "export LICENSE_KEY='${var.red5pro_license_key}'",
       "export SM_API_KEY='${var.stream_manager_api_key}'",
       "export NODE_API_KEY='${var.red5pro_api_key}'",
@@ -413,7 +413,7 @@ resource "oci_load_balancer_load_balancer" "red5pro_lb" {
   display_name               = "${var.name}-lb"
   compartment_id             = var.compartment_id
   subnet_ids                 = [local.subnet_id]
-  network_security_group_ids = [var.network_security_group_create ? oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id : var.network_security_group_id_existing]
+  network_security_group_ids = [oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id]
   shape                      = "flexible"
   shape_details {
     maximum_bandwidth_in_mbps = 100
@@ -509,7 +509,7 @@ resource "oci_core_instance_configuration" "red5pro_instance_configuration" {
         subnet_id        = local.subnet_id
         display_name     = "${var.name}-sm-instance-vnic"
         assign_public_ip = true
-        nsg_ids          = [var.network_security_group_create ? oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id : var.network_security_group_id_existing]
+        nsg_ids          = [oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id]
       }
 
       shape_config {
@@ -635,7 +635,7 @@ resource "oci_core_instance" "red5pro_node_origin" {
   create_vnic_details {
     assign_public_ip = true
     subnet_id        = local.subnet_id
-    nsg_ids          = [var.network_security_group_create ? oci_core_network_security_group.red5pro_node_network_security_group[0].id : var.network_security_group_id_existing]
+    nsg_ids          = [oci_core_network_security_group.red5pro_node_network_security_group[0].id]
   }
 
   metadata = {
@@ -726,7 +726,7 @@ resource "oci_core_instance" "red5pro_node_edge" {
   create_vnic_details {
     assign_public_ip = true
     subnet_id        = local.subnet_id
-    nsg_ids          = [var.network_security_group_create ? oci_core_network_security_group.red5pro_node_network_security_group[0].id : var.network_security_group_id_existing]
+    nsg_ids          = [oci_core_network_security_group.red5pro_node_network_security_group[0].id]
   }
 
   metadata = {
@@ -817,7 +817,7 @@ resource "oci_core_instance" "red5pro_node_transcoder" {
   create_vnic_details {
     assign_public_ip = true
     subnet_id        = local.subnet_id
-    nsg_ids          = [var.network_security_group_create ? oci_core_network_security_group.red5pro_node_network_security_group[0].id : var.network_security_group_id_existing]
+    nsg_ids          = [oci_core_network_security_group.red5pro_node_network_security_group[0].id]
   }
 
   metadata = {
@@ -908,7 +908,7 @@ resource "oci_core_instance" "red5pro_node_relay" {
   create_vnic_details {
     assign_public_ip = true
     subnet_id        = local.subnet_id
-    nsg_ids          = [var.network_security_group_create ? oci_core_network_security_group.red5pro_node_network_security_group[0].id : var.network_security_group_id_existing]
+    nsg_ids          = [oci_core_network_security_group.red5pro_node_network_security_group[0].id]
   }
 
   metadata = {
