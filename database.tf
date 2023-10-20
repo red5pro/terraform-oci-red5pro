@@ -2,10 +2,12 @@
 # MySQL Database (OCI MySQL DB System)
 ################################################################################
 data "oci_mysql_mysql_versions" "default_mysql_versions" {
+  count          = local.mysql_db_system_create ? 1 : 0
   compartment_id = var.compartment_id
 }
 
 data "oci_mysql_mysql_configurations" "default_mds_mysql_configurations" {
+  count          = local.mysql_db_system_create ? 1 : 0
   compartment_id = var.compartment_id
   state          = "ACTIVE"
   shape_name     = var.mysql_shape_name
@@ -16,7 +18,7 @@ resource "oci_mysql_mysql_configuration" "red5pro_mds_mysql_configuration" {
   compartment_id          = var.compartment_id
   shape_name              = var.mysql_shape_name
   display_name            = "${var.name}-mysql-cnf"
-  parent_configuration_id = data.oci_mysql_mysql_configurations.default_mds_mysql_configurations.configurations[0].id
+  parent_configuration_id = data.oci_mysql_mysql_configurations.default_mds_mysql_configurations[0].configurations[0].id
   variables {
     max_connections            = "100000"
     binlog_expire_logs_seconds = "7200"
@@ -36,5 +38,5 @@ resource "oci_mysql_mysql_db_system" "red5pro_mysql_db_system" {
   data_storage_size_in_gb = var.mysql_db_system_data_storage_size_in_gb
   defined_tags            = var.defined_tags
   port                    = 3306
-  mysql_version           = element(data.oci_mysql_mysql_versions.default_mysql_versions.versions[0].versions[*].version, length(data.oci_mysql_mysql_versions.default_mysql_versions.versions[0].versions[*].version)-1)
+  mysql_version           = element(data.oci_mysql_mysql_versions.default_mysql_versions[0].versions[0].versions[*].version, length(data.oci_mysql_mysql_versions.default_mysql_versions[0].versions[0].versions[*].version)-1)
 }
