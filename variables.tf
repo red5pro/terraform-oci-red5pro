@@ -178,18 +178,6 @@ variable "network_security_group_node_ingress_udp" {
   ]
 }
 
-# Reserved IP configuration
-variable "reserved_public_ip_address_create" {
-  description = "Create a new OCI Reserved public IP addres or use an existing one. true = create new, false = use existing"
-  type        = bool
-  default     = true
-}
-variable "reserved_public_ip_address_existing" {
-  description = "OCI Reserved public IP address Existing"
-  type        = string
-  default     = "1.2.3.4"
-}
-
 # MySQL configuration
 variable "mysql_db_system_create" {
   description = "Create a new OCI managed MySQL DB instance"

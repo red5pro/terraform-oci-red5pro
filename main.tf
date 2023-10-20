@@ -392,14 +392,8 @@ resource "oci_core_instance" "red5pro_sm" {
 ################################################################################
 # Red5 Pro Stream Manager Autoscaling (OCI Load Balancer + Autoscaling)
 ################################################################################
-# SM Load Balancer
-data "oci_core_public_ip" "red5pro_reserved_ip_by_ip" {
-  count      = local.autoscaling && var.reserved_public_ip_address_create ? 0 : 1
-  ip_address = var.reserved_public_ip_address_existing
-}
-
 resource "oci_core_public_ip" "red5pro_reserved_ip" {
-  count          = local.autoscaling && var.reserved_public_ip_address_create ? 1 : 0
+  count          = local.autoscaling ? 1 : 0
   compartment_id = var.compartment_id
   lifetime       = "RESERVED"
 
@@ -420,7 +414,7 @@ resource "oci_load_balancer_load_balancer" "red5pro_lb" {
     minimum_bandwidth_in_mbps = 10
   }
   reserved_ips {
-    id = local.autoscaling && var.reserved_public_ip_address_create ? oci_core_public_ip.red5pro_reserved_ip[0].id : data.oci_core_public_ip.red5pro_reserved_ip_by_ip[0].id
+    id = oci_core_public_ip.red5pro_reserved_ip[0].id
   }
 }
 

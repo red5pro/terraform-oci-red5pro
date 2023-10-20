@@ -16,5 +16,5 @@ locals {
   terra_host_local_enable          = local.autoscaling ? false : var.dedicated_terra_host_create ? false : true
   oci_lb_cert_create               = local.autoscaling ? true : var.https_oci_certificates_use_existing ? false : true
   oci_lb_cert                      = local.autoscaling ? oci_load_balancer_certificate.red5pro_lb_ssl_cert[0].certificate_name : var.https_oci_certificates_certificate_name
-  stream_manager_ip                = local.autoscaling && var.reserved_public_ip_address_create ? oci_core_public_ip.red5pro_reserved_ip[0].ip_address : local.cluster ? oci_core_instance.red5pro_sm[0].public_ip : var.reserved_public_ip_address_existing
+  stream_manager_ip                = local.autoscaling ? oci_core_public_ip.red5pro_reserved_ip[0].ip_address : local.cluster ? oci_core_instance.red5pro_sm[0].public_ip : null
 }
