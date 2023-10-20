@@ -36,5 +36,5 @@ resource "oci_mysql_mysql_db_system" "red5pro_mysql_db_system" {
   data_storage_size_in_gb = var.mysql_db_system_data_storage_size_in_gb
   defined_tags            = var.defined_tags
   port                    = 3306
-  mysql_version           = data.oci_mysql_mysql_versions.default_mysql_versions.versions[1].versions[4].version
+  mysql_version           = element(data.oci_mysql_mysql_versions.default_mysql_versions.versions[0].versions[*].version, length(data.oci_mysql_mysql_versions.default_mysql_versions.versions[0].versions[*].version)-1)
 }
