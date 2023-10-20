@@ -215,9 +215,29 @@ variable "mysql_user_name" {
   default     = ""
 }
 variable "mysql_password" {
-  description = "MySQL Database password"
-  type        = string
-  default     = ""
+  type    = string
+  default = "Abc12345@"
+
+  validation {
+    condition = length(var.mysql_password) >= 8
+    error_message = "Password must have at least 8 characters."
+  }
+  validation {
+    condition = can(regex("[A-Z]", var.mysql_password))
+    error_message = "Password must contain at least one uppercase letter."
+  }
+  validation {
+    condition = can(regex("[a-z]", var.mysql_password))
+    error_message = "Password must contain at least one lowercase letter."
+  }
+  validation {
+    condition = can(regex("[^a-zA-Z0-9]", var.mysql_password))
+    error_message = "Password must contain at least one character that isn't a letter or a digit."
+  }
+  validation {
+    condition = can(regex("[0-9]", var.mysql_password))
+    error_message = "Password must contain at least one digit."
+  }
 }
 variable "mysql_port" {
   description = "MySQL Database port"
