@@ -208,7 +208,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_single_nsg_sec
 resource "oci_core_network_security_group" "red5pro_stream_manager_network_security_group" {
   count          = local.cluster || local.autoscaling ? 1 : 0
   compartment_id = var.compartment_id
-  vcn_id         = oci_core_vcn.red5pro_vcn[0].id
+  vcn_id         = local.vcn_id
   display_name   = "${var.name}-sm-nsg"
   defined_tags   = var.defined_tags
 }
@@ -253,7 +253,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager
 resource "oci_core_network_security_group" "red5pro_terraform_service_network_security_group" {
   count          = local.cluster || local.autoscaling ? 1 : 0
   compartment_id = var.compartment_id
-  vcn_id         = oci_core_vcn.red5pro_vcn[0].id
+  vcn_id         = local.vcn_id
   display_name   = "${var.name}-sm-nsg"
   defined_tags   = var.defined_tags
 }
@@ -298,7 +298,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_terraform_serv
 resource "oci_core_network_security_group" "red5pro_node_network_security_group" {
   count          = local.cluster || local.autoscaling ? 1 : 0
   compartment_id = var.compartment_id
-  vcn_id         = oci_core_vcn.red5pro_vcn[0].id
+  vcn_id         = local.vcn_id
   display_name   = "${var.name}-node-nsg"
   defined_tags   = var.defined_tags
 }
