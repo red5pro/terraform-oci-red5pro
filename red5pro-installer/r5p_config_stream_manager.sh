@@ -109,31 +109,31 @@ config_sm_properties_main(){
 
     fi
 
-    local db_host_pattern='config.dbHost={host}'
+    local db_host_pattern='config.dbHost=.*'
     local db_host_new="config.dbHost=${DB_HOST}"
 
-    local db_port_pattern='config.dbPort=3306'
+    local db_port_pattern='config.dbPort=.*'
     local db_port_new="config.dbPort=${DB_PORT}"
 
-    local db_user_pattern='config.dbUser={username}'
+    local db_user_pattern='config.dbUser=.*'
     local db_user_new="config.dbUser=${DB_USER}"
 
-    local db_pass_pattern='config.dbPass={password}'
+    local db_pass_pattern='config.dbPass=.*'
     local db_pass_new="config.dbPass=${DB_PASSWORD}"
 
-    local node_prefix_pattern='instancecontroller.instanceNamePrefix={unique-value}'
+    local node_prefix_pattern='instancecontroller.instanceNamePrefix=.*'
     local node_prefix_new="instancecontroller.instanceNamePrefix=${NODE_PREFIX_NAME}"
 
-    local node_cluster_password_pattern='cluster.password=changeme'
+    local node_cluster_password_pattern='cluster.password=.*'
     local node_cluster_password_new="cluster.password=${NODE_CLUSTER_KEY}"
 
-    local node_api_token_pattern='serverapi.accessToken={node api security token}'
+    local node_api_token_pattern='serverapi.accessToken=.*'
     local node_api_token_new="serverapi.accessToken=${NODE_API_KEY}"
 
-    local sm_rest_token_pattern='rest.administratorToken='
+    local sm_rest_token_pattern='rest.administratorToken=.*'
     local sm_rest_token_new="rest.administratorToken=${SM_API_KEY}"
 
-    local sm_proxy_enabled_pattern='proxy.enabled=false'
+    local sm_proxy_enabled_pattern='proxy.enabled=.*'
     local sm_proxy_enabled_new='proxy.enabled=true'
 
     sudo sed -i -e "s|$db_host_pattern|$db_host_new|" -e "s|$db_port_pattern|$db_port_new|" -e "s|$db_user_pattern|$db_user_new|" -e "s|$db_pass_pattern|$db_pass_new|" -e "s|$node_prefix_pattern|$node_prefix_new|" -e "s|$node_cluster_password_pattern|$node_cluster_password_new|" -e "s|$node_api_token_pattern|$node_api_token_new|" -e "s|$sm_rest_token_pattern|$sm_rest_token_new|" -e "s|$sm_proxy_enabled_pattern|$sm_proxy_enabled_new|" "$RED5_HOME/webapps/streammanager/WEB-INF/red5-web.properties"
