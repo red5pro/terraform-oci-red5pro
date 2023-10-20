@@ -237,7 +237,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
 ################################################################################
 
 resource "oci_core_instance" "red5pro_sm" {
-  count               = local.cluster || local.autoscaling ? 1 : 0
+  count               = local.cluster_or_autoscaling ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   compartment_id      = var.compartment_id
   shape               = var.stream_manager_instance_type
@@ -616,7 +616,7 @@ resource "oci_autoscaling_auto_scaling_configuration" "red5pro_autoscaling_confi
 
 # Origin Node instance for OCI Custom Image
 resource "oci_core_instance" "red5pro_node_origin" {
-  count               = local.cluster || local.autoscaling && var.origin_image_create ? 1 : 0
+  count               = local.cluster_or_autoscaling && var.origin_image_create ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   compartment_id      = var.compartment_id
   shape               = var.origin_image_instance_type
@@ -707,7 +707,7 @@ resource "oci_core_instance" "red5pro_node_origin" {
 
 # Edge Node instance for OCI Custom Image
 resource "oci_core_instance" "red5pro_node_edge" {
-  count               = local.cluster || local.autoscaling && var.edge_image_create ? 1 : 0
+  count               = local.cluster_or_autoscaling && var.edge_image_create ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   compartment_id      = var.compartment_id
   shape               = var.edge_image_instance_type
@@ -798,7 +798,7 @@ resource "oci_core_instance" "red5pro_node_edge" {
 
 # Transcoder Node instance for OCI Custom Image
 resource "oci_core_instance" "red5pro_node_transcoder" {
-  count               = local.cluster || local.autoscaling && var.transcoder_image_create ? 1 : 0
+  count               = local.cluster_or_autoscaling && var.transcoder_image_create ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   compartment_id      = var.compartment_id
   shape               = var.transcoder_image_instance_type
@@ -889,7 +889,7 @@ resource "oci_core_instance" "red5pro_node_transcoder" {
 
 # Relay Node instance for OCI Custom Image
 resource "oci_core_instance" "red5pro_node_relay" {
-  count               = local.cluster || local.autoscaling && var.relay_image_create ? 1 : 0
+  count               = local.cluster_or_autoscaling && var.relay_image_create ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   compartment_id      = var.compartment_id
   shape               = var.relay_image_instance_type
@@ -984,7 +984,7 @@ resource "oci_core_instance" "red5pro_node_relay" {
 
 # Origin node - Create image (OCI Custom Images)
 resource "oci_core_image" "red5pro_node_origin_image" {
-  count          = local.cluster || local.autoscaling && var.origin_image_create ? 1 : 0
+  count          = local.cluster_or_autoscaling && var.origin_image_create ? 1 : 0
   compartment_id = var.compartment_id
   instance_id    = oci_core_instance.red5pro_node_origin[0].id
   display_name   = "${var.name}-node-origin-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
@@ -993,7 +993,7 @@ resource "oci_core_image" "red5pro_node_origin_image" {
 
 # Edger node - Create image (OCI Custom Images)
 resource "oci_core_image" "red5pro_node_edge_image" {
-  count          = local.cluster || local.autoscaling && var.edge_image_create ? 1 : 0
+  count          = local.cluster_or_autoscaling && var.edge_image_create ? 1 : 0
   compartment_id = var.compartment_id
   instance_id    = oci_core_instance.red5pro_node_edge[0].id
   display_name   = "${var.name}-node-edge-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
@@ -1002,7 +1002,7 @@ resource "oci_core_image" "red5pro_node_edge_image" {
 
 # Transcoder node - Create image (OCI Custom Images)
 resource "oci_core_image" "red5pro_node_transcoder_image" {
-  count          = local.cluster || local.autoscaling && var.transcoder_image_create ? 1 : 0
+  count          = local.cluster_or_autoscaling && var.transcoder_image_create ? 1 : 0
   compartment_id = var.compartment_id
   instance_id    = oci_core_instance.red5pro_node_transcoder[0].id
   display_name   = "${var.name}-node-transcoder-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
@@ -1011,7 +1011,7 @@ resource "oci_core_image" "red5pro_node_transcoder_image" {
 
 # Relay node - Create image (OCI Custom Images)
 resource "oci_core_image" "red5pro_node_relay_image" {
-  count          = local.cluster || local.autoscaling && var.relay_image_create ? 1 : 0
+  count          = local.cluster_or_autoscaling && var.relay_image_create ? 1 : 0
   compartment_id = var.compartment_id
   instance_id    = oci_core_instance.red5pro_node_relay[0].id
   display_name   = "${var.name}-node-relay-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
@@ -1032,7 +1032,7 @@ resource "null_resource" "stop_stream_manager" {
 
 # Stop Origin Node instance using OCI CLI
 resource "null_resource" "stop_node_origin" {
-  count = local.cluster || local.autoscaling && var.origin_image_create ? 1 : 0
+  count = local.cluster_or_autoscaling && var.origin_image_create ? 1 : 0
   provisioner "local-exec" {
     command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_origin[0].id}"
   }
@@ -1040,7 +1040,7 @@ resource "null_resource" "stop_node_origin" {
 }
 # Stop Edge Node instance using OCI CLI
 resource "null_resource" "stop_node_edge" {
-  count = local.cluster || local.autoscaling && var.edge_image_create ? 1 : 0
+  count = local.cluster_or_autoscaling && var.edge_image_create ? 1 : 0
   provisioner "local-exec" {
     command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_edge[0].id}"
   }
@@ -1048,7 +1048,7 @@ resource "null_resource" "stop_node_edge" {
 }
 # Stop Transcoder Node instance using OCI CLI
 resource "null_resource" "stop_node_transcoder" {
-  count = local.cluster || local.autoscaling && var.transcoder_image_create ? 1 : 0
+  count = local.cluster_or_autoscaling && var.transcoder_image_create ? 1 : 0
   provisioner "local-exec" {
     command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_transcoder[0].id}"
   }
@@ -1056,7 +1056,7 @@ resource "null_resource" "stop_node_transcoder" {
 }
 # Stop Relay Node instance using OCI CLI
 resource "null_resource" "stop_node_relay" {
-  count = local.cluster || local.autoscaling && var.relay_image_create ? 1 : 0
+  count = local.cluster_or_autoscaling && var.relay_image_create ? 1 : 0
   provisioner "local-exec" {
     command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_relay[0].id}"
   }

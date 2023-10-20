@@ -2,6 +2,7 @@ locals {
   single                           = var.type == "single" ? true : false
   cluster                          = var.type == "cluster" ? true : false
   autoscaling                      = var.type == "autoscaling" ? true : false
+  cluster_or_autoscaling           = var.type == "cluster" || var.type == "autoscaling" ? true : false
   vcn_id                           = var.vcn_create ? oci_core_vcn.red5pro_vcn[0].id : var.vcn_id_existing
   vcn_name                         = var.vcn_create ? oci_core_vcn.red5pro_vcn[0].display_name : data.oci_core_vcn.red5pro_existing_vcn[0].display_name
   subnet_id                        = var.vcn_create ? oci_core_subnet.red5pro_vcn_subnet_public[0].id : var.subnet_id_existing
