@@ -4,7 +4,7 @@
 # Before start this script you need copy terraform-service-build.zip into the same folder with this script!!!
 ##############################################################################################################
 
-# TERRA_API_TOKEN="abc123"
+# TERRA_API_KEY="abc123"
 # TERRA_PARALLELISM="20"
 # TENANCY_OCID=""
 # USER_OCID=""
@@ -43,8 +43,8 @@ log() {
 check_terraform_variables(){
     log_i "Check TERRAFORM variables..."
     
-    if [ -z "$TERRA_API_TOKEN" ]; then
-        log_w "Variable TERRA_API_TOKEN is empty."
+    if [ -z "$TERRA_API_KEY" ]; then
+        log_w "Variable TERRA_API_KEY is empty."
         var_error=1
     fi
     if [ -z "$TERRA_PARALLELISM" ]; then
@@ -167,7 +167,7 @@ config_terraform_service(){
     log_i "TERRAFORM SERVICE CONFIGURATION"
 
     local terra_api_token_pattern='api.accessToken=.*'
-    local terra_api_token_new="api.accessToken=${TERRA_API_TOKEN}"
+    local terra_api_token_new="api.accessToken=${TERRA_API_KEY}"
     
     local terra_parallelism_pattern='terra.parallelism=.*'
     local terra_parallelism_new="terra.parallelism=${TERRA_PARALLELISM}"

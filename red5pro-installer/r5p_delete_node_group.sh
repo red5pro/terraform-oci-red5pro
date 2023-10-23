@@ -41,7 +41,8 @@ delete_node_group(){
         delete_resp=$(echo "$DELETE_NODE_GROUP" | jq -r '.name')
         
         if [[ "$delete_resp" == "$group" ]]; then
-            log_i "Node group deleted successfully."
+            log_i "Node group deleted successfully. Waiting 10 seconds ..."
+            sleep 10
         else
             log_w "Node group was not deleted!"
             error=1

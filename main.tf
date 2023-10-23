@@ -143,15 +143,15 @@ resource "oci_core_instance" "red5pro_single" {
 ################################################################################
 
 resource "oci_core_instance" "red5pro_terraform_service" {
-  count               = local.dedicated_terra_host_create ? 1 : 0
+  count               = local.terraform_service_instance_create ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   compartment_id      = var.oracle_compartment_id
-  shape               = "VM.Standard.E4.Flex"
+  shape               = var.terraform_service_instance_type
   display_name        = "${var.name}-terraform-service"
 
   shape_config {
-    ocpus         = 2
-    memory_in_gbs = 8
+    ocpus         = var.terraform_service_instance_cpu
+    memory_in_gbs = var.terraform_service_instance_memory
   }
 
   source_details {
@@ -239,8 +239,8 @@ resource "oci_core_instance" "red5pro_terraform_service" {
       "export DB_USER='${var.mysql_user_name}'",
       "export DB_PASSWORD='${var.mysql_password}'",
       "export TERRA_HOST='${self.private_ip}'",
-      "export TERRA_API_TOKEN='${var.terra_api_token}'",
-      "export TERRA_PARALLELISM='${var.terra_parallelism}'",
+      "export TERRA_API_KEY='${var.terraform_service_api_key}'",
+      "export TERRA_PARALLELISM='${var.terraform_service_parallelism}'",
       "cd /home/ubuntu/red5pro-installer/",
       "sudo chmod +x /home/ubuntu/red5pro-installer/*",
       "sudo chmod 400 /home/ubuntu/${basename(var.oracle_private_key_path)}",
@@ -380,7 +380,7 @@ resource "oci_core_instance" "red5pro_sm" {
       "export NODE_CLUSTER_KEY='${var.red5pro_cluster_key}'",
       "export NODE_PREFIX_NAME='${var.name}-node'",
       "export DB_LOCAL_ENABLE='${local.mysql_local_enable}'",
-      "export TF_SVC_ENABLE='${local.cluster && var.dedicated_terra_host_create == false ? true : false}'",
+      "export TF_SVC_ENABLE='${local.cluster && var.terraform_service_instance_create == false ? true : false}'",
       "export DB_HOST='${local.mysql_host}'",
       "export DB_PORT='${var.mysql_port}'",
       "export DB_USER='${var.mysql_user_name}'",
@@ -390,8 +390,8 @@ resource "oci_core_instance" "red5pro_sm" {
       "export SSL_MAIL='${var.https_letsencrypt_certificate_email}'",
       "export SSL_PASSWORD='${var.https_letsencrypt_certificate_password}'",
       "export TERRA_HOST='${local.terra_host}'",
-      "export TERRA_API_TOKEN='${var.terra_api_token}'",
-      "export TERRA_PARALLELISM='${var.terra_parallelism}'",
+      "export TERRA_API_KEY='${var.terraform_service_api_key}'",
+      "export TERRA_PARALLELISM='${var.terraform_service_parallelism}'",
       "cd /home/ubuntu/red5pro-installer/",
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_server_basic.sh",

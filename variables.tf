@@ -85,20 +85,35 @@ variable "ssh_public_key_path" {
 }
 
 # Red5 Pro Terraform Service properties
-variable "dedicated_terra_host_create" {
+variable "terraform_service_instance_create" {
   description = "Create a dedicated OCI Instance for Red5 pro Terraform Service "
   type        = bool
   default     = false
 }
-variable "terra_api_token" {
-  description = "API Token for Teraform Service to autherize the APIs"
+variable "terraform_service_instance_type" {
+  description = "Terraform Service instance type"
+  type        = string
+  default     = "VM.Standard.E4.Flex"
+}
+variable "terraform_service_instance_cpu" {
+  description = "Terraform Service instance cpu count(1 OCPU = 2vCPU)"
+  type        = number
+  default     = 1
+}
+variable "terraform_service_instance_memory" {
+  description = "Terraform Service instance memory in GB"
+  type        = number
+  default     = 4
+}
+variable "terraform_service_api_key" {
+  description = "API Key for Terraform Service to authorize the APIs"
   type        = string
   default     = ""
 }
-variable "terra_parallelism" {
+variable "terraform_service_parallelism" {
   description = "Number of Terraform concurrent operations and used for non-standard rate limiting"
-  type        = string
-  default     = ""
+  type        = number
+  default     = 10
 }
 
 # VCN configuration
