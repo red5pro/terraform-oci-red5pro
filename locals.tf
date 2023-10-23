@@ -13,7 +13,6 @@ locals {
   mysql_local_enable               = local.autoscaling ? false : var.mysql_db_system_create ? false : true
   dedicated_terra_host_create      = local.autoscaling ? true : local.cluster && var.dedicated_terra_host_create ? true : false
   terra_host                       = local.autoscaling ? oci_core_instance.red5pro_terraform_service[0].private_ip : local.cluster && var.dedicated_terra_host_create ? oci_core_instance.red5pro_terraform_service[0].private_ip : "localhost"
-  terra_host_local_enable          = local.autoscaling ? false : local.cluster && var.dedicated_terra_host_create ? true : false
   oci_lb_cert_create               = local.autoscaling ? true : var.https_oci_certificates_use_existing ? false : true
   oci_lb_cert                      = local.autoscaling ? oci_load_balancer_certificate.red5pro_lb_ssl_cert[0].certificate_name : var.https_oci_certificates_certificate_name
   stream_manager_ip                = local.autoscaling ? oci_core_public_ip.red5pro_reserved_ip[0].ip_address : local.cluster ? oci_core_instance.red5pro_sm[0].public_ip : null

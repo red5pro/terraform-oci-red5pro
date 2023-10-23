@@ -18,6 +18,7 @@
 # DB_PORT="3306"
 # DB_USER="smuser"
 # DB_PASSWORD="abc123"
+# TF_SVC_ENABLE="true"
 
 TERRA_FOLDER="/usr/local/red5service"
 CURRENT_DIRECTORY=$(pwd)
@@ -229,8 +230,8 @@ start_terraform_service(){
     
 }
 
-if [[ "$TF_SVC_LOCAL_ENABLE" == true ]]; then
-    log_i "TF_SVC_LOCAL_ENABLE is set to true, Installing Red5 Pro Terraform Service Locally..."
+if [[ "$TF_SVC_ENABLE" == true ]]; then
+    log_i "TF_SVC_ENABLE is set to true, Installing Red5 Pro Terraform Service..."
     export LC_ALL="en_US.UTF-8"
     export LC_CTYPE="en_US.UTF-8"
 
@@ -240,6 +241,6 @@ if [[ "$TF_SVC_LOCAL_ENABLE" == true ]]; then
     config_terraform_service
     start_terraform_service
 else
-    log_i "SKIP Local Red5 Pro Terraform Service installation."
+    log_i "SKIP Red5 Pro Terraform Service installation."
 fi
 
