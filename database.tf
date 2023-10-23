@@ -3,19 +3,19 @@
 ################################################################################
 data "oci_mysql_mysql_versions" "default_mysql_versions" {
   count          = local.mysql_db_system_create ? 1 : 0
-  compartment_id = var.compartment_id
+  compartment_id = var.oracle_compartment_id
 }
 
 data "oci_mysql_mysql_configurations" "default_mds_mysql_configurations" {
   count          = local.mysql_db_system_create ? 1 : 0
-  compartment_id = var.compartment_id
+  compartment_id = var.oracle_compartment_id
   state          = "ACTIVE"
   shape_name     = var.mysql_shape_name
 }
 
 resource "oci_mysql_mysql_configuration" "red5pro_mds_mysql_configuration" {
   count                   = local.mysql_db_system_create ? 1 : 0
-  compartment_id          = var.compartment_id
+  compartment_id          = var.oracle_compartment_id
   shape_name              = var.mysql_shape_name
   display_name            = "${var.name}-mysql-cnf"
   parent_configuration_id = data.oci_mysql_mysql_configurations.default_mds_mysql_configurations[0].configurations[0].id
@@ -28,7 +28,7 @@ resource "oci_mysql_mysql_configuration" "red5pro_mds_mysql_configuration" {
 resource "oci_mysql_mysql_db_system" "red5pro_mysql_db_system" {
   count                   = local.mysql_db_system_create ? 1 : 0
   availability_domain     = data.oci_identity_availability_domains.ads.availability_domains[0].name
-  compartment_id          = var.compartment_id
+  compartment_id          = var.oracle_compartment_id
   display_name            = "${var.name}-mysql-db"
   shape_name              = var.mysql_shape_name
   subnet_id               = local.subnet_id

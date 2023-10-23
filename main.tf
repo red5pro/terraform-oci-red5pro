@@ -1,10 +1,34 @@
 ################################################################################
+# SSH_KEY
+################################################################################
+
+# SSH key pair generation
+resource "tls_private_key" "red5pro_ssh_key" {
+  count     = var.ssh_key_create ? 1 : 0
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Save SSH key pair files to local folder
+resource "local_file" "red5pro_ssh_key_pem" {
+  count           = var.ssh_key_create ? 1 : 0
+  filename        = "./ssh-key-${var.name}.pem"
+  content         = tls_private_key.red5pro_ssh_key[0].private_key_pem
+  file_permission = "0400"
+}
+resource "local_file" "red5pro_ssh_key_pub" {
+  count    = var.ssh_key_create ? 1 : 0
+  filename = "./ssh-key-${var.name}.pub"
+  content  = tls_private_key.red5pro_ssh_key[0].public_key_openssh
+}
+
+################################################################################
 # Oracle Cloud Infrastructure
 ################################################################################
 
 # Get latest Canonical Ubuntu 20.04 image
 data "oci_core_images" "red5pro_image" {
-  compartment_id   = var.compartment_id
+  compartment_id   = var.oracle_compartment_id
   operating_system = "Canonical Ubuntu"
   filter {
     name   = "display_name"
@@ -15,7 +39,7 @@ data "oci_core_images" "red5pro_image" {
 
 # Get List of Oracle cloud availability domains
 data "oci_identity_availability_domains" "ads" {
-  compartment_id = var.compartment_id
+  compartment_id = var.oracle_compartment_id
 }
 
 ################################################################################
@@ -25,7 +49,7 @@ data "oci_identity_availability_domains" "ads" {
 resource "oci_core_instance" "red5pro_single" {
   count               = local.single ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
-  compartment_id      = var.compartment_id
+  compartment_id      = var.oracle_compartment_id
   shape               = var.single_instance_type
   display_name        = "${var.name}-single-server"
 
@@ -46,7 +70,7 @@ resource "oci_core_instance" "red5pro_single" {
   }
 
   metadata = {
-    ssh_authorized_keys = file(var.ssh_public_key_path)
+    ssh_authorized_keys = file(local.ssh_public_key_path)
   }
   preserve_boot_volume = false
 
@@ -58,7 +82,7 @@ resource "oci_core_instance" "red5pro_single" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -70,7 +94,7 @@ resource "oci_core_instance" "red5pro_single" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -109,7 +133,7 @@ resource "oci_core_instance" "red5pro_single" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 }
@@ -121,7 +145,7 @@ resource "oci_core_instance" "red5pro_single" {
 resource "oci_core_instance" "red5pro_terraform_service" {
   count               = local.dedicated_terra_host_create ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
-  compartment_id      = var.compartment_id
+  compartment_id      = var.oracle_compartment_id
   shape               = "VM.Standard.E4.Flex"
   display_name        = "${var.name}-terraform-service"
 
@@ -142,7 +166,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
   }
 
   metadata = {
-    ssh_authorized_keys = file(var.ssh_public_key_path)
+    ssh_authorized_keys = file(local.ssh_public_key_path)
   }
   preserve_boot_volume = false
 
@@ -154,7 +178,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -166,31 +190,31 @@ resource "oci_core_instance" "red5pro_terraform_service" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
   provisioner "file" {
-    source      = var.path_to_private_key_terraform_service
-    destination = "/home/ubuntu/${basename(var.path_to_private_key_terraform_service)}"
+    source      = var.oracle_private_key_path
+    destination = "/home/ubuntu/${basename(var.oracle_private_key_path)}"
 
     connection {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
   provisioner "file" {
-    source      = var.path_to_public_key_terraform_service
-    destination = "/home/ubuntu/${basename(var.path_to_public_key_terraform_service)}"
+    source      = local.ssh_public_key_path
+    destination = "/home/ubuntu/${basename(local.ssh_public_key_path)}"
 
     connection {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -200,13 +224,13 @@ resource "oci_core_instance" "red5pro_terraform_service" {
       "sudo iptables -F",
       "sudo netfilter-persistent save",
       "sudo cloud-init status --wait",
-      "export TENANCY_OCID='${var.tenancy_ocid}'",
-      "export USER_OCID='${var.user_ocid}'",
-      "export COMPARTMENT_ID='${var.compartment_id}'",
-      "export FINGERPRINT='${var.fingerprint}'",
-      "export PRIVATE_KEY_PATH='/home/ubuntu/${basename(var.path_to_private_key_terraform_service)}'",
-      "export PUBLIC_KEY_PATH='/home/ubuntu/${basename(var.path_to_public_key_terraform_service)}'",
-      "export REGION='${var.region}'",
+      "export TENANCY_OCID='${var.oracle_tenancy_ocid}'",
+      "export USER_OCID='${var.oracle_user_ocid}'",
+      "export COMPARTMENT_ID='${var.oracle_compartment_id}'",
+      "export FINGERPRINT='${var.oracle_fingerprint}'",
+      "export PRIVATE_KEY_PATH='/home/ubuntu/${basename(var.oracle_private_key_path)}'",
+      "export PUBLIC_KEY_PATH='/home/ubuntu/${basename(local.ssh_public_key_path)}'",
+      "export REGION='${var.oracle_region}'",
       "export SUBNET_NAME='${local.subnet_name}'",
       "export NETWORK_SECURITY_GROUP='${oci_core_network_security_group.red5pro_node_network_security_group[0].display_name}'",
       "export TF_SVC_LOCAL_ENABLE='${local.terra_host_local_enable}'",
@@ -219,8 +243,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
       "export TERRA_PARALLELISM='${var.terra_parallelism}'",
       "cd /home/ubuntu/red5pro-installer/",
       "sudo chmod +x /home/ubuntu/red5pro-installer/*",
-      "sudo chmod 400 /home/ubuntu/${basename(var.path_to_private_key_terraform_service)}",
-      "sudo chmod 400 /home/ubuntu/${basename(var.path_to_public_key_terraform_service)}",
+      "sudo chmod 400 /home/ubuntu/${basename(var.oracle_private_key_path)}",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_terraform_svc.sh",
       "sleep 2"
     ]
@@ -228,7 +251,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 }
@@ -240,7 +263,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
 resource "oci_core_instance" "red5pro_sm" {
   count               = local.cluster_or_autoscaling ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
-  compartment_id      = var.compartment_id
+  compartment_id      = var.oracle_compartment_id
   shape               = var.stream_manager_instance_type
   display_name        = "${var.name}-stream-manager"
 
@@ -261,7 +284,7 @@ resource "oci_core_instance" "red5pro_sm" {
   }
 
   metadata = {
-    ssh_authorized_keys = file(var.ssh_public_key_path)
+    ssh_authorized_keys = file(local.ssh_public_key_path)
   }
   preserve_boot_volume = false
 
@@ -273,7 +296,7 @@ resource "oci_core_instance" "red5pro_sm" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -285,7 +308,7 @@ resource "oci_core_instance" "red5pro_sm" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -297,7 +320,7 @@ resource "oci_core_instance" "red5pro_sm" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -309,31 +332,31 @@ resource "oci_core_instance" "red5pro_sm" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
   provisioner "file" {
-    source      = var.path_to_private_key_terraform_service
-    destination = "/home/ubuntu/${basename(var.path_to_private_key_terraform_service)}"
+    source      = var.oracle_private_key_path
+    destination = "/home/ubuntu/${basename(var.oracle_private_key_path)}"
 
     connection {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
   provisioner "file" {
-    source      = var.path_to_public_key_terraform_service
-    destination = "/home/ubuntu/${basename(var.path_to_public_key_terraform_service)}"
+    source      = local.ssh_public_key_path
+    destination = "/home/ubuntu/${basename(local.ssh_public_key_path)}"
 
     connection {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -342,13 +365,13 @@ resource "oci_core_instance" "red5pro_sm" {
       "sudo cloud-init status --wait",
       "sudo iptables -F",
       "sudo netfilter-persistent save",
-      "export TENANCY_OCID='${var.tenancy_ocid}'",
-      "export USER_OCID='${var.user_ocid}'",
-      "export COMPARTMENT_ID='${var.compartment_id}'",
-      "export FINGERPRINT='${var.fingerprint}'",
-      "export PRIVATE_KEY_PATH='/home/ubuntu/${basename(var.path_to_private_key_terraform_service)}'",
-      "export PUBLIC_KEY_PATH='/home/ubuntu/${basename(var.path_to_public_key_terraform_service)}'",
-      "export REGION='${var.region}'",
+      "export TENANCY_OCID='${var.oracle_tenancy_ocid}'",
+      "export USER_OCID='${var.oracle_user_ocid}'",
+      "export COMPARTMENT_ID='${var.oracle_compartment_id}'",
+      "export FINGERPRINT='${var.oracle_fingerprint}'",
+      "export PRIVATE_KEY_PATH='/home/ubuntu/${basename(var.oracle_private_key_path)}'",
+      "export PUBLIC_KEY_PATH='/home/ubuntu/${basename(local.ssh_public_key_path)}'",
+      "export REGION='${var.oracle_region}'",
       "export SUBNET_NAME='${local.subnet_name}'",
       "export NETWORK_SECURITY_GROUP='${oci_core_network_security_group.red5pro_node_network_security_group[0].display_name}'",
       "export LICENSE_KEY='${var.red5pro_license_key}'",
@@ -373,8 +396,7 @@ resource "oci_core_instance" "red5pro_sm" {
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_server_basic.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_mysql_local.sh",
-      "sudo chmod 400 /home/ubuntu/${basename(var.path_to_private_key_terraform_service)}",
-      "sudo chmod 400 /home/ubuntu/${basename(var.path_to_public_key_terraform_service)}",
+      "sudo chmod 400 /home/ubuntu/${basename(var.oracle_private_key_path)}",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_terraform_svc.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_config_stream_manager.sh",
       "sudo systemctl daemon-reload && sudo systemctl start red5pro",
@@ -385,7 +407,7 @@ resource "oci_core_instance" "red5pro_sm" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 }
@@ -395,7 +417,7 @@ resource "oci_core_instance" "red5pro_sm" {
 ################################################################################
 resource "oci_core_public_ip" "red5pro_reserved_ip" {
   count          = local.autoscaling ? 1 : 0
-  compartment_id = var.compartment_id
+  compartment_id = var.oracle_compartment_id
   lifetime       = "RESERVED"
 
   lifecycle {
@@ -406,7 +428,7 @@ resource "oci_core_public_ip" "red5pro_reserved_ip" {
 resource "oci_load_balancer_load_balancer" "red5pro_lb" {
   count                      = local.autoscaling ? 1 : 0
   display_name               = "${var.name}-lb"
-  compartment_id             = var.compartment_id
+  compartment_id             = var.oracle_compartment_id
   subnet_ids                 = [local.subnet_id]
   network_security_group_ids = [oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id]
   shape                      = "flexible"
@@ -481,7 +503,7 @@ resource "oci_load_balancer_certificate" "red5pro_lb_ssl_cert" {
 
 resource "oci_core_image" "red5pro_sm_image" {
   count          = local.autoscaling ? 1 : 0
-  compartment_id = var.compartment_id
+  compartment_id = var.oracle_compartment_id
   instance_id    = oci_core_instance.red5pro_sm[0].id
   display_name   = "${var.name}-stream-manager"
   depends_on     = [oci_core_instance.red5pro_sm]
@@ -489,7 +511,7 @@ resource "oci_core_image" "red5pro_sm_image" {
 
 resource "oci_core_instance_configuration" "red5pro_instance_configuration" {
   count          = local.autoscaling ? 1 : 0
-  compartment_id = var.compartment_id
+  compartment_id = var.oracle_compartment_id
   display_name   = "${var.name}-sm-instance-cnf"
 
   instance_details {
@@ -497,7 +519,7 @@ resource "oci_core_instance_configuration" "red5pro_instance_configuration" {
 
     launch_details {
       display_name   = "${var.name}-sm-instance-ld"
-      compartment_id = var.compartment_id
+      compartment_id = var.oracle_compartment_id
       shape          = var.stream_manager_instance_type
 
       create_vnic_details {
@@ -518,7 +540,7 @@ resource "oci_core_instance_configuration" "red5pro_instance_configuration" {
       }
 
       metadata = {
-        ssh_authorized_keys = file(var.ssh_public_key_path)
+        ssh_authorized_keys = file(local.ssh_public_key_path)
       }
     }
   }
@@ -526,7 +548,7 @@ resource "oci_core_instance_configuration" "red5pro_instance_configuration" {
 
 resource "oci_core_instance_pool" "red5pro_instance_pool" {
   count                     = local.autoscaling ? 1 : 0
-  compartment_id            = var.compartment_id
+  compartment_id            = var.oracle_compartment_id
   instance_configuration_id = oci_core_instance_configuration.red5pro_instance_configuration[0].id
   size                      = 1
   state                     = "RUNNING"
@@ -547,7 +569,7 @@ resource "oci_core_instance_pool" "red5pro_instance_pool" {
 
 resource "oci_autoscaling_auto_scaling_configuration" "red5pro_autoscaling_configuration" {
   count                = local.autoscaling ? 1 : 0
-  compartment_id       = var.compartment_id
+  compartment_id       = var.oracle_compartment_id
   cool_down_in_seconds = "300"
   display_name         = "${var.name}-autoscale-cnf"
   is_enabled           = "true"
@@ -613,7 +635,7 @@ resource "oci_autoscaling_auto_scaling_configuration" "red5pro_autoscaling_confi
 resource "oci_core_instance" "red5pro_node_origin" {
   count               = local.cluster_or_autoscaling && var.origin_image_create ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
-  compartment_id      = var.compartment_id
+  compartment_id      = var.oracle_compartment_id
   shape               = var.origin_image_instance_type
   display_name        = "${var.name}-node-origin-image"
 
@@ -634,7 +656,7 @@ resource "oci_core_instance" "red5pro_node_origin" {
   }
 
   metadata = {
-    ssh_authorized_keys = file(var.ssh_public_key_path)
+    ssh_authorized_keys = file(local.ssh_public_key_path)
   }
   preserve_boot_volume = false
 
@@ -646,7 +668,7 @@ resource "oci_core_instance" "red5pro_node_origin" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -658,7 +680,7 @@ resource "oci_core_instance" "red5pro_node_origin" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -695,7 +717,7 @@ resource "oci_core_instance" "red5pro_node_origin" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 }
@@ -704,7 +726,7 @@ resource "oci_core_instance" "red5pro_node_origin" {
 resource "oci_core_instance" "red5pro_node_edge" {
   count               = local.cluster_or_autoscaling && var.edge_image_create ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
-  compartment_id      = var.compartment_id
+  compartment_id      = var.oracle_compartment_id
   shape               = var.edge_image_instance_type
   display_name        = "${var.name}-node-edge-image"
 
@@ -725,7 +747,7 @@ resource "oci_core_instance" "red5pro_node_edge" {
   }
 
   metadata = {
-    ssh_authorized_keys = file(var.ssh_public_key_path)
+    ssh_authorized_keys = file(local.ssh_public_key_path)
   }
   preserve_boot_volume = false
 
@@ -737,7 +759,7 @@ resource "oci_core_instance" "red5pro_node_edge" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -749,7 +771,7 @@ resource "oci_core_instance" "red5pro_node_edge" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -786,7 +808,7 @@ resource "oci_core_instance" "red5pro_node_edge" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 }
@@ -795,7 +817,7 @@ resource "oci_core_instance" "red5pro_node_edge" {
 resource "oci_core_instance" "red5pro_node_transcoder" {
   count               = local.cluster_or_autoscaling && var.transcoder_image_create ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
-  compartment_id      = var.compartment_id
+  compartment_id      = var.oracle_compartment_id
   shape               = var.transcoder_image_instance_type
   display_name        = "${var.name}-node-transcoder-image"
 
@@ -816,7 +838,7 @@ resource "oci_core_instance" "red5pro_node_transcoder" {
   }
 
   metadata = {
-    ssh_authorized_keys = file(var.ssh_public_key_path)
+    ssh_authorized_keys = file(local.ssh_public_key_path)
   }
   preserve_boot_volume = false
 
@@ -828,7 +850,7 @@ resource "oci_core_instance" "red5pro_node_transcoder" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -840,7 +862,7 @@ resource "oci_core_instance" "red5pro_node_transcoder" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -877,7 +899,7 @@ resource "oci_core_instance" "red5pro_node_transcoder" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 }
@@ -886,7 +908,7 @@ resource "oci_core_instance" "red5pro_node_transcoder" {
 resource "oci_core_instance" "red5pro_node_relay" {
   count               = local.cluster_or_autoscaling && var.relay_image_create ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
-  compartment_id      = var.compartment_id
+  compartment_id      = var.oracle_compartment_id
   shape               = var.relay_image_instance_type
   display_name        = "${var.name}-node-relay-image"
 
@@ -907,7 +929,7 @@ resource "oci_core_instance" "red5pro_node_relay" {
   }
 
   metadata = {
-    ssh_authorized_keys = file(var.ssh_public_key_path)
+    ssh_authorized_keys = file(local.ssh_public_key_path)
   }
   preserve_boot_volume = false
 
@@ -919,7 +941,7 @@ resource "oci_core_instance" "red5pro_node_relay" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -931,7 +953,7 @@ resource "oci_core_instance" "red5pro_node_relay" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 
@@ -968,7 +990,7 @@ resource "oci_core_instance" "red5pro_node_relay" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
+      private_key = file(local.ssh_private_key_path)
     }
   }
 }
@@ -980,7 +1002,7 @@ resource "oci_core_instance" "red5pro_node_relay" {
 # Origin node - Create image (OCI Custom Images)
 resource "oci_core_image" "red5pro_node_origin_image" {
   count          = local.cluster_or_autoscaling && var.origin_image_create ? 1 : 0
-  compartment_id = var.compartment_id
+  compartment_id = var.oracle_compartment_id
   instance_id    = oci_core_instance.red5pro_node_origin[0].id
   display_name   = "${var.name}-node-origin-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
   depends_on     = [oci_core_instance.red5pro_node_origin]
@@ -989,7 +1011,7 @@ resource "oci_core_image" "red5pro_node_origin_image" {
 # Edger node - Create image (OCI Custom Images)
 resource "oci_core_image" "red5pro_node_edge_image" {
   count          = local.cluster_or_autoscaling && var.edge_image_create ? 1 : 0
-  compartment_id = var.compartment_id
+  compartment_id = var.oracle_compartment_id
   instance_id    = oci_core_instance.red5pro_node_edge[0].id
   display_name   = "${var.name}-node-edge-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
   depends_on     = [oci_core_instance.red5pro_node_edge]
@@ -998,7 +1020,7 @@ resource "oci_core_image" "red5pro_node_edge_image" {
 # Transcoder node - Create image (OCI Custom Images)
 resource "oci_core_image" "red5pro_node_transcoder_image" {
   count          = local.cluster_or_autoscaling && var.transcoder_image_create ? 1 : 0
-  compartment_id = var.compartment_id
+  compartment_id = var.oracle_compartment_id
   instance_id    = oci_core_instance.red5pro_node_transcoder[0].id
   display_name   = "${var.name}-node-transcoder-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
   depends_on     = [oci_core_instance.red5pro_node_transcoder]
@@ -1007,7 +1029,7 @@ resource "oci_core_image" "red5pro_node_transcoder_image" {
 # Relay node - Create image (OCI Custom Images)
 resource "oci_core_image" "red5pro_node_relay_image" {
   count          = local.cluster_or_autoscaling && var.relay_image_create ? 1 : 0
-  compartment_id = var.compartment_id
+  compartment_id = var.oracle_compartment_id
   instance_id    = oci_core_instance.red5pro_node_relay[0].id
   display_name   = "${var.name}-node-relay-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
   depends_on     = [oci_core_instance.red5pro_node_relay]
@@ -1076,7 +1098,7 @@ resource "null_resource" "node_group" {
       NAME                     = "${var.name}"
       SM_IP                    = "${local.stream_manager_ip}"
       SM_API_KEY               = "${var.stream_manager_api_key}"
-      NODE_GROUP_REGION        = "${var.region}"
+      NODE_GROUP_REGION        = "${var.oracle_region}"
       NODE_GROUP_NAME          = "${var.node_group_name}"
       ORIGINS                  = "${var.node_group_origins}"
       EDGES                    = "${var.node_group_edges}"

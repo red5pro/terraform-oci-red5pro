@@ -36,42 +36,42 @@ variable "path_to_terraform_cloud_controller" {
   type        = string
   default     = ""
 }
-variable "path_to_private_key_terraform_service" {
-  description = "SSH private key path for Red5 Pro Terraform Service"
-  type        = string
-  default     = ""
-}
-variable "path_to_public_key_terraform_service" {
-  description = "SSH Public key path for Red5 Pro Terraform Service"
-  type        = string
-  default     = ""
-}
-
 # Oracle Cloud Prvider basic configuration settings
-variable "compartment_id" {
+variable "oracle_compartment_id" {
   description = "Oracle Cloud Compartment OCID to create the resources, https://cloud.oracle.com/identity/compartments"
   type        = string
   default     = ""
 }
-variable "tenancy_ocid" {
+variable "oracle_tenancy_ocid" {
   description = "Oracle Cloud Tenancy OCID to create the resources, https://cloud.oracle.com/tenancy"
   type        = string
   default     = ""
 }
-variable "user_ocid" {
+variable "oracle_user_ocid" {
   description = "Oracle Cloud User OCID to create the resources, https://cloud.oracle.com/identity/domains/my-profile"
   type        = string
   default     = ""
 }
-variable "fingerprint" {
+variable "oracle_fingerprint" {
   description = "API key fingerprint for Oracle Cloud User to create the resources, https://cloud.oracle.com/identity/domains/my-profile/api-keys"
   type        = string
   default     = ""
 }
-variable "region" {
+variable "oracle_private_key_path" {
+  description = "SSH private key path for for Oracle Cloud User to create the resources, https://cloud.oracle.com/identity/domains/my-profile/api-keys"
+  type        = string
+  default     = ""
+}
+variable "oracle_region" {
   description = "Oracle Cloud Region to create the resources"
   type        = string
   default     = ""
+}
+# SSH key configuration
+variable "ssh_key_create" {
+  description = "Create a new SSH key pair or use an existing one. true = create new, false = use existing"
+  type        = bool
+  default     = true
 }
 variable "ssh_private_key_path" {
   description = "SSH private key path existing"
