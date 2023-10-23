@@ -1,24 +1,24 @@
 ####################################################################################
 # Example: Red5 Pro Stream Manager Autoscaling (OCI Load Balancer + Autoscaling)
 ####################################################################################
-module "red5pro_stream_manager_autoscaling" {
+module "red5pro_stream_manager" {
   source                                = "../../"
   type                                  = "autoscaling"                            # Deployment type: single, cluster, autoscaling
   name                                  = "red5pro-autoscaling"                    # Name to be used on all the resources as identifier
   path_to_red5pro_build                 = "./red5pro-server-0.0.0.b0-release.zip"  # Absolute path or relative path to Red5 Pro server ZIP file
   path_to_terraform_cloud_controller    = "./terraform-cloud-controller-0.0.0.jar" # Absolute path or relative path to Terraform Cloud Controller JAR file
   path_to_terraform_service_build       = "./terraform-service-0.0.0.zip"
-  path_to_private_key_terraform_service = "./example_pri_key.pem"
-  path_to_public_key_terraform_service  = "./example_pub_key.pem"
 
   # Oracle Cloud Account Details
-  compartment_id = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
-  tenancy_ocid   = "ocid1.tenancy.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"     # Existing Tenancy OCID of Oracle Cloud Account
-  user_ocid      = "ocid1.user.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"        # Existing User OCID of Oracle Cloud Account
-  fingerprint    = "00:11:22:33:44:55:66:77:aa:bb:cc:dd:ee:ff:gg:hh"                                     # Existing SSH based API key fingerprint of Oracle Cloud Account
-  region         = "us-ashburn-1"                                                                        # Current region code name of Oracle Cloud Account, https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm
+  oracle_compartment_id   = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
+  oracle_tenancy_ocid     = "ocid1.tenancy.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"     # Existing Tenancy OCID of Oracle Cloud Account
+  oracle_user_ocid        = "ocid1.user.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"        # Existing User OCID of Oracle Cloud Account
+  oracle_fingerprint      = "00:11:22:33:44:55:66:77:aa:bb:cc:dd:ee:ff:gg:hh"                                     # Existing SSH based API key fingerprint of Oracle Cloud Account
+  oracle_private_key_path = "./example_private_key.pem"
+  oracle_region           = "us-ashburn-1"                                                                        # Current region code name of Oracle Cloud Account, https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm
 
   # SSH key configuration
+  ssh_key_create       = false
   ssh_private_key_path = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pri_key.pem" # Path to existing SSH private key
   ssh_public_key_path  = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pub_key.pem" # Path to existing SSH Public key
 
@@ -27,25 +27,20 @@ module "red5pro_stream_manager_autoscaling" {
   vcn_id_existing      = "ocid1.vcn.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"    # VCN OCID for existing VCN Network
   subnet_id_existing   = "ocid1.subnet.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Subnet OCID for existing VCN Subnet
 
-  # Network Security Group configuration
-  network_security_group_create      = true                                                                                              # true - create new Network Security Group, false - use existing Network Security Group
-  network_security_group_id_existing = "ocid1.networksecuritygroup.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Network Security Group OCID for existing Network Security Group
-
   # MySQL DB configuration
   mysql_db_system_create = false                        # true - create new MySQL DB System, false - install local MySQL server on the Stream Manager OCI instance
   mysql_shape_name       = "MySQL.VM.Standard.E3.1.8GB" # Instance type for Oracle Cloud MySQL DB system instance
   mysql_user_name        = "exampleuser"                # MySQL username
-  mysql_password         = "examplepass"                # MySQL password
+  mysql_password         = "Examplepass1!"                # MySQL password (The password for the administrative user. The password must be between 8 and 32 characters long, and must contain at least 1 numeric character, 1 lowercase character, 1 uppercase character, and 1 special (nonalphanumeric) character.)
   mysql_port             = 3306                         # MySQL port
 
   # Terraform Service configuration
-  dedicated_terra_host_create = true
-  terra_api_token             = "abc123"
-  terra_parallelism           = "20"
-
-  # Stream Manager Reserved IP Address configuration
-  reserved_public_ip_address_create   = true      # true - create new Reserved IP, false - use existing Reserved IP
-  reserved_public_ip_address_existing = "1.2.3.4" # Reserved IP Address for existing Oracle Cloud Reserved IP
+  terraform_service_instance_create = true
+  terraform_service_instance_type   = "VM.Standard.E4.Flex"
+  terraform_service_instance_cpu    = 1
+  terraform_service_instance_memory = 4
+  terraform_service_api_key         = "examplekey"
+  terraform_service_parallelism     = 20
 
   # Load Balancer HTTPS/SSL certificate configuration
   https_oci_certificates_use_existing     = true                  # If you want to use SSL certificate set it to true
@@ -105,5 +100,5 @@ module "red5pro_stream_manager_autoscaling" {
 }
 
 output "module_output" {
-  value = module.red5pro_stream_manager_autoscaling
+  value = module.red5pro_stream_manager
 }

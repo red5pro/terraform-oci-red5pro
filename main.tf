@@ -469,7 +469,7 @@ resource "oci_load_balancer_listener" "red5pro_lb_listener_5080" {
 }
 
 resource "oci_load_balancer_listener" "red5pro_lb_listener_443" {
-  count                    = local.autoscaling ? 1 : 0
+  count                    = local.autoscaling && var.https_oci_certificates_use_existing ? 1 : 0
   load_balancer_id         = oci_load_balancer_load_balancer.red5pro_lb[0].id
   name                     = "https"
   default_backend_set_name = oci_load_balancer_backend_set.red5pro_lb_backend_set[0].name
@@ -477,7 +477,7 @@ resource "oci_load_balancer_listener" "red5pro_lb_listener_443" {
   protocol                 = "HTTP"
 
   ssl_configuration {
-    certificate_name        = local.oci_lb_cert
+    certificate_name        = var.https_oci_certificates_certificate_name
     verify_peer_certificate = false
     protocols               = ["TLSv1.1", "TLSv1.2"]
     server_order_preference = "ENABLED"
@@ -487,7 +487,7 @@ resource "oci_load_balancer_listener" "red5pro_lb_listener_443" {
 # OCI SSL certificate
 
 resource "oci_load_balancer_certificate" "red5pro_lb_ssl_cert" {
-  count              = local.oci_lb_cert_create && local.autoscaling ? 1 : 0
+  count              = local.autoscaling && var.https_oci_certificates_use_existing ? 1 : 0
   load_balancer_id   = oci_load_balancer_load_balancer.red5pro_lb[0].id
   ca_certificate     = file(var.cert_fullchain)
   certificate_name   = var.https_oci_certificates_certificate_name
