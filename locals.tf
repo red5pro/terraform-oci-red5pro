@@ -19,4 +19,6 @@ locals {
   stream_manager_ip                = local.autoscaling ? oci_core_public_ip.red5pro_reserved_ip[0].ip_address : local.cluster ? oci_core_instance.red5pro_sm[0].public_ip : null
   ssh_private_key_path             = var.ssh_key_create ? local_file.red5pro_ssh_key_pem[0].filename : var.ssh_private_key_path
   ssh_public_key_path              = var.ssh_key_create ? local_file.red5pro_ssh_key_pub[0].filename : var.ssh_public_key_path
+  ssh_private_key                  = var.ssh_key_create ? tls_private_key.red5pro_ssh_key[0].private_key_pem : file(var.ssh_private_key_path)
+  ssh_public_key                   = var.ssh_key_create ? tls_private_key.red5pro_ssh_key[0].public_key_openssh : file(var.ssh_public_key_path)
 }

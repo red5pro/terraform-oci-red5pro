@@ -70,7 +70,7 @@ resource "oci_core_instance" "red5pro_single" {
   }
 
   metadata = {
-    ssh_authorized_keys = file(local.ssh_public_key_path)
+    ssh_authorized_keys = local.ssh_public_key
   }
   preserve_boot_volume = false
 
@@ -82,7 +82,7 @@ resource "oci_core_instance" "red5pro_single" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -94,7 +94,7 @@ resource "oci_core_instance" "red5pro_single" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -133,7 +133,7 @@ resource "oci_core_instance" "red5pro_single" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 }
@@ -166,7 +166,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
   }
 
   metadata = {
-    ssh_authorized_keys = file(local.ssh_public_key_path)
+    ssh_authorized_keys = local.ssh_public_key
   }
   preserve_boot_volume = false
 
@@ -178,7 +178,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -190,7 +190,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -202,7 +202,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -214,7 +214,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -251,7 +251,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 }
@@ -284,7 +284,7 @@ resource "oci_core_instance" "red5pro_sm" {
   }
 
   metadata = {
-    ssh_authorized_keys = file(local.ssh_public_key_path)
+    ssh_authorized_keys = local.ssh_public_key
   }
   preserve_boot_volume = false
 
@@ -296,7 +296,7 @@ resource "oci_core_instance" "red5pro_sm" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -308,7 +308,7 @@ resource "oci_core_instance" "red5pro_sm" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -320,7 +320,7 @@ resource "oci_core_instance" "red5pro_sm" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -332,7 +332,7 @@ resource "oci_core_instance" "red5pro_sm" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -344,7 +344,7 @@ resource "oci_core_instance" "red5pro_sm" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -356,7 +356,7 @@ resource "oci_core_instance" "red5pro_sm" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -407,7 +407,7 @@ resource "oci_core_instance" "red5pro_sm" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 }
@@ -540,7 +540,7 @@ resource "oci_core_instance_configuration" "red5pro_instance_configuration" {
       }
 
       metadata = {
-        ssh_authorized_keys = file(local.ssh_public_key_path)
+        ssh_authorized_keys = local.ssh_public_key
       }
     }
   }
@@ -656,7 +656,7 @@ resource "oci_core_instance" "red5pro_node_origin" {
   }
 
   metadata = {
-    ssh_authorized_keys = file(local.ssh_public_key_path)
+    ssh_authorized_keys = local.ssh_public_key
   }
   preserve_boot_volume = false
 
@@ -668,7 +668,7 @@ resource "oci_core_instance" "red5pro_node_origin" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -680,7 +680,7 @@ resource "oci_core_instance" "red5pro_node_origin" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -717,7 +717,7 @@ resource "oci_core_instance" "red5pro_node_origin" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 }
@@ -747,7 +747,7 @@ resource "oci_core_instance" "red5pro_node_edge" {
   }
 
   metadata = {
-    ssh_authorized_keys = file(local.ssh_public_key_path)
+    ssh_authorized_keys = local.ssh_public_key
   }
   preserve_boot_volume = false
 
@@ -759,7 +759,7 @@ resource "oci_core_instance" "red5pro_node_edge" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -771,7 +771,7 @@ resource "oci_core_instance" "red5pro_node_edge" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -808,7 +808,7 @@ resource "oci_core_instance" "red5pro_node_edge" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 }
@@ -838,7 +838,7 @@ resource "oci_core_instance" "red5pro_node_transcoder" {
   }
 
   metadata = {
-    ssh_authorized_keys = file(local.ssh_public_key_path)
+    ssh_authorized_keys = local.ssh_public_key
   }
   preserve_boot_volume = false
 
@@ -850,7 +850,7 @@ resource "oci_core_instance" "red5pro_node_transcoder" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -862,7 +862,7 @@ resource "oci_core_instance" "red5pro_node_transcoder" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -899,7 +899,7 @@ resource "oci_core_instance" "red5pro_node_transcoder" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 }
@@ -929,7 +929,7 @@ resource "oci_core_instance" "red5pro_node_relay" {
   }
 
   metadata = {
-    ssh_authorized_keys = file(local.ssh_public_key_path)
+    ssh_authorized_keys = local.ssh_public_key
   }
   preserve_boot_volume = false
 
@@ -941,7 +941,7 @@ resource "oci_core_instance" "red5pro_node_relay" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -953,7 +953,7 @@ resource "oci_core_instance" "red5pro_node_relay" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 
@@ -990,7 +990,7 @@ resource "oci_core_instance" "red5pro_node_relay" {
       host        = self.public_ip
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(local.ssh_private_key_path)
+      private_key = local.ssh_private_key
     }
   }
 }
