@@ -576,9 +576,9 @@ resource "oci_autoscaling_auto_scaling_configuration" "red5pro_autoscaling_confi
 
   policies {
     capacity {
-      initial = "1"
-      max     = "2"
-      min     = "1"
+      initial = var.stream_manager_autoscaling_desired_capacity
+      max     = var.stream_manager_autoscaling_maximum_capacity
+      min     = var.stream_manager_autoscaling_minimum_capacity
     }
 
     display_name = "${var.name}-autoscale-policy"

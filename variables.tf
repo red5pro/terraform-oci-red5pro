@@ -341,6 +341,21 @@ variable "stream_manager_api_key" {
   type        = string
   default     = ""
 }
+variable "stream_manager_autoscaling_desired_capacity" {
+  description = "value to set the desired capacity for stream manager autoscaling"
+  type        = number
+  default     = 1
+}
+variable "stream_manager_autoscaling_minimum_capacity" {
+  description = "value to set the minimum capacity for stream manager autoscaling"
+  type        = number
+  default     = 1
+}
+variable "stream_manager_autoscaling_maximum_capacity" {
+  description = "value to set the maximum capacity for stream manager autoscaling"
+  type        = number
+  default     = 1
+}
 variable "red5pro_cluster_key" {
   description = "Red5 Pro node cluster key"
   type        = string
