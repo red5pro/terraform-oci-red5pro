@@ -95,7 +95,7 @@ variable "terraform_service_instance_type" {
   type        = string
   default     = "VM.Standard.E4.Flex"
 }
-variable "terraform_service_instance_cpu" {
+variable "terraform_service_instance_ocpu" {
   description = "Terraform Service instance cpu count(1 OCPU = 2vCPU)"
   type        = number
   default     = 1
@@ -127,10 +127,20 @@ variable "vcn_id_existing" {
   type        = string
   default     = ""
 }
+variable "vcn_cidr_block" {
+  description = "Oracle Cloud VCN IP range"
+  type        = string
+  default     = "10.5.0.0/16"
+}
 variable "subnet_id_existing" {
   description = "Oracle Cloud Subnet OCID of an existing VCN Subnet"
   type        = string
   default     = ""
+}
+variable "subnet_cidr_block" {
+  description = "Oracle Cloud Subnet IP range"
+  type        = string
+  default     = "10.5.1.0/24"
 }
 
 # Security group configuration
@@ -254,7 +264,7 @@ variable "single_instance_type" {
   type        = string
   default     = "VM.Standard.E4.Flex"
 }
-variable "single_instance_cpu" {
+variable "single_instance_ocpu" {
   description = "Red5 Pro Single server instance cpu count(1 OCPU = 2vCPU)"
   type        = number
   default     = 1
@@ -326,7 +336,7 @@ variable "stream_manager_instance_type" {
   type        = string
   default     = "VM.Standard.E4.Flex"
 }
-variable "stream_manager_instance_cpu" {
+variable "stream_manager_instance_ocpu" {
   description = "Red5 Pro Stream Manager instance cpu count(1 OCPU = 2vCPU)"
   type        = number
   default     = 1
@@ -435,7 +445,7 @@ variable "origin_image_instance_type" {
   type        = string
   default     = "VM.Standard.E4.Flex"
 }
-variable "origin_image_instance_cpu" {
+variable "origin_image_instance_ocpu" {
   description = "Origin node image - instance cpu"
   type        = number
   default     = 2
@@ -512,7 +522,7 @@ variable "edge_image_instance_type" {
   type        = string
   default     = "VM.Standard.E4.Flex"
 }
-variable "edge_image_instance_cpu" {
+variable "edge_image_instance_ocpu" {
   description = "Edge node image - instance cpu"
   type        = number
   default     = 2
@@ -589,7 +599,7 @@ variable "transcoder_image_instance_type" {
   type        = string
   default     = "VM.Standard.E4.Flex"
 }
-variable "transcoder_image_instance_cpu" {
+variable "transcoder_image_instance_ocpu" {
   description = "Transcoder node image - instance cpu"
   type        = number
   default     = 2
@@ -666,7 +676,7 @@ variable "relay_image_instance_type" {
   type        = string
   default     = "VM.Standard.E4.Flex"
 }
-variable "relay_image_instance_cpu" {
+variable "relay_image_instance_ocpu" {
   description = "Relay node image - instance cpu"
   type        = number
   default     = 2

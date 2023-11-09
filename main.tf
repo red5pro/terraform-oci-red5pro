@@ -54,7 +54,7 @@ resource "oci_core_instance" "red5pro_single" {
   display_name        = "${var.name}-single-server"
 
   shape_config {
-    ocpus         = var.single_instance_cpu
+    ocpus         = var.single_instance_ocpu
     memory_in_gbs = var.single_instance_memory
   }
 
@@ -150,7 +150,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
   display_name        = "${var.name}-terraform-service"
 
   shape_config {
-    ocpus         = var.terraform_service_instance_cpu
+    ocpus         = var.terraform_service_instance_ocpu
     memory_in_gbs = var.terraform_service_instance_memory
   }
 
@@ -268,7 +268,7 @@ resource "oci_core_instance" "red5pro_sm" {
   display_name        = "${var.name}-stream-manager"
 
   shape_config {
-    ocpus         = var.stream_manager_instance_cpu
+    ocpus         = var.stream_manager_instance_ocpu
     memory_in_gbs = var.stream_manager_instance_memory
   }
 
@@ -524,13 +524,13 @@ resource "oci_core_instance_configuration" "red5pro_instance_configuration" {
 
       create_vnic_details {
         subnet_id        = local.subnet_id
-        display_name     = "${var.name}-sm-instance-vnic"
+        display_name     = "${var.name}-sm-instance"
         assign_public_ip = true
         nsg_ids          = [oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id]
       }
 
       shape_config {
-        ocpus         = var.stream_manager_instance_cpu
+        ocpus         = var.stream_manager_instance_ocpu
         memory_in_gbs = var.stream_manager_instance_memory
       }
 
@@ -640,7 +640,7 @@ resource "oci_core_instance" "red5pro_node_origin" {
   display_name        = "${var.name}-node-origin-image"
 
   shape_config {
-    ocpus         = var.origin_image_instance_cpu
+    ocpus         = var.origin_image_instance_ocpu
     memory_in_gbs = var.origin_image_instance_memory
   }
 
@@ -731,7 +731,7 @@ resource "oci_core_instance" "red5pro_node_edge" {
   display_name        = "${var.name}-node-edge-image"
 
   shape_config {
-    ocpus         = var.edge_image_instance_cpu
+    ocpus         = var.edge_image_instance_ocpu
     memory_in_gbs = var.edge_image_instance_memory
   }
 
@@ -822,7 +822,7 @@ resource "oci_core_instance" "red5pro_node_transcoder" {
   display_name        = "${var.name}-node-transcoder-image"
 
   shape_config {
-    ocpus         = var.transcoder_image_instance_cpu
+    ocpus         = var.transcoder_image_instance_ocpu
     memory_in_gbs = var.transcoder_image_instance_memory
   }
 
@@ -913,7 +913,7 @@ resource "oci_core_instance" "red5pro_node_relay" {
   display_name        = "${var.name}-node-relay-image"
 
   shape_config {
-    ocpus         = var.relay_image_instance_cpu
+    ocpus         = var.relay_image_instance_ocpu
     memory_in_gbs = var.relay_image_instance_memory
   }
 
@@ -1006,6 +1006,9 @@ resource "oci_core_image" "red5pro_node_origin_image" {
   instance_id    = oci_core_instance.red5pro_node_origin[0].id
   display_name   = "${var.name}-node-origin-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
   depends_on     = [oci_core_instance.red5pro_node_origin]
+  lifecycle {
+    ignore_changes = [display_name]
+  }
 }
 
 # Edger node - Create image (OCI Custom Images)
@@ -1015,6 +1018,9 @@ resource "oci_core_image" "red5pro_node_edge_image" {
   instance_id    = oci_core_instance.red5pro_node_edge[0].id
   display_name   = "${var.name}-node-edge-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
   depends_on     = [oci_core_instance.red5pro_node_edge]
+  lifecycle {
+    ignore_changes = [display_name]
+  }
 }
 
 # Transcoder node - Create image (OCI Custom Images)
@@ -1024,6 +1030,9 @@ resource "oci_core_image" "red5pro_node_transcoder_image" {
   instance_id    = oci_core_instance.red5pro_node_transcoder[0].id
   display_name   = "${var.name}-node-transcoder-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
   depends_on     = [oci_core_instance.red5pro_node_transcoder]
+  lifecycle {
+    ignore_changes = [display_name]
+  }
 }
 
 # Relay node - Create image (OCI Custom Images)
@@ -1033,59 +1042,97 @@ resource "oci_core_image" "red5pro_node_relay_image" {
   instance_id    = oci_core_instance.red5pro_node_relay[0].id
   display_name   = "${var.name}-node-relay-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
   depends_on     = [oci_core_instance.red5pro_node_relay]
+  lifecycle {
+    ignore_changes = [display_name]
+  }
 }
 
-# ################################################################################
-# # Stop instances which used for creating OCI custom images (OCI CLI)
-# ################################################################################
-# # Stream Manager autoscaling - Stop Stream Manager instance using OCI CLI
-# resource "null_resource" "stop_stream_manager" {
-#   count = local.autoscaling ? 1 : 0
-#   provisioner "local-exec" {
-#     command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_sm[0].id}"
-#   }
-#   depends_on = [oci_core_image.red5pro_sm_image[0]]
-# }
+################################################################################
+# Stop instances which used for creating OCI custom images (OCI CLI)
+################################################################################
+# Stream Manager autoscaling - Stop Stream Manager instance using OCI CLI
+resource "null_resource" "stop_stream_manager" {
+  count = local.autoscaling ? 1 : 0
+  provisioner "local-exec" {
+    command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_sm[0].id}"
+    environment = {
+      OCI_CLI_USER = "${var.oracle_user_ocid}"
+      OCI_CLI_FINGERPRINT = "${var.oracle_fingerprint}"
+      OCI_CLI_TENANCY = "${var.oracle_tenancy_ocid}"
+      OCI_CLI_REGION = "${var.oracle_region}"
+      OCI_CLI_KEY_FILE = "${var.oracle_private_key_path}"
+    }
+  }
+  depends_on = [oci_core_image.red5pro_sm_image[0]]
+}
 
-# # Stop Origin Node instance using OCI CLI
-# resource "null_resource" "stop_node_origin" {
-#   count = local.cluster_or_autoscaling && var.origin_image_create ? 1 : 0
-#   provisioner "local-exec" {
-#     command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_origin[0].id}"
-#   }
-#   depends_on = [oci_core_image.red5pro_node_origin_image[0]]
-# }
-# # Stop Edge Node instance using OCI CLI
-# resource "null_resource" "stop_node_edge" {
-#   count = local.cluster_or_autoscaling && var.edge_image_create ? 1 : 0
-#   provisioner "local-exec" {
-#     command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_edge[0].id}"
-#   }
-#   depends_on = [oci_core_image.red5pro_node_edge_image[0]]
-# }
-# # Stop Transcoder Node instance using OCI CLI
-# resource "null_resource" "stop_node_transcoder" {
-#   count = local.cluster_or_autoscaling && var.transcoder_image_create ? 1 : 0
-#   provisioner "local-exec" {
-#     command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_transcoder[0].id}"
-#   }
-#   depends_on = [oci_core_image.red5pro_node_transcoder_image[0]]
-# }
-# # Stop Relay Node instance using OCI CLI
-# resource "null_resource" "stop_node_relay" {
-#   count = local.cluster_or_autoscaling && var.relay_image_create ? 1 : 0
-#   provisioner "local-exec" {
-#     command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_relay[0].id}"
-#   }
-#   depends_on = [oci_core_image.red5pro_node_relay_image[0]]
-# }
+# Stop Origin Node instance using OCI CLI
+resource "null_resource" "stop_node_origin" {
+  count = local.cluster_or_autoscaling && var.origin_image_create ? 1 : 0
+  provisioner "local-exec" {
+    command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_origin[0].id}"
+    environment = {
+      OCI_CLI_USER = "${var.oracle_user_ocid}"
+      OCI_CLI_FINGERPRINT = "${var.oracle_fingerprint}"
+      OCI_CLI_TENANCY = "${var.oracle_tenancy_ocid}"
+      OCI_CLI_REGION = "${var.oracle_region}"
+      OCI_CLI_KEY_FILE = "${var.oracle_private_key_path}"
+    }
+  }
+  depends_on = [oci_core_image.red5pro_node_origin_image[0]]
+}
+# Stop Edge Node instance using OCI CLI
+resource "null_resource" "stop_node_edge" {
+  count = local.cluster_or_autoscaling && var.edge_image_create ? 1 : 0
+  provisioner "local-exec" {
+    command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_edge[0].id}"
+    environment = {
+      OCI_CLI_USER = "${var.oracle_user_ocid}"
+      OCI_CLI_FINGERPRINT = "${var.oracle_fingerprint}"
+      OCI_CLI_TENANCY = "${var.oracle_tenancy_ocid}"
+      OCI_CLI_REGION = "${var.oracle_region}"
+      OCI_CLI_KEY_FILE = "${var.oracle_private_key_path}"
+    }
+  }
+  depends_on = [oci_core_image.red5pro_node_edge_image[0]]
+}
+# Stop Transcoder Node instance using OCI CLI
+resource "null_resource" "stop_node_transcoder" {
+  count = local.cluster_or_autoscaling && var.transcoder_image_create ? 1 : 0
+  provisioner "local-exec" {
+    command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_transcoder[0].id}"
+    environment = {
+      OCI_CLI_USER = "${var.oracle_user_ocid}"
+      OCI_CLI_FINGERPRINT = "${var.oracle_fingerprint}"
+      OCI_CLI_TENANCY = "${var.oracle_tenancy_ocid}"
+      OCI_CLI_REGION = "${var.oracle_region}"
+      OCI_CLI_KEY_FILE = "${var.oracle_private_key_path}"
+    }
+  }
+  depends_on = [oci_core_image.red5pro_node_transcoder_image[0]]
+}
+# Stop Relay Node instance using OCI CLI
+resource "null_resource" "stop_node_relay" {
+  count = local.cluster_or_autoscaling && var.relay_image_create ? 1 : 0
+  provisioner "local-exec" {
+    command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_relay[0].id}"
+    environment = {
+      OCI_CLI_USER = "${var.oracle_user_ocid}"
+      OCI_CLI_FINGERPRINT = "${var.oracle_fingerprint}"
+      OCI_CLI_TENANCY = "${var.oracle_tenancy_ocid}"
+      OCI_CLI_REGION = "${var.oracle_region}"
+      OCI_CLI_KEY_FILE = "${var.oracle_private_key_path}"
+    }
+  }
+  depends_on = [oci_core_image.red5pro_node_relay_image[0]]
+}
 
 ################################################################################
 # Create node group (Stream Manager API)
 ################################################################################
 
 resource "null_resource" "node_group" {
-  count = var.node_group_create ? 1 : 0
+  count = local.cluster_or_autoscaling && var.node_group_create ? 1 : 0
   triggers = {
     trigger_name = "node-group-trigger"
     SM_IP        = "${local.stream_manager_ip}"
@@ -1123,5 +1170,14 @@ resource "null_resource" "node_group" {
     command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_node_group.sh '${self.triggers.SM_IP}' '${self.triggers.SM_API_KEY}'"
   }
 
-  depends_on = [oci_core_instance.red5pro_sm[0], oci_load_balancer_load_balancer.red5pro_lb[0]]
+  depends_on = [
+    oci_core_instance.red5pro_sm[0],
+    oci_load_balancer_load_balancer.red5pro_lb[0],
+    oci_core_instance.red5pro_terraform_service[0],
+    oci_core_instance_pool.red5pro_instance_pool[0],
+    oci_core_network_security_group.red5pro_terraform_service_network_security_group[0],
+    oci_core_network_security_group_security_rule.red5pro_terraform_service_nsg_rule_egress[0],
+    oci_core_network_security_group_security_rule.red5pro_terraform_service_nsg_security_rule_ingress_tcp[0],
+    oci_core_network_security_group_security_rule.red5pro_terraform_service_nsg_security_rule_ingress_tcp[1]
+    ]
 }

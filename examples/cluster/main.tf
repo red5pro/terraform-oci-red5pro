@@ -23,11 +23,6 @@ module "red5pro_stream_manager" {
   ssh_private_key_path = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pri_key.pem" # Path to existing SSH private key
   ssh_public_key_path  = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pub_key.pem" # Path to existing SSH Public key
 
-  # VCN Configuration
-  vcn_create           = true                                                                                # true - create new VCN, false - use existing VCN
-  vcn_id_existing      = "ocid1.vcn.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"    # VCN OCID for existing VCN Network
-  subnet_id_existing   = "ocid1.subnet.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Subnet OCID for existing VCN Subnet
-
   # MySQL DB configuration
   mysql_db_system_create = false                        # true - create new MySQL DB System instance, false - install local MySQL server on the Stream Manager OCI instance
   mysql_shape_name       = "MySQL.VM.Standard.E3.1.8GB" # Instance type for Oracle Cloud MySQL DB system instance
@@ -38,7 +33,7 @@ module "red5pro_stream_manager" {
   # Terraform Service configuration
   terraform_service_instance_create = true
   terraform_service_instance_type   = "VM.Standard.E4.Flex"
-  terraform_service_instance_cpu    = 1
+  terraform_service_instance_ocpu   = 1
   terraform_service_instance_memory = 4
   terraform_service_api_key         = "examplekey"
   terraform_service_parallelism     = 20
@@ -51,7 +46,7 @@ module "red5pro_stream_manager" {
 
   # Stream Manager configuration
   stream_manager_instance_type   = "VM.Standard.E4.Flex" # OCI Instance type for Stream Manager
-  stream_manager_instance_cpu    = 2                     # OCI Instance OCPU Count for Stream Manager(1 OCPU = 2 vCPU)
+  stream_manager_instance_ocpu   = 2                     # OCI Instance OCPU Count for Stream Manager(1 OCPU = 2 vCPU)
   stream_manager_instance_memory = 8                     # OCI Instance Memory size in GB for Stream Manager
   stream_manager_api_key         = "examplekey"          # API key for Stream Manager
 
@@ -64,7 +59,7 @@ module "red5pro_stream_manager" {
   # Red5 Pro autoscaling Origin node image configuration
   origin_image_create                                      = true                          # Default: true for Autoscaling and Cluster, true - create new Origin node image, false - not create new Origin node image
   origin_image_instance_type                               = "VM.Standard.E4.Flex"         # Instance type for Origin node image
-  origin_image_instance_cpu                                = 2                             # OCI Instance OCPU Count for Origin node image(1 OCPU = 2 vCPU)
+  origin_image_instance_ocpu                               = 1                             # OCI Instance OCPU Count for Origin node image(1 OCPU = 2 vCPU)
   origin_image_instance_memory                             = 4                             # OCI Instance Memory size in GB for Origin node image
   origin_image_red5pro_inspector_enable                    = false                         # true - enable Red5 Pro server inspector, false - disable Red5 Pro server inspector (https://www.red5pro.com/docs/troubleshooting/inspector/overview/)
   origin_image_red5pro_restreamer_enable                   = false                         # true - enable Red5 Pro server restreamer, false - disable Red5 Pro server restreamer (https://www.red5pro.com/docs/special/restreamer/overview/)

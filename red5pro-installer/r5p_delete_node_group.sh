@@ -42,7 +42,7 @@ delete_node_group(){
         
         if [[ "$delete_resp" == "$group" ]]; then
             log_i "Node group deleted successfully. Waiting 10 seconds ..."
-            sleep 10
+            sleep 15
         else
             log_w "Node group was not deleted!"
             error=1
@@ -50,7 +50,7 @@ delete_node_group(){
     done
     
     if [[ $error -eq 1 ]]; then
-        log_e "One or more node groups was not deleted. Please check and delete Node group manualy!!!"
+        log_e "One or more node groups was not deleted. Please check and delete Node group manually!!!"
     fi
 }
 

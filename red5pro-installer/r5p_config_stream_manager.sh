@@ -64,7 +64,7 @@ config_sm_properties_oci(){
     local terra_token_pattern='#terra.token=.*'
     local terra_token_new="terra.token=${TERRA_API_KEY}"
     
-    sudo sed -i -e "s|$terra_region_pattern|$terra_region_new|" -e "s|$terra_instance_name_pattern|$terra_instance_name_new|" -e "s|$terra_host_pattern|$terra_host_new|" -e "s|$terra_port_pattern|$terra_port_new|" -e "s|$terra_token_pattern|$terra_token_new|" "$RED5_HOME/webapps/streammanager/WEB-INF/red5-web.properties"
+    sed -i -e "s|$terra_region_pattern|$terra_region_new|" -e "s|$terra_instance_name_pattern|$terra_instance_name_new|" -e "s|$terra_host_pattern|$terra_host_new|" -e "s|$terra_port_pattern|$terra_port_new|" -e "s|$terra_token_pattern|$terra_token_new|" "$RED5_HOME/webapps/streammanager/WEB-INF/red5-web.properties"
     
 }
 
@@ -136,7 +136,7 @@ config_sm_properties_main(){
     local sm_proxy_enabled_pattern='proxy.enabled=.*'
     local sm_proxy_enabled_new='proxy.enabled=true'
 
-    sudo sed -i -e "s|$db_host_pattern|$db_host_new|" -e "s|$db_port_pattern|$db_port_new|" -e "s|$db_user_pattern|$db_user_new|" -e "s|$db_pass_pattern|$db_pass_new|" -e "s|$node_prefix_pattern|$node_prefix_new|" -e "s|$node_cluster_password_pattern|$node_cluster_password_new|" -e "s|$node_api_token_pattern|$node_api_token_new|" -e "s|$sm_rest_token_pattern|$sm_rest_token_new|" -e "s|$sm_proxy_enabled_pattern|$sm_proxy_enabled_new|" "$RED5_HOME/webapps/streammanager/WEB-INF/red5-web.properties"
+    sed -i -e "s|$db_host_pattern|$db_host_new|" -e "s|$db_port_pattern|$db_port_new|" -e "s|$db_user_pattern|$db_user_new|" -e "s|$db_pass_pattern|$db_pass_new|" -e "s|$node_prefix_pattern|$node_prefix_new|" -e "s|$node_cluster_password_pattern|$node_cluster_password_new|" -e "s|$node_api_token_pattern|$node_api_token_new|" -e "s|$sm_rest_token_pattern|$sm_rest_token_new|" -e "s|$sm_proxy_enabled_pattern|$sm_proxy_enabled_new|" "$RED5_HOME/webapps/streammanager/WEB-INF/red5-web.properties"
 }
 
 
@@ -205,16 +205,21 @@ config_sm_applicationContext(){
     local terra_controller_out='/> <property name="terraToken" value="${terra.token}"/> </bean> -->'
     local terra_controller_out_new='/> <property name="terraToken" value="${terra.token}"/> </bean>'
 
-    sed -i '' -e "s|$def_controller|$def_controller_new|" -e "s|$terra_controller|$terra_controller_new|" -e "s|$terra_controller_in|$terra_controller_in_new|" -e "s|$terra_controller_out|$terra_controller_out_new|" "$RED5_HOME/webapps/streammanager/WEB-INF/applicationContext.xml"
+    sed -i -e "s|$def_controller|$def_controller_new|" -e "s|$terra_controller|$terra_controller_new|" -e "s|$terra_controller_in|$terra_controller_in_new|" -e "s|$terra_controller_out|$terra_controller_out_new|" "$RED5_HOME/webapps/streammanager/WEB-INF/applicationContext.xml"
 }
 
 config_sm_cors(){
-    log_i "Set CORS * in $RED5_HOME/webapps/streammanager/WEB-INF/web.xml"
+    log_i "Configuring CORS in $RED5_HOME/webapps/streammanager/WEB-INF/web.xml"
 
-    local STR1="<filter>\n<filter-name>CorsFilter</filter-name>\n<filter-class>org.apache.catalina.filters.CorsFilter</filter-class>\n<init-param>\n<param-name>cors.allowed.origins</param-name>\n<param-value>*</param-value>\n</init-param>\n<init-param>\n<param-name>cors.exposed.headers</param-name>\n<param-value>Access-Control-Allow-Origin</param-value>\n</init-param>\n<init-param>\n<param-name>cors.allowed.methods</param-name>\n<param-value>GET, POST, PUT, DELETE</param-value>\n</init-param>\n<async-supported>true</async-supported>\n</filter>"
-    local STR2="\n<filter-mapping>\n<filter-name>CorsFilter</filter-name>\n<url-pattern>/api/*</url-pattern>\n</filter-mapping>"
-    
-    sed -i "/<\/web-app>/i $STR1 $STR2" "$RED5_HOME/webapps/streammanager/WEB-INF/web.xml"
+    if grep -q "org.apache.catalina.filters.CorsFilter" "$RED5_HOME/webapps/streammanager/WEB-INF/web.xml" ; then
+        log_i "org.apache.catalina.filters.CorsFilter exist in the file web.xml - Start old style CORS configuration..."
+
+        local STR1="<filter>\n<filter-name>CorsFilter</filter-name>\n<filter-class>org.apache.catalina.filters.CorsFilter</filter-class>\n<init-param>\n<param-name>cors.allowed.origins</param-name>\n<param-value>*</param-value>\n</init-param>\n<init-param>\n<param-name>cors.exposed.headers</param-name>\n<param-value>Access-Control-Allow-Origin</param-value>\n</init-param>\n<init-param>\n<param-name>cors.allowed.methods</param-name>\n<param-value>GET, POST, PUT, DELETE</param-value>\n</init-param>\n<async-supported>true</async-supported>\n</filter>"
+        local STR2="\n<filter-mapping>\n<filter-name>CorsFilter</filter-name>\n<url-pattern>/api/*</url-pattern>\n</filter-mapping>"
+        sed -i "/<\/web-app>/i $STR1 $STR2" "$RED5_HOME/webapps/streammanager/WEB-INF/web.xml"
+    else
+        log_i "org.apache.catalina.filters.CorsFilter doesn't exist in the file web.xml - Leave it without changes."
+    fi
 }
 
 config_whip_whep(){
@@ -227,7 +232,7 @@ config_whip_whep(){
         log_i "Change from: com.red5pro.whip.servlet.WhipEndpoint to com.red5pro.whip.servlet.WHProxy"
         local servlet_whipendpoint='com.red5pro.whip.servlet.WhipEndpoint'
         local servlet_whipendpoint_new="com.red5pro.whip.servlet.WHProxy"
-        sudo sed -i -e "s|$servlet_whipendpoint|$servlet_whipendpoint_new|" "$live_web_config"
+        sed -i -e "s|$servlet_whipendpoint|$servlet_whipendpoint_new|" "$live_web_config"
     fi
 
     if grep "com.red5pro.whip.servlet.WhepEndpoint" $live_web_config &> /dev/null
@@ -235,7 +240,7 @@ config_whip_whep(){
         log_i "Changed from: com.red5pro.whip.servlet.WhepEndpoint to com.red5pro.whip.servlet.WHProxy"
         local servlet_whipendpoint='com.red5pro.whip.servlet.WhepEndpoint'
         local servlet_whipendpoint_new="com.red5pro.whip.servlet.WHProxy"
-        sudo sed -i -e "s|$servlet_whipendpoint|$servlet_whipendpoint_new|" "$live_web_config"
+        sed -i -e "s|$servlet_whipendpoint|$servlet_whipendpoint_new|" "$live_web_config"
     fi
 }
 

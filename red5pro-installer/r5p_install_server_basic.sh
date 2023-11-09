@@ -194,7 +194,7 @@ install_red5pro_service(){
     
     local service_memory_pattern='-Xms2g -Xmx2g'
     local service_memory_new="-Xms${JVM_MEMORY}g -Xmx${JVM_MEMORY}g"
-    sudo sed -i -e "s|$service_memory_pattern|$service_memory_new|" "/lib/systemd/system/red5pro.service"
+    sed -i -e "s|$service_memory_pattern|$service_memory_new|" "/lib/systemd/system/red5pro.service"
     
     systemctl daemon-reload
     systemctl enable red5pro.service
@@ -218,7 +218,7 @@ linux_optimization(){
     local service_limitnofile_pattern='LimitNOFILE=65536'
     local service_limitnofile_new="LimitNOFILE=1000000"
 
-    sudo sed -i -e "s|$service_limitnofile_pattern|$service_limitnofile_new|" "/lib/systemd/system/red5pro.service"
+    sed -i -e "s|$service_limitnofile_pattern|$service_limitnofile_new|" "/lib/systemd/system/red5pro.service"
 }
 
 export LC_ALL="en_US.UTF-8"

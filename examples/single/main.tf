@@ -2,7 +2,7 @@
 # Example: Red5 Pro Single server (Oracle Cloud VM Instance)
 ################################################################################
 
-module "red5pro_single" {
+module "red5pro" {
   source                = "../../"
   type                  = "single"                                # Deployment type: single, cluster, autoscaling
   name                  = "red5pro-single"                        # Name to be used on all the resources as identifier
@@ -33,7 +33,7 @@ module "red5pro_single" {
 
   # Single Red5 Pro server OCI instance configuration
   single_instance_type = "VM.Standard.E4.Flex" # Instance type for Red5 Pro server
-  single_instance_cpu    = 2                   # Instance CPU for Red5 Pro server
+  single_instance_ocpu    = 2                   # Instance CPU for Red5 Pro server
   single_instance_memory = 4                   # Instance Memory for Red5 Pro server
 
   # Red5Pro server configuration
@@ -54,5 +54,5 @@ module "red5pro_single" {
 }
 
 output "module_output" {
-  value = module.red5pro_single
+  value = module.red5pro
 }
