@@ -2,6 +2,14 @@
 # Example: Red5 Pro Single server (Oracle Cloud VM Instance)
 ################################################################################
 
+provider "oci" {
+  region           = "us-ashburn-1"
+  tenancy_ocid     = "ocid1.tenancy.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  user_ocid        = "ocid1.user.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  fingerprint      = "00:11:22:33:44:55:66:77:aa:bb:cc:dd:ee:ff:gg:hh"
+  private_key_path = "./example_oracle_private_key.pem"
+}
+
 module "red5pro_single" {
   source                = "../../"
   type                  = "single"                                # Deployment type: single, cluster, autoscaling
@@ -12,12 +20,12 @@ module "red5pro_single" {
   oracle_compartment_id = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
 
   # SSH key configuration
-  ssh_key_create       = false
+  ssh_key_create       = true
   ssh_private_key_path = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pri_key.pem" # Path to existing SSH private key
   ssh_public_key_path  = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pub_key.pem" # Path to existing SSH Public key
 
   # VCN Configuration
-  vcn_create           = false                                                                                # true - create new VCN, false - use existing VCN
+  vcn_create           = true                                                                                # true - create new VCN, false - use existing VCN
   vcn_id_existing      = "ocid1.vcn.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"    # VCN OCID for existing VCN Network
   subnet_id_existing   = "ocid1.subnet.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Subnet OCID for existing VCN Subnet
 
@@ -32,8 +40,8 @@ module "red5pro_single" {
   https_letsencrypt_certificate_password    = "examplepass"         # Password for Let's Encrypt SSL certificate
 
   # Single Red5 Pro server OCI instance configuration
-  single_instance_type = "VM.Standard.E4.Flex" # Instance type for Red5 Pro server
-  single_instance_ocpu    = 2                   # Instance CPU for Red5 Pro server
+  single_instance_type   = "VM.Standard.E4.Flex" # Instance type for Red5 Pro server
+  single_instance_ocpu   = 2                   # Instance CPU for Red5 Pro server
   single_instance_memory = 4                   # Instance Memory for Red5 Pro server
 
   # Red5Pro server configuration
