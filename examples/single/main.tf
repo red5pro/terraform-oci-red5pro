@@ -2,14 +2,14 @@
 # Example: Red5 Pro Single server (Oracle Cloud VM Instance)
 ################################################################################
 
-module "red5pro" {
+module "red5pro_single" {
   source                = "../../"
   type                  = "single"                                # Deployment type: single, cluster, autoscaling
   name                  = "red5pro-single"                        # Name to be used on all the resources as identifier
   path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
 
   # Oracle Cloud Account Details
-  compartment_id = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
+  oracle_compartment_id = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
 
   # SSH key configuration
   ssh_key_create       = false
@@ -54,5 +54,5 @@ module "red5pro" {
 }
 
 output "module_output" {
-  value = module.red5pro
+  value = module.red5pro_single
 }

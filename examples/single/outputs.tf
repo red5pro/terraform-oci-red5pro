@@ -6,10 +6,6 @@ output "vcn_name" {
   description = "Oracle Cloud VCN Name"
   value       = module.red5pro_single.vcn_name
 }
-output "ssh_key_name" {
-  description = "SSH key name"
-  value       = module.red5pro_single.ssh_key_name
-}
 output "ssh_private_key_path" {
   description = "SSH private key path"
   value       = module.red5pro_single.ssh_private_key_path

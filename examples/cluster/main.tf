@@ -2,7 +2,7 @@
 # Example: Red5 Pro Cluster (Oracle Cloud VM Instance)
 ##############################################################################
 
-module "red5pro_stream_manager" {
+module "red5pro_cluster" {
   source                                = "../../"
   type                                  = "cluster"                                # Deployment type: single, cluster, autoscaling
   name                                  = "red5pro-cluster"                        # Name to be used on all the resources as identifier
@@ -74,26 +74,26 @@ module "red5pro_stream_manager" {
   origin_image_red5pro_round_trip_auth_endpoint_invalidate = "/invalidateCredentials"      # Round trip authentication server endpoint for invalidate
 
   # Red5 Pro autoscaling Node group - (Optional)
-  node_group_create = true                   # Linux or Mac OS only. true - create new Node group, false - not create new Node group
-  node_group_name   = "terraform-node-group" # Node group name
+  node_group_create                    = true                      # Linux or Mac OS only. true - create new Node group, false - not create new Node group
+  node_group_name                      = "terraform-node-group"    # Node group name
   # Origin node configuration
-  node_group_origins               = 1                         # Number of Origins
-  node_group_origins_instance_type = "VM.Standard.E4.Flex-1-4" # Origins OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_origins_capacity      = 30                        # Connections capacity for Origins
+  node_group_origins                   = 1                         # Number of Origins
+  node_group_origins_instance_type     = "VM.Standard.E4.Flex-1-4" # Origins OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
+  node_group_origins_capacity          = 30                        # Connections capacity for Origins
   # Edge node configuration
-  node_group_edges               = 1                         # Number of Edges
-  node_group_edges_instance_type = "VM.Standard.E4.Flex-1-4" # Edges OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_edges_capacity      = 300                       # Connections capacity for Edges
+  node_group_edges                     = 1                         # Number of Edges
+  node_group_edges_instance_type       = "VM.Standard.E4.Flex-1-4" # Edges OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
+  node_group_edges_capacity            = 300                       # Connections capacity for Edges
   # Transcoder node configuration
   node_group_transcoders               = 0                         # Number of Transcoders
   node_group_transcoders_instance_type = "VM.Standard.E4.Flex-1-4" # Transcoders OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
   node_group_transcoders_capacity      = 30                        # Connections capacity for Transcoders
   # Relay node configuration
-  node_group_relays               = 0                         # Number of Relays
-  node_group_relays_instance_type = "VM.Standard.E4.Flex-1-4" # Relays OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_relays_capacity      = 30                        # Connections capacity for Relays
+  node_group_relays                    = 0                         # Number of Relays
+  node_group_relays_instance_type      = "VM.Standard.E4.Flex-1-4" # Relays OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
+  node_group_relays_capacity           = 30                        # Connections capacity for Relays
 }
 
 output "module_output" {
-  value = module.red5pro_stream_manager
+  value = module.red5pro_cluster
 }

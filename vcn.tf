@@ -30,7 +30,7 @@ data "oci_core_subnet" "red5pro_existing_subnet" {
 
 # Get details of the existing Network Security Group
 data "oci_core_network_security_group" "red5pro_existing_network_security_group" {
-  count = local.single && var.network_security_group_create ? 1 : 0
+  count = local.single ? var.network_security_group_create ? 0 : 1 : 0
   network_security_group_id = var.network_security_group_id_existing
 
   lifecycle {
