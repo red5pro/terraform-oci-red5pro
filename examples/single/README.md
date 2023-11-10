@@ -3,8 +3,8 @@
 
 In the following example, Terraform module will automates the infrastructure provisioning of the [Red5 Pro standalone server](https://www.red5pro.com/docs/installation/installation/oci-install/).
 
-* **VCN** - This Terrform module can either create a new or use your existing VCN. If you wish to create a new VCN, set `vcn_create` to `true`, and the script will ignore the other VCN configurations. To use your existing VCN, set `vcn_create` to `false` and include your existing vcn_id, name, dns label, subnet id, and subnet name.
-* **Network Security Group** - This Terrform module can either create a new or use your existing Network Security Group in Oracle Cloud Infrastructure(OCI).
+* **VCN** - For single server deployment this Terrform module can either create a new or use your existing VCN. If you wish to create a new VCN, set `vcn_create` to `true`, and the script will ignore the other VCN configurations. To use your existing VCN, set `vcn_create` to `false` and include your existing vcn_id, name, dns label, subnet id, and subnet name.
+* **Network Security Group** - For single server deployment this Terrform module can either create a new or use your existing Network Security Group in Oracle Cloud Infrastructure(OCI).
 * **Instance Type** - Select the instance type based on the usecase from [Oracle Cloud Infrastructure(OCI) Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm)
 * **SSL Certificates** - User can install Let's encrypt SSL certificates or use Red5Pro server without SSL certificate (HTTP only).
 
@@ -96,7 +96,7 @@ $ terraform apply
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_red5pro_single"></a> [red5pro\_single](#module\_red5pro\_single) | ../../ | N/A |
+| <a name="module_red5pro_single"></a> [red5pro\_single](#module\_red5pro\_single) | ../../ | n/a |
 
 ## Resources
 
@@ -110,10 +110,10 @@ No inputs.
 
 | Name | Description |
 |------|-------------|
+| <a name="output_module_output"></a> [module\_output](#output\_module\_output) | n/a |
 | <a name="output_red5pro_server_http_url"></a> [red5pro\_server\_http\_url](#output\_red5pro\_server\_http\_url) | Red5 Pro Server HTTP URL |
 | <a name="output_red5pro_server_https_url"></a> [red5pro\_server\_https\_url](#output\_red5pro\_server\_https\_url) | Red5 Pro Server HTTPS URL |
 | <a name="output_red5pro_server_ip"></a> [red5pro\_server\_ip](#output\_red5pro\_server\_ip) | Red5 Pro Server IP |
-| <a name="output_ssh_key_name"></a> [ssh\_key\_name](#output\_ssh\_key\_name) | SSH key name |
 | <a name="output_ssh_private_key_path"></a> [ssh\_private\_key\_path](#output\_ssh\_private\_key\_path) | SSH private key path |
 | <a name="output_vcn_id"></a> [vcn\_id](#output\_vcn\_id) | Oracle Cloud VCN ID |
 | <a name="output_vcn_name"></a> [vcn\_name](#output\_vcn\_name) | Oracle Cloud VCN Name |

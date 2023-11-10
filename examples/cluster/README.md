@@ -2,8 +2,8 @@
 
 In the following example, Terraform module will automates the infrastructure provisioning of the [Stream Manager cluster on the Oracle Cloud Infrastructure(OCI)](https://www.red5pro.com/docs/installation/auto-oci/overview/).
 
-* **VCN** - This Terrform module can either create a new or use your existing VCN. If you wish to create a new VCN, set `vcn_create` to `true`, and the script will ignore the other VCN configurations. To use your existing VCN, set `vcn_create` to `false` and include your existing vcn_id, name, dns label, subnet id, and subnet name
-* **Network Security Group** - This Terrform module can either create a new or use your existing Network Security Group in Oracle Cloud Infrastructure(OCI) for Stream Manager, Terraform Service, Nodes, MySQL DB System and others
+* **VCN** - For cluster deployment this Terrform module create VCN, subnets, route table, internet geteway and security list automatically
+* **Network Security Group** - For cluster deployment this Terrform module create Security groups for Stream Manager, nodes and MySQL DB automatically
 * **Instance Type** - Select the instance type based on the usecase from [Oracle Cloud Infrastructure(OCI) Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm)
 * **MySQL Database** - Users have flexibility to create a MySQL databse server in Oracle Cloud MySQL DB System or install it locally on the Stream Manager
 * **Terraform Server** - Uesrs can choose to create a dedicated Oracle Cloud Infrastructure(OCI) instance for Terraform Server or install it locally on the Stream Manager
@@ -104,7 +104,7 @@ $ terraform apply
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_red5pro_stream_manager"></a> [red5pro\_stream\_manager](#module\_red5pro\_stream\_manager) | ../../ | N/A |
+| <a name="module_red5pro_cluster"></a> [red5pro\_cluster](#module\_red5pro\_cluster) | ../../ | n/a |
 
 ## Resources
 
@@ -118,9 +118,9 @@ No inputs.
 
 | Name | Description |
 |------|-------------|
+| <a name="output_module_output"></a> [module\_output](#output\_module\_output) | n/a |
 | <a name="output_mysql_host"></a> [mysql\_host](#output\_mysql\_host) | MySQL host |
 | <a name="output_node_origin_image"></a> [node\_origin\_image](#output\_node\_origin\_image) | Oracle Cloud custom image name of the Red5 Pro Node Origin image |
-| <a name="output_ssh_key_name"></a> [ssh\_key\_name](#output\_ssh\_key\_name) | SSH key name |
 | <a name="output_ssh_private_key_path"></a> [ssh\_private\_key\_path](#output\_ssh\_private\_key\_path) | SSH private key path |
 | <a name="output_stream_manager_http_url"></a> [stream\_manager\_http\_url](#output\_stream\_manager\_http\_url) | Stream Manager HTTP URL |
 | <a name="output_stream_manager_https_url"></a> [stream\_manager\_https\_url](#output\_stream\_manager\_https\_url) | Stream Manager HTTPS URL |
