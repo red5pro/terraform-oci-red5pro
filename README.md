@@ -67,7 +67,7 @@ cp ~/Downloads/terraform-cloud-controller-0.0.0.jar ./
 cp ~/Downloads/terraform-service-0.0.0.zip ./
 ```
 
-## Red5 Pro Single server deployment (single) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/main/examples/single)
+## Red5 Pro Single server deployment (single) - [Example](examples/single)
 
 In the following example, Terraform module will automates the infrastructure provisioning of the [Red5 Pro standalone server](https://www.red5pro.com/docs/installation/installation/oci-install/).
 
@@ -135,7 +135,7 @@ output "module_output" {
 
 ---
 
-## Red5 Pro Stream Manager cluster deployment (cluster) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/main/examples/cluster)
+## Red5 Pro Stream Manager cluster deployment (cluster) - [Example](examples/cluster)
 
 In the following example, Terraform module will automates the infrastructure provisioning of the [Stream Manager cluster on the Oracle Cloud Infrastructure(OCI)](https://www.red5pro.com/docs/installation/auto-oci/overview/).
 
@@ -252,7 +252,7 @@ output "module_output" {
 
 ---
 
-## Red5 Pro Stream Manager cluster with Oracle Cloud autoscaling Stream Managers (autoscaling) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/main/examples/autoscaling)
+## Red5 Pro Stream Manager cluster with Oracle Cloud autoscaling Stream Managers (autoscaling) - [Example](examples/autoscaling)
 
 In the following example, Terraform module will automates the infrastructure provisioning of the [Stream Manager cluster with autoscaling and loadbalancer on the Oracle Cloud Infrastructure(OCI)](https://www.red5pro.com/docs/installation/auto-oci/overview/).
 
