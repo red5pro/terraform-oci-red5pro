@@ -81,6 +81,7 @@ module "red5pro_single" {
   source                = "../../"
   type                  = "single"                                # Deployment type: single, cluster, autoscaling
   name                  = "red5pro-single"                        # Name to be used on all the resources as identifier
+  ubuntu_version        = "20.04"                                 # Ubuntu version to be used for machine, it can either be 20.04 or 22.04
   path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
 
   # Oracle Cloud Account Details
@@ -157,6 +158,7 @@ module "red5pro_cluster" {
   source                                = "../../"
   type                                  = "cluster"                                # Deployment type: single, cluster, autoscaling
   name                                  = "red5pro-cluster"                        # Name to be used on all the resources as identifier
+  ubuntu_version                        = "20.04"                                  # Ubuntu version to be used for machine, it can either be 20.04 or 22.04
   path_to_red5pro_build                 = "./red5pro-server-0.0.0.b0-release.zip"  # Absolute path or relative path to Red5 Pro server ZIP file
   path_to_terraform_cloud_controller    = "./terraform-cloud-controller-0.0.0.jar" # Absolute path or relative path to Terraform Cloud Controller JAR file
   path_to_terraform_service_build       = "./terraform-service-0.0.0.zip"
@@ -277,6 +279,7 @@ module "red5pro_autoscaling" {
   source                                = "../../"
   type                                  = "autoscaling"                            # Deployment type: single, cluster, autoscaling
   name                                  = "red5pro-autoscaling"                    # Name to be used on all the resources as identifier
+  ubuntu_version                        = "20.04"                                  # Ubuntu version to be used for machine, it can either be 20.04 or 22.04
   path_to_red5pro_build                 = "./red5pro-server-0.0.0.b0-release.zip"  # Absolute path or relative path to Red5 Pro server ZIP file
   path_to_terraform_cloud_controller    = "./terraform-cloud-controller-0.0.0.jar" # Absolute path or relative path to Terraform Cloud Controller JAR file
   path_to_terraform_service_build       = "./terraform-service-0.0.0.zip"

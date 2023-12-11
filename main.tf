@@ -27,12 +27,23 @@ resource "local_file" "red5pro_ssh_key_pub" {
 ################################################################################
 
 # Get latest Canonical Ubuntu 20.04 image
-data "oci_core_images" "red5pro_image" {
+data "oci_core_images" "red5pro_image_20" {
   compartment_id   = var.oracle_compartment_id
   operating_system = "Canonical Ubuntu"
   filter {
     name   = "display_name"
     values = ["^Canonical-Ubuntu-20.04-([\\.0-9-]+)$"]
+    regex  = true
+  }
+}
+
+# Get latest Canonical Ubuntu 22.04 image
+data "oci_core_images" "red5pro_image_22" {
+  compartment_id   = var.oracle_compartment_id
+  operating_system = "Canonical Ubuntu"
+  filter {
+    name   = "display_name"
+    values = ["^Canonical-Ubuntu-22.04-([\\.0-9-]+)$"]
     regex  = true
   }
 }
@@ -59,7 +70,7 @@ resource "oci_core_instance" "red5pro_single" {
   }
 
   source_details {
-    source_id   = data.oci_core_images.red5pro_image.images[0].id
+    source_id   = local.ubuntu_image
     source_type = "image"
   }
 
@@ -155,7 +166,7 @@ resource "oci_core_instance" "red5pro_terraform_service" {
   }
 
   source_details {
-    source_id   = data.oci_core_images.red5pro_image.images[0].id
+    source_id   = local.ubuntu_image
     source_type = "image"
   }
 
@@ -273,7 +284,7 @@ resource "oci_core_instance" "red5pro_sm" {
   }
 
   source_details {
-    source_id   = data.oci_core_images.red5pro_image.images[0].id
+    source_id   = local.ubuntu_image
     source_type = "image"
   }
 
@@ -645,7 +656,7 @@ resource "oci_core_instance" "red5pro_node_origin" {
   }
 
   source_details {
-    source_id   = data.oci_core_images.red5pro_image.images[0].id
+    source_id   = local.ubuntu_image
     source_type = "image"
   }
 
@@ -736,7 +747,7 @@ resource "oci_core_instance" "red5pro_node_edge" {
   }
 
   source_details {
-    source_id   = data.oci_core_images.red5pro_image.images[0].id
+    source_id   = local.ubuntu_image
     source_type = "image"
   }
 
@@ -827,7 +838,7 @@ resource "oci_core_instance" "red5pro_node_transcoder" {
   }
 
   source_details {
-    source_id   = data.oci_core_images.red5pro_image.images[0].id
+    source_id   = local.ubuntu_image
     source_type = "image"
   }
 
@@ -918,7 +929,7 @@ resource "oci_core_instance" "red5pro_node_relay" {
   }
 
   source_details {
-    source_id   = data.oci_core_images.red5pro_image.images[0].id
+    source_id   = local.ubuntu_image
     source_type = "image"
   }
 
