@@ -10,6 +10,7 @@
 # NODE_SOCIALPUSHER_ENABLE=true
 # NODE_SUPPRESSOR_ENABLE=true
 # NODE_HLS_ENABLE=true
+# NODE_CLOUDSTORAGE_ENABLE=true
 
 # NODE_WEBHOOKS_ENABLE=true
 # NODE_WEBHOOKS_ENDPOINT="https://test.webhook.app/api/v1/broadcast/webhook"
@@ -66,11 +67,10 @@ config_node_apps_plugins(){
             log_e "Parameter NODE_API_KEY is empty. EXIT."
             exit 1
         fi
-        local token_pattern='security.accessToken='
-        local debug_logaccess_pattern='debug.logaccess=false'
+        local token_pattern='security.accessToken=.*'
         local token_new="security.accessToken=${NODE_API_KEY}"
-        local debug_logaccess='debug.logaccess=true'
-        sed -i -e "s|$token_pattern|$token_new|" -e "s|$debug_logaccess_pattern|$debug_logaccess|" "$RED5_HOME/webapps/api/WEB-INF/red5-web.properties"
+        
+        sed -i -e "s|$token_pattern|$token_new|" "$RED5_HOME/webapps/api/WEB-INF/red5-web.properties"
         echo " " >> $RED5_HOME/webapps/api/WEB-INF/security/hosts.txt
         echo "*" >> $RED5_HOME/webapps/api/WEB-INF/security/hosts.txt
     else
@@ -101,10 +101,25 @@ config_node_apps_plugins(){
             rm $RED5_HOME/plugins/red5pro-mpegts-plugin*
         fi
     fi
+### Red5Pro Cloudstorage (S3)
+    if [[ "$NODE_CLOUDSTORAGE_ENABLE" == "true" ]]; then
+        log_i "Red5Pro OCI Cloudstorage plugin (S3) - enable"
+        log_i "HERE need to add OCI Cloudstorage configuration!!!"
+        else
+        log_d "Red5Pro AWS Cloudstorage plugin (S3) - disable"
+    fi
     ### Red5Pro Restreamer
     if [[ "$NODE_RESTREAMER_ENABLE" == "true" ]]; then
         log_i "Red5Pro Restreamer - enable"
-        log_i "HERE need to add Restreamer configuration!!!"
+        
+        log_i "Enable Restreamer Servlet in $RED5_HOME/webapps/live/WEB-INF/web.xml"
+        restreamer_servlet="<servlet>\n<servlet-name>RestreamerServlet</servlet-name>\n<servlet-class>com.red5pro.restreamer.servlet.RestreamerServlet</servlet-class>\n</servlet>\n<servlet-mapping>\n<servlet-name>RestreamerServlet</servlet-name>\n<url-pattern>/restream</url-pattern>\n</servlet-mapping>"
+        sed -i "/<\/web-app>/i $restreamer_servlet"  "$RED5_HOME/webapps/live/WEB-INF/web.xml"
+
+        log_i "Set enable.srtingest=true in $RED5_HOME/conf/restreamer-plugin.properties"
+        enable_srtingest="enable.srtingest=.*"
+        enable_srtingest_new="enable.srtingest=true"
+        sed -i -e "s|$enable_srtingest|$enable_srtingest_new|" "$RED5_HOME/conf/restreamer-plugin.properties"
     else
         log_d "Red5Pro Restreamer - disable"
         if ls $RED5_HOME/plugins/red5pro-restreamer-plugin* >/dev/null 2>&1; then
