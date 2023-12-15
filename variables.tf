@@ -366,6 +366,16 @@ variable "stream_manager_autoscaling_maximum_capacity" {
   type        = number
   default     = 2
 }
+variable "load_balancer_reserved_ip_create" {
+  description = "Create a new reserved IP for Load Balancer true/false - if false, use existing reserved IP for Load Balancer"
+  type        = bool
+  default     = true
+}
+variable "load_balancer_reserved_ip" {
+  description = "Reserved IP for Load Balancer"
+  type        = string
+  default     = ""
+}
 variable "red5pro_cluster_key" {
   description = "Red5 Pro node cluster key"
   type        = string

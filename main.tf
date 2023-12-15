@@ -415,8 +415,13 @@ resource "oci_core_instance" "red5pro_sm" {
 ################################################################################
 # Red5 Pro Stream Manager Autoscaling (OCI Load Balancer + Autoscaling)
 ################################################################################
+data "oci_core_public_ip" "red5pro_reserved_ip" {
+    count      = local.autoscaling && var.load_balancer_reserved_ip_create == false ? 1 : 0
+    ip_address = var.load_balancer_reserved_ip
+}
+
 resource "oci_core_public_ip" "red5pro_reserved_ip" {
-  count          = local.autoscaling ? 1 : 0
+  count          = local.autoscaling && var.load_balancer_reserved_ip_create ? 1 : 0
   compartment_id = var.oracle_compartment_id
   lifetime       = "RESERVED"
 
@@ -437,7 +442,7 @@ resource "oci_load_balancer_load_balancer" "red5pro_lb" {
     minimum_bandwidth_in_mbps = 10
   }
   reserved_ips {
-    id = oci_core_public_ip.red5pro_reserved_ip[0].id
+    id = local.load_balancer_reserved_ip_id
   }
 }
 
@@ -489,7 +494,7 @@ resource "oci_load_balancer_listener" "red5pro_lb_listener_443" {
 resource "oci_load_balancer_certificate" "red5pro_lb_ssl_cert" {
   count              = local.autoscaling && var.https_oci_certificates_use_existing ? 1 : 0
   load_balancer_id   = oci_load_balancer_load_balancer.red5pro_lb[0].id
-  ca_certificate     = file(var.cert_fullchain)
+  #ca_certificate     = file(var.cert_fullchain)
   certificate_name   = var.https_oci_certificates_certificate_name
   private_key        = file(var.cert_private_key)
   public_certificate = file(var.cert_public_cert)

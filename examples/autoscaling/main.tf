@@ -14,7 +14,7 @@ module "red5pro_autoscaling" {
   source                                = "../../"
   type                                  = "autoscaling"                            # Deployment type: single, cluster, autoscaling
   name                                  = "red5pro-autoscaling"                    # Name to be used on all the resources as identifier
-  ubuntu_version                        = "20.04"                                  # Ubuntu version to be used for machine, it can either be 20.04 or 22.04
+  ubuntu_version                        = "22.04"                                  # Ubuntu version to be used for machine, it can either be 20.04 or 22.04
   path_to_red5pro_build                 = "./red5pro-server-0.0.0.b0-release.zip"  # Absolute path or relative path to Red5 Pro server ZIP file
   path_to_terraform_cloud_controller    = "./terraform-cloud-controller-0.0.0.jar" # Absolute path or relative path to Terraform Cloud Controller JAR file
   path_to_terraform_service_build       = "./terraform-service-0.0.0.zip"
@@ -40,10 +40,10 @@ module "red5pro_autoscaling" {
 
   # Terraform Service configuration
   terraform_service_instance_type   = "VM.Standard.E4.Flex"
-  terraform_service_instance_ocpu   = 1
-  terraform_service_instance_memory = 4
+  terraform_service_instance_ocpu   = 2
+  terraform_service_instance_memory = 8
   terraform_service_api_key         = "examplekey"
-  terraform_service_parallelism     = 20
+  terraform_service_parallelism     = 10
 
   # Load Balancer HTTPS/SSL certificate configuration
   https_oci_certificates_use_existing     = false                 # If you want to use SSL certificate set it to true
@@ -53,10 +53,16 @@ module "red5pro_autoscaling" {
   cert_public_cert                        = "/PATH/TO/EXISTING/SSL/CERTS/cert.pem"
 
   # Stream Manager configuration
-  stream_manager_instance_type   = "VM.Standard.E4.Flex" # OCI Instance type for Stream Manager
-  stream_manager_instance_ocpu   = 2                     # OCI Instance OCPU Count for Stream Manager(1 OCPU = 2 vCPU)
-  stream_manager_instance_memory = 8                     # OCI Instance Memory size in GB for Stream Manager
-  stream_manager_api_key         = "examplekey"          # API key for Stream Manager
+  stream_manager_instance_type                  = "VM.Standard.E4.Flex" # OCI Instance type for Stream Manager
+  stream_manager_instance_ocpu                  = 2                     # OCI Instance OCPU Count for Stream Manager(1 OCPU               = 2 vCPU)
+  stream_manager_instance_memory                = 8                     # OCI Instance Memory size in GB for Stream Manager
+  stream_manager_api_key                        = "examplekey"          # API key for Stream Manager
+  stream_manager_autoscaling_desired_capacity   = 1                     # Desired capacity for Stream Manager autoscaling group
+  stream_manager_autoscaling_minimum_capacity   = 1                     # Min capacity for Stream Manager autoscaling group
+  stream_manager_autoscaling_maximum_capacity   = 2                     # Max capacity for Stream Manager autoscaling group
+
+  load_balancer_reserved_ip_create = false          # true - create new reserved IP for Load Balancer, false - use existing reserved IP for Load Balancer
+  load_balancer_reserved_ip        = "1.2.3.4"      # Reserved IP for Load Balancer
 
   # Red5 Pro general configuration
   red5pro_license_key = "1111-2222-3333-4444" # Red5 Pro license key (https://account.red5pro.com/login)
