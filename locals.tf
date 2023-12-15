@@ -2,7 +2,6 @@ locals {
   single                            = var.type == "single" ? true : false
   cluster                           = var.type == "cluster" ? true : false
   autoscaling                       = var.type == "autoscaling" ? true : false
-  ubuntu_image                      = var.ubuntu_version == "20.04" ? data.oci_core_images.red5pro_image_20.images[0].id : data.oci_core_images.red5pro_image_22.images[0].id
   cluster_or_autoscaling            = local.cluster || local.autoscaling ? true : false
   vcn_create                        = local.cluster_or_autoscaling ? true : var.vcn_create ? true : false
   vcn_id                            = local.vcn_create ? oci_core_vcn.red5pro_vcn[0].id : var.vcn_id_existing
