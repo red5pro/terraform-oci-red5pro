@@ -326,7 +326,7 @@ module "red5pro_autoscaling" {
   stream_manager_autoscaling_minimum_capacity   = 1                     # Min capacity for Stream Manager autoscaling group
   stream_manager_autoscaling_maximum_capacity   = 2                     # Max capacity for Stream Manager autoscaling group
 
-  load_balancer_reserved_ip_create = false          # true - create new reserved IP for Load Balancer, false - use existing reserved IP for Load Balancer
+  load_balancer_reserved_ip_create = true           # true - create new reserved IP for Load Balancer, false - use existing reserved IP for Load Balancer
   load_balancer_reserved_ip        = "1.2.3.4"      # Reserved IP for Load Balancer
 
   # Red5 Pro general configuration
