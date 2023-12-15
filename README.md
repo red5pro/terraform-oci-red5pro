@@ -311,11 +311,11 @@ module "red5pro_autoscaling" {
   terraform_service_parallelism     = 10
 
   # Load Balancer HTTPS/SSL certificate configuration
-  https_oci_certificates_use_existing     = false                 # If you want to use SSL certificate set it to true
-  https_oci_certificates_certificate_name = "red5pro.example.com" # Domain name for your SSL certificate
-  cert_fullchain                          = "/PATH/TO/EXISTING/SSL/CERTS/fullchain.pem"
-  cert_private_key                        = "/PATH/TO/EXISTING/SSL/CERTS/privkey.pem"
-  cert_public_cert                        = "/PATH/TO/EXISTING/SSL/CERTS/cert.pem"
+  https_oci_certificates_use_existing     = false                                     # If you want to use SSL certificate set it to true
+  https_oci_certificates_certificate_name = "red5pro.example.com"                     # Domain name for your SSL certificate
+  cert_private_key                        = "/PATH/TO/EXISTING/SSL/CERTS/privkey.pem" # Path to existing SSL certificate private key
+  cert_public_cert                        = "/PATH/TO/EXISTING/SSL/CERTS/cert.pem"    # Path to existing SSL certificate public key
+
 
   # Stream Manager configuration
   stream_manager_instance_type                  = "VM.Standard.E4.Flex" # OCI Instance type for Stream Manager
@@ -326,7 +326,7 @@ module "red5pro_autoscaling" {
   stream_manager_autoscaling_minimum_capacity   = 1                     # Min capacity for Stream Manager autoscaling group
   stream_manager_autoscaling_maximum_capacity   = 2                     # Max capacity for Stream Manager autoscaling group
 
-  load_balancer_reserved_ip_create = false          # true - create new reserved IP for Load Balancer, false - use existing reserved IP for Load Balancer
+  load_balancer_reserved_ip_create = true           # true - create new reserved IP for Load Balancer, false - use existing reserved IP for Load Balancer
   load_balancer_reserved_ip        = "1.2.3.4"      # Reserved IP for Load Balancer
 
   # Red5 Pro general configuration

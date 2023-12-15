@@ -428,11 +428,6 @@ variable "https_oci_certificates_certificate_name" {
   type        = string
   default     = ""
 }
-variable "cert_fullchain" {
-  description = "File path for SSL/TLS CA Certificate Fullchain (autoscaling)"
-  type        = string
-  default     = ""
-}
 variable "cert_private_key" {
   description = "File path for SSL/TLS Certificate Private Key (autoscaling)"
   type        = string
