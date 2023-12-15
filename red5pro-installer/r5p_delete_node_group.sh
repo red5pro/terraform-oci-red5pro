@@ -49,7 +49,7 @@ delete_node_group(){
     done
     
     if [[ $error -eq 1 ]]; then
-        log_e "One or more node groups was not deleted. Please check and delete Node group manualy!!!"
+        log_e "One or more node groups was not deleted. Please check and delete Node group manually!!!"
     fi
 }
 

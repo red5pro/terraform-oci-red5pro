@@ -162,7 +162,7 @@ rpro_ssl_config(){
     local rtmps_truststorefile_pattern="rtmps.truststorefile=.*"
     local rtmps_truststorefile_replacement_value="rtmps.truststorefile=${cert_path}/truststore.jks"
     
-    sudo sed -i -e "s|$https_port_pattern|$https_port_replacement_value|" -e "s|$rtmps_keystorepass_pattern|$rtmps_keystorepass_replacement_value|" -e "s|$rtmps_keystorefile_pattern|$rtmps_keystorefile_replacement_value|" -e "s|$rtmps_truststorepass_pattern|$rtmps_truststorepass_replacement_value|" -e "s|$rtmps_truststorefile_pattern|$rtmps_truststorefile_replacement_value|"   "$RED5_HOME/conf/red5.properties"
+    sed -i -e "s|$https_port_pattern|$https_port_replacement_value|" -e "s|$rtmps_keystorepass_pattern|$rtmps_keystorepass_replacement_value|" -e "s|$rtmps_keystorefile_pattern|$rtmps_keystorefile_replacement_value|" -e "s|$rtmps_truststorepass_pattern|$rtmps_truststorepass_replacement_value|" -e "s|$rtmps_truststorefile_pattern|$rtmps_truststorefile_replacement_value|"   "$RED5_HOME/conf/red5.properties"
 }
 
 if [[ "$SSL_ENABLE" == "true" ]] ; then

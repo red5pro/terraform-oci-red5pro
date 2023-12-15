@@ -30,10 +30,6 @@ output "subnet_id" {
   description = "Oracle Cloud VCN Subnet ID"
   value       = local.subnet_id
 }
-output "ssh_key_name" {
-  description = "SSH key name"
-  value       = var.ssh_private_key_path
-}
 output "ssh_private_key_path" {
   description = "SSH private key path"
   value       = var.ssh_private_key_path

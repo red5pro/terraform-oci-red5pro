@@ -36,42 +36,42 @@ variable "path_to_terraform_cloud_controller" {
   type        = string
   default     = ""
 }
-variable "path_to_private_key_terraform_service" {
-  description = "SSH private key path for Red5 Pro Terraform Service"
-  type        = string
-  default     = ""
-}
-variable "path_to_public_key_terraform_service" {
-  description = "SSH Public key path for Red5 Pro Terraform Service"
-  type        = string
-  default     = ""
-}
-
 # Oracle Cloud Prvider basic configuration settings
-variable "compartment_id" {
+variable "oracle_compartment_id" {
   description = "Oracle Cloud Compartment OCID to create the resources, https://cloud.oracle.com/identity/compartments"
   type        = string
   default     = ""
 }
-variable "tenancy_ocid" {
+variable "oracle_tenancy_ocid" {
   description = "Oracle Cloud Tenancy OCID to create the resources, https://cloud.oracle.com/tenancy"
   type        = string
   default     = ""
 }
-variable "user_ocid" {
+variable "oracle_user_ocid" {
   description = "Oracle Cloud User OCID to create the resources, https://cloud.oracle.com/identity/domains/my-profile"
   type        = string
   default     = ""
 }
-variable "fingerprint" {
+variable "oracle_fingerprint" {
   description = "API key fingerprint for Oracle Cloud User to create the resources, https://cloud.oracle.com/identity/domains/my-profile/api-keys"
   type        = string
   default     = ""
 }
-variable "region" {
+variable "oracle_private_key_path" {
+  description = "SSH private key path for for Oracle Cloud User to create the resources, https://cloud.oracle.com/identity/domains/my-profile/api-keys"
+  type        = string
+  default     = ""
+}
+variable "oracle_region" {
   description = "Oracle Cloud Region to create the resources"
   type        = string
   default     = ""
+}
+# SSH key configuration
+variable "ssh_key_create" {
+  description = "Create a new SSH key pair or use an existing one. true = create new, false = use existing"
+  type        = bool
+  default     = true
 }
 variable "ssh_private_key_path" {
   description = "SSH private key path existing"
@@ -85,20 +85,35 @@ variable "ssh_public_key_path" {
 }
 
 # Red5 Pro Terraform Service properties
-variable "dedicated_terra_host_create" {
+variable "terraform_service_instance_create" {
   description = "Create a dedicated OCI Instance for Red5 pro Terraform Service "
   type        = bool
   default     = false
 }
-variable "terra_api_token" {
-  description = "API Token for Teraform Service to autherize the APIs"
+variable "terraform_service_instance_type" {
+  description = "Terraform Service instance type"
+  type        = string
+  default     = "VM.Standard.E4.Flex"
+}
+variable "terraform_service_instance_ocpu" {
+  description = "Terraform Service instance cpu count(1 OCPU = 2vCPU)"
+  type        = number
+  default     = 1
+}
+variable "terraform_service_instance_memory" {
+  description = "Terraform Service instance memory in GB"
+  type        = number
+  default     = 4
+}
+variable "terraform_service_api_key" {
+  description = "API Key for Terraform Service to authorize the APIs"
   type        = string
   default     = ""
 }
-variable "terra_parallelism" {
+variable "terraform_service_parallelism" {
   description = "Number of Terraform concurrent operations and used for non-standard rate limiting"
-  type        = string
-  default     = ""
+  type        = number
+  default     = 10
 }
 
 # VCN configuration
@@ -112,10 +127,20 @@ variable "vcn_id_existing" {
   type        = string
   default     = ""
 }
+variable "vcn_cidr_block" {
+  description = "Oracle Cloud VCN IP range"
+  type        = string
+  default     = "10.5.0.0/16"
+}
 variable "subnet_id_existing" {
   description = "Oracle Cloud Subnet OCID of an existing VCN Subnet"
   type        = string
   default     = ""
+}
+variable "subnet_cidr_block" {
+  description = "Oracle Cloud Subnet IP range"
+  type        = string
+  default     = "10.5.1.0/24"
 }
 
 # Security group configuration
@@ -178,18 +203,6 @@ variable "network_security_group_node_ingress_udp" {
   ]
 }
 
-# Reserved IP configuration
-variable "reserved_public_ip_address_create" {
-  description = "Create a new OCI Reserved public IP addres or use an existing one. true = create new, false = use existing"
-  type        = bool
-  default     = true
-}
-variable "reserved_public_ip_address_existing" {
-  description = "OCI Reserved public IP address Existing"
-  type        = string
-  default     = "1.2.3.4"
-}
-
 # MySQL configuration
 variable "mysql_db_system_create" {
   description = "Create a new OCI managed MySQL DB instance"
@@ -215,9 +228,29 @@ variable "mysql_user_name" {
   default     = ""
 }
 variable "mysql_password" {
-  description = "MySQL Database password"
-  type        = string
-  default     = ""
+  type    = string
+  default = "Abc12345@"
+
+  validation {
+    condition = length(var.mysql_password) >= 8
+    error_message = "Password must have at least 8 characters."
+  }
+  validation {
+    condition = can(regex("[A-Z]", var.mysql_password))
+    error_message = "Password must contain at least one uppercase letter."
+  }
+  validation {
+    condition = can(regex("[a-z]", var.mysql_password))
+    error_message = "Password must contain at least one lowercase letter."
+  }
+  validation {
+    condition = can(regex("[^a-zA-Z0-9]", var.mysql_password))
+    error_message = "Password must contain at least one character that isn't a letter or a digit."
+  }
+  validation {
+    condition = can(regex("[0-9]", var.mysql_password))
+    error_message = "Password must contain at least one digit."
+  }
 }
 variable "mysql_port" {
   description = "MySQL Database port"
@@ -231,7 +264,7 @@ variable "single_instance_type" {
   type        = string
   default     = "VM.Standard.E4.Flex"
 }
-variable "single_instance_cpu" {
+variable "single_instance_ocpu" {
   description = "Red5 Pro Single server instance cpu count(1 OCPU = 2vCPU)"
   type        = number
   default     = 1
@@ -303,7 +336,7 @@ variable "stream_manager_instance_type" {
   type        = string
   default     = "VM.Standard.E4.Flex"
 }
-variable "stream_manager_instance_cpu" {
+variable "stream_manager_instance_ocpu" {
   description = "Red5 Pro Stream Manager instance cpu count(1 OCPU = 2vCPU)"
   type        = number
   default     = 1
@@ -317,6 +350,21 @@ variable "stream_manager_api_key" {
   description = "value to set the api key for stream manager"
   type        = string
   default     = ""
+}
+variable "stream_manager_autoscaling_desired_capacity" {
+  description = "value to set the desired capacity for stream manager autoscaling"
+  type        = number
+  default     = 1
+}
+variable "stream_manager_autoscaling_minimum_capacity" {
+  description = "value to set the minimum capacity for stream manager autoscaling"
+  type        = number
+  default     = 1
+}
+variable "stream_manager_autoscaling_maximum_capacity" {
+  description = "value to set the maximum capacity for stream manager autoscaling"
+  type        = number
+  default     = 2
 }
 variable "red5pro_cluster_key" {
   description = "Red5 Pro node cluster key"
@@ -397,7 +445,7 @@ variable "origin_image_instance_type" {
   type        = string
   default     = "VM.Standard.E4.Flex"
 }
-variable "origin_image_instance_cpu" {
+variable "origin_image_instance_ocpu" {
   description = "Origin node image - instance cpu"
   type        = number
   default     = 2
@@ -474,7 +522,7 @@ variable "edge_image_instance_type" {
   type        = string
   default     = "VM.Standard.E4.Flex"
 }
-variable "edge_image_instance_cpu" {
+variable "edge_image_instance_ocpu" {
   description = "Edge node image - instance cpu"
   type        = number
   default     = 2
@@ -551,7 +599,7 @@ variable "transcoder_image_instance_type" {
   type        = string
   default     = "VM.Standard.E4.Flex"
 }
-variable "transcoder_image_instance_cpu" {
+variable "transcoder_image_instance_ocpu" {
   description = "Transcoder node image - instance cpu"
   type        = number
   default     = 2
@@ -628,7 +676,7 @@ variable "relay_image_instance_type" {
   type        = string
   default     = "VM.Standard.E4.Flex"
 }
-variable "relay_image_instance_cpu" {
+variable "relay_image_instance_ocpu" {
   description = "Relay node image - instance cpu"
   type        = number
   default     = 2
@@ -771,4 +819,14 @@ variable "defined_tags" {
   description = "Predefined defined tags."
   type        = map(string)
   default     = null
+}
+
+variable "ubuntu_version" {
+  description = "Ubuntu version"
+  type        = string
+  default     = "20.04"
+  validation {
+    condition = var.ubuntu_version == "20.04" || var.ubuntu_version == "22.04"
+    error_message = "Please specify the correct ubuntu version, it can either be 20.04 or 22.04"
+  }
 }

@@ -71,8 +71,8 @@ cp ~/Downloads/terraform-service-0.0.0.zip ./
 
 In the following example, Terraform module will automates the infrastructure provisioning of the [Red5 Pro standalone server](https://www.red5pro.com/docs/installation/installation/oci-install/).
 
-* **VCN** - This Terrform module can either create a new or use your existing VCN. If you wish to create a new VCN, set `vcn_create` to `true`, and the script will ignore the other VCN configurations. To use your existing VCN, set `vcn_create` to `false` and include your existing vcn_id, name, dns label, subnet id, and subnet name.
-* **Network Security Group** - This Terrform module can either create a new or use your existing Network Security Group in Oracle Cloud Infrastructure(OCI).
+* **VCN** - For single server deployment this Terrform module can either create a new or use your existing VCN. If you wish to create a new VCN, set `vcn_create` to `true`, and the script will ignore the other VCN configurations. To use your existing VCN, set `vcn_create` to `false` and include your existing vcn_id, name, dns label, subnet id, and subnet name.
+* **Network Security Group** - For single server deployment this Terrform module can either create a new or use your existing Network Security Group in Oracle Cloud Infrastructure(OCI).
 * **Instance Type** - Select the instance type based on the usecase from [Oracle Cloud Infrastructure(OCI) Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm)
 * **SSL Certificates** - User can install Let's encrypt SSL certificates or use Red5Pro server without SSL certificate (HTTP only).
 
@@ -81,26 +81,25 @@ module "red5pro_single" {
   source                = "../../"
   type                  = "single"                                # Deployment type: single, cluster, autoscaling
   name                  = "red5pro-single"                        # Name to be used on all the resources as identifier
+  ubuntu_version        = "20.04"                                 # Ubuntu version to be used for machine, it can either be 20.04 or 22.04
   path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
 
   # Oracle Cloud Account Details
-  compartment_id = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
+  oracle_compartment_id = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
 
   # SSH key configuration
+  ssh_key_create       = true
   ssh_private_key_path = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pri_key.pem" # Path to existing SSH private key
   ssh_public_key_path  = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pub_key.pem" # Path to existing SSH Public key
 
   # VCN Configuration
   vcn_create           = true                                                                                # true - create new VCN, false - use existing VCN
   vcn_id_existing      = "ocid1.vcn.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"    # VCN OCID for existing VCN Network
-  vcn_name_existing    = "red5pro-single-vcn"                                                                # VCN name for existing VCN Network
-  vcn_dns_label        = "vcnexample"                                                                        # Should contains chanraters only for VCN DNS Labels, No special characters and white spaces allowed                                        
   subnet_id_existing   = "ocid1.subnet.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Subnet OCID for existing VCN Subnet
-  subnet_name_existing = "red5pro-single-public-subnet"                                                      # Subnet name for existing VCN Subnet
 
   # Network Security Group configuration
   network_security_group_create      = true         # true - create new Network Security Group, false - use existing Network Security Group
-  network_security_group_id_existing = "sg-example" # Network Security Group ID for existing security group
+  network_security_group_id_existing = "ocid1.networksecuritygroup.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Network Security Group ID for existing security group
 
   # Single Red5 Pro server HTTPS/SSL certificate configuration
   https_letsencrypt_enable                  = true                  # true - create new Let's Encrypt HTTPS/SSL certificate, false - use Red5 Pro server without HTTPS/SSL certificate
@@ -109,7 +108,9 @@ module "red5pro_single" {
   https_letsencrypt_certificate_password    = "examplepass"         # Password for Let's Encrypt SSL certificate
 
   # Single Red5 Pro server OCI instance configuration
-  single_instance_type = "VM.Standard.E4.Flex" # Instance type for Red5 Pro server
+  single_instance_type   = "VM.Standard.E4.Flex" # Instance type for Red5 Pro server
+  single_instance_ocpu   = 2                   # Instance CPU for Red5 Pro server
+  single_instance_memory = 4                   # Instance Memory for Red5 Pro server
 
   # Red5Pro server configuration
   red5pro_license_key                         = "1111-2222-3333-4444"         # Red5 Pro license key (https://account.red5pro.com/login)
@@ -139,8 +140,8 @@ output "module_output" {
 
 In the following example, Terraform module will automates the infrastructure provisioning of the [Stream Manager cluster on the Oracle Cloud Infrastructure(OCI)](https://www.red5pro.com/docs/installation/auto-oci/overview/).
 
-* **VCN** - This Terrform module can either create a new or use your existing VCN. If you wish to create a new VCN, set `vcn_create` to `true`, and the script will ignore the other VCN configurations. To use your existing VCN, set `vcn_create` to `false` and include your existing vcn_id, name, dns label, subnet id, and subnet name
-* **Network Security Group** - This Terrform module can either create a new or use your existing Network Security Group in Oracle Cloud Infrastructure(OCI) for Stream Manager, Terraform Service, Nodes, MySQL DB System and others
+* **VCN** - For cluster deployment this Terrform module create VCN, subnets, route table, internet geteway and security list automatically
+* **Network Security Group** - For cluster deployment this Terrform module create Security groups for Stream Manager, nodes and MySQL DB automatically
 * **Instance Type** - Select the instance type based on the usecase from [Oracle Cloud Infrastructure(OCI) Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm)
 * **MySQL Database** - Users have flexibility to create a MySQL databse server in Oracle Cloud MySQL DB System or install it locally on the Stream Manager
 * **Terraform Server** - Uesrs can choose to create a dedicated Oracle Cloud Infrastructure(OCI) instance for Terraform Server or install it locally on the Stream Manager
@@ -153,50 +154,42 @@ In the following example, Terraform module will automates the infrastructure pro
 * **Autoscaling Node Group** - This is required for creating autoscaling node group using [Stream Manager APIs](https://www.red5pro.com/docs/special/concepts/nodegroup/) automatically as part of Terraform module, If users are not selecting this option then they must create a new node group using [Stream Manager APIs](https://www.red5pro.com/docs/special/concepts/nodegroup/) Manually.
 
 ```hcl
-module "red5pro_stream_manager" {
+module "red5pro_cluster" {
   source                                = "../../"
   type                                  = "cluster"                                # Deployment type: single, cluster, autoscaling
   name                                  = "red5pro-cluster"                        # Name to be used on all the resources as identifier
+  ubuntu_version                        = "20.04"                                  # Ubuntu version to be used for machine, it can either be 20.04 or 22.04
   path_to_red5pro_build                 = "./red5pro-server-0.0.0.b0-release.zip"  # Absolute path or relative path to Red5 Pro server ZIP file
   path_to_terraform_cloud_controller    = "./terraform-cloud-controller-0.0.0.jar" # Absolute path or relative path to Terraform Cloud Controller JAR file
   path_to_terraform_service_build       = "./terraform-service-0.0.0.zip"
-  path_to_private_key_terraform_service = "./example_pri_key.pem"
-  path_to_public_key_terraform_service  = "./example_pub_key.pem"
 
   # Oracle Cloud Account Details
-  compartment_id = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
-  tenancy_ocid   = "ocid1.tenancy.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"     # Existing Tenancy OCID of Oracle Cloud Account
-  user_ocid      = "ocid1.user.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"        # Existing User OCID of Oracle Cloud Account
-  fingerprint    = "00:11:22:33:44:55:66:77:aa:bb:cc:dd:ee:ff:gg:hh"                                     # Existing SSH based API key fingerprint of Oracle Cloud Account
-  region         = "us-ashburn-1"                                                                        # Current region code name of Oracle Cloud Account, https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm
+  oracle_compartment_id   = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
+  oracle_tenancy_ocid     = "ocid1.tenancy.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"     # Existing Tenancy OCID of Oracle Cloud Account
+  oracle_user_ocid        = "ocid1.user.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"        # Existing User OCID of Oracle Cloud Account
+  oracle_fingerprint      = "00:11:22:33:44:55:66:77:aa:bb:cc:dd:ee:ff:gg:hh"                                     # Existing SSH based API key fingerprint of Oracle Cloud Account
+  oracle_private_key_path = "./example_oracle_private_key.pem"                                                    # Path to existing SSH private key of Oracle Cloud Account
+  oracle_region           = "us-ashburn-1"                                                                        # Current region code name of Oracle Cloud Account, https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm
 
   # SSH key configuration
+  ssh_key_create       = true
   ssh_private_key_path = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pri_key.pem" # Path to existing SSH private key
   ssh_public_key_path  = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pub_key.pem" # Path to existing SSH Public key
 
-  # VCN Configuration
-  vcn_create           = true                                                                                # true - create new VCN, false - use existing VCN
-  vcn_id_existing      = "ocid1.vcn.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"    # VCN OCID for existing VCN Network
-  vcn_name_existing    = "red5pro-cluster-vcn"                                                               # VCN name for existing VCN Network
-  vcn_dns_label        = "vcnexample"                                                                        # Should contains chanraters only for VCN DNS Labels, No special characters and white spaces allowed                                        
-  subnet_id_existing   = "ocid1.subnet.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Subnet OCID for existing VCN Subnet
-  subnet_name_existing = "red5pro-cluster-public-subnet"                                                     # Subnet name for existing VCN Subnet
-
-  # Network Security Group configuration
-  network_security_group_create      = true                                                                                              # true - create new Network Security Group, false - use existing Network Security Group
-  network_security_group_id_existing = "ocid1.networksecuritygroup.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Network Security Group OCID for existing Network Security Group
-
   # MySQL DB configuration
-  mysql_db_system_create         = false                        # true - create new Oracle Cloud MySQL DB System  instance, false - install local MySQL server on the Stream Manager OCI instance
-  mysql_shape_name               = "MySQL.VM.Standard.E3.1.8GB" # Instance type for Oracle Cloud MySQL DB system instance
-  mysql_user_name                = "exampleuser"                # MySQL username
-  mysql_password                 = "examplepass"                # MySQL password
-  mysql_port                     = 3306                         # MySQL port
+  mysql_db_system_create = false                        # true - create new MySQL DB System instance, false - install local MySQL server on the Stream Manager OCI instance
+  mysql_shape_name       = "MySQL.VM.Standard.E3.1.8GB" # Instance type for Oracle Cloud MySQL DB system instance
+  mysql_user_name        = "exampleuser"                # MySQL username
+  mysql_password         = "Examplepass1!"                # MySQL password (The password for the administrative user. The password must be between 8 and 32 characters long, and must contain at least 1 numeric character, 1 lowercase character, 1 uppercase character, and 1 special (nonalphanumeric) character.)
+  mysql_port             = 3306                         # MySQL port
 
   # Terraform Service configuration
-  dedicated_terra_host_create = true
-  terra_api_token             = "abc123"
-  terra_parallelism           = "20"
+  terraform_service_instance_create = true
+  terraform_service_instance_type   = "VM.Standard.E4.Flex"
+  terraform_service_instance_ocpu   = 1
+  terraform_service_instance_memory = 4
+  terraform_service_api_key         = "examplekey"
+  terraform_service_parallelism     = 20
 
   # Stream Manager HTTPS/SSL certificate configuration
   https_letsencrypt_enable                  = true                  # true - create new Let's Encrypt HTTPS/SSL certificate, false - use Red5 Pro server without HTTPS/SSL certificate
@@ -206,7 +199,7 @@ module "red5pro_stream_manager" {
 
   # Stream Manager configuration
   stream_manager_instance_type   = "VM.Standard.E4.Flex" # OCI Instance type for Stream Manager
-  stream_manager_instance_cpu    = 2                     # OCI Instance OCPU Count for Stream Manager(1 OCPU = 2 vCPU)
+  stream_manager_instance_ocpu   = 2                     # OCI Instance OCPU Count for Stream Manager(1 OCPU = 2 vCPU)
   stream_manager_instance_memory = 8                     # OCI Instance Memory size in GB for Stream Manager
   stream_manager_api_key         = "examplekey"          # API key for Stream Manager
 
@@ -219,7 +212,7 @@ module "red5pro_stream_manager" {
   # Red5 Pro autoscaling Origin node image configuration
   origin_image_create                                      = true                          # Default: true for Autoscaling and Cluster, true - create new Origin node image, false - not create new Origin node image
   origin_image_instance_type                               = "VM.Standard.E4.Flex"         # Instance type for Origin node image
-  origin_image_instance_cpu                                = 2                             # OCI Instance OCPU Count for Origin node image(1 OCPU = 2 vCPU)
+  origin_image_instance_ocpu                               = 1                             # OCI Instance OCPU Count for Origin node image(1 OCPU = 2 vCPU)
   origin_image_instance_memory                             = 4                             # OCI Instance Memory size in GB for Origin node image
   origin_image_red5pro_inspector_enable                    = false                         # true - enable Red5 Pro server inspector, false - disable Red5 Pro server inspector (https://www.red5pro.com/docs/troubleshooting/inspector/overview/)
   origin_image_red5pro_restreamer_enable                   = false                         # true - enable Red5 Pro server restreamer, false - disable Red5 Pro server restreamer (https://www.red5pro.com/docs/special/restreamer/overview/)
@@ -234,28 +227,28 @@ module "red5pro_stream_manager" {
   origin_image_red5pro_round_trip_auth_endpoint_invalidate = "/invalidateCredentials"      # Round trip authentication server endpoint for invalidate
 
   # Red5 Pro autoscaling Node group - (Optional)
-  node_group_create = true                   # Linux or Mac OS only. true - create new Node group, false - not create new Node group
-  node_group_name   = "terraform-node-group" # Node group name
+  node_group_create                    = true                      # Linux or Mac OS only. true - create new Node group, false - not create new Node group
+  node_group_name                      = "terraform-node-group"    # Node group name
   # Origin node configuration
-  node_group_origins               = 1                         # Number of Origins
-  node_group_origins_instance_type = "VM.Standard.E4.Flex-1-4" # Origins OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_origins_capacity      = 30                        # Connections capacity for Origins
+  node_group_origins                   = 1                         # Number of Origins
+  node_group_origins_instance_type     = "VM.Standard.E4.Flex-1-4" # Origins OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
+  node_group_origins_capacity          = 30                        # Connections capacity for Origins
   # Edge node configuration
-  node_group_edges               = 1                         # Number of Edges
-  node_group_edges_instance_type = "VM.Standard.E4.Flex-1-4" # Edges OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_edges_capacity      = 300                       # Connections capacity for Edges
+  node_group_edges                     = 1                         # Number of Edges
+  node_group_edges_instance_type       = "VM.Standard.E4.Flex-1-4" # Edges OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
+  node_group_edges_capacity            = 300                       # Connections capacity for Edges
   # Transcoder node configuration
   node_group_transcoders               = 0                         # Number of Transcoders
   node_group_transcoders_instance_type = "VM.Standard.E4.Flex-1-4" # Transcoders OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
   node_group_transcoders_capacity      = 30                        # Connections capacity for Transcoders
   # Relay node configuration
-  node_group_relays               = 0                         # Number of Relays
-  node_group_relays_instance_type = "VM.Standard.E4.Flex-1-4" # Relays OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_relays_capacity      = 30                        # Connections capacity for Relays
+  node_group_relays                    = 0                         # Number of Relays
+  node_group_relays_instance_type      = "VM.Standard.E4.Flex-1-4" # Relays OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
+  node_group_relays_capacity           = 30                        # Connections capacity for Relays
 }
 
 output "module_output" {
-  value = module.red5pro_stream_manager
+  value = module.red5pro_cluster
 }
 ```
 
@@ -265,8 +258,8 @@ output "module_output" {
 
 In the following example, Terraform module will automates the infrastructure provisioning of the [Stream Manager cluster with autoscaling and loadbalancer on the Oracle Cloud Infrastructure(OCI)](https://www.red5pro.com/docs/installation/auto-oci/overview/).
 
-* **VCN** - This Terrform module can either create a new or use your existing VCN. If you wish to create a new VCN, set `vcn_create` to `true`, and the script will ignore the other VCN configurations. To use your existing VCN, set `vcn_create` to `false` and include your existing vcn_id, name, dns label, subnet id, and subnet name
-* **Network Security Group** - This Terrform module can either create a new or use your existing Network Security Group in Oracle Cloud Infrastructure(OCI) for Stream Manager, Terraform Service, Nodes, MySQL DB System and others
+* **VCN** - For cluster deployment this Terrform module create VCN, subnets, route table, internet geteway and security list automatically
+* **Network Security Group** - For cluster deployment this Terrform module create Security groups for Stream Manager, nodes and MySQL DB automatically
 * **Instance Type** - Select the instance type based on the usecase from [Oracle Cloud Infrastructure(OCI) Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm)
 * **MySQL Database** - Users need to create a MySQL databse server in Oracle Cloud MySQL DB System
 * **Terraform Server** - Uesrs can choose to create a dedicated Oracle Cloud Infrastructure(OCI) instance for Terraform Server
@@ -282,66 +275,52 @@ In the following example, Terraform module will automates the infrastructure pro
 * **Autoscaling Node Group** - This is required for creating autoscaling node group using [Stream Manager APIs](https://www.red5pro.com/docs/special/concepts/nodegroup/) automatically as part of Terraform module, If users are not selecting this option then they must create a new node group using [Stream Manager APIs](https://www.red5pro.com/docs/special/concepts/nodegroup/) Manually.
 
 ```hcl
-module "red5pro_stream_manager" {
+module "red5pro_autoscaling" {
   source                                = "../../"
   type                                  = "autoscaling"                            # Deployment type: single, cluster, autoscaling
   name                                  = "red5pro-autoscaling"                    # Name to be used on all the resources as identifier
+  ubuntu_version                        = "20.04"                                  # Ubuntu version to be used for machine, it can either be 20.04 or 22.04
   path_to_red5pro_build                 = "./red5pro-server-0.0.0.b0-release.zip"  # Absolute path or relative path to Red5 Pro server ZIP file
   path_to_terraform_cloud_controller    = "./terraform-cloud-controller-0.0.0.jar" # Absolute path or relative path to Terraform Cloud Controller JAR file
   path_to_terraform_service_build       = "./terraform-service-0.0.0.zip"
-  path_to_private_key_terraform_service = "./example_pri_key.pem"
-  path_to_public_key_terraform_service  = "./example_pub_key.pem"
 
   # Oracle Cloud Account Details
-  compartment_id = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
-  tenancy_ocid   = "ocid1.tenancy.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"     # Existing Tenancy OCID of Oracle Cloud Account
-  user_ocid      = "ocid1.user.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"        # Existing User OCID of Oracle Cloud Account
-  fingerprint    = "00:11:22:33:44:55:66:77:aa:bb:cc:dd:ee:ff:gg:hh"                                     # Existing SSH based API key fingerprint of Oracle Cloud Account
-  region         = "us-ashburn-1"                                                                        # Current region code name of Oracle Cloud Account, https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm
+  oracle_compartment_id   = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
+  oracle_tenancy_ocid     = "ocid1.tenancy.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"     # Existing Tenancy OCID of Oracle Cloud Account
+  oracle_user_ocid        = "ocid1.user.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"        # Existing User OCID of Oracle Cloud Account
+  oracle_fingerprint      = "00:11:22:33:44:55:66:77:aa:bb:cc:dd:ee:ff:gg:hh"                                     # Existing SSH based API key fingerprint of Oracle Cloud Account
+  oracle_private_key_path = "./example_oracle_private_key.pem"                                                    # Path to existing SSH private key of Oracle Cloud Account
+  oracle_region           = "us-ashburn-1"                                                                        # Current region code name of Oracle Cloud Account, https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm
 
   # SSH key configuration
+  ssh_key_create       = true
   ssh_private_key_path = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pri_key.pem" # Path to existing SSH private key
   ssh_public_key_path  = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pub_key.pem" # Path to existing SSH Public key
 
-  # VCN Configuration
-  vcn_create           = true                                                                                # true - create new VCN, false - use existing VCN
-  vcn_id_existing      = "ocid1.vcn.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"    # VCN OCID for existing VCN Network
-  vcn_name_existing    = "red5pro-autoscaling-vcn"                                                               # VCN name for existing VCN Network
-  vcn_dns_label        = "vcnexample"                                                                        # Should contains chanraters only for VCN DNS Labels, No special characters and white spaces allowed                                        
-  subnet_id_existing   = "ocid1.subnet.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Subnet OCID for existing VCN Subnet
-  subnet_name_existing = "red5pro-autoscaling-public-subnet"                                                     # Subnet name for existing VCN Subnet
-
-  # Network Security Group configuration
-  network_security_group_create      = true                                                                                              # true - create new Network Security Group, false - use existing Network Security Group
-  network_security_group_id_existing = "ocid1.networksecuritygroup.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Network Security Group OCID for existing Network Security Group
-
   # MySQL DB configuration
-  mysql_db_system_create         = false                        # true - create new MySQL DB System instance, false - install local MySQL server on the Stream Manager OCI instance
-  mysql_shape_name               = "MySQL.VM.Standard.E3.1.8GB" # Instance type for Oracle Cloud MySQL DB system instance
-  mysql_user_name                = "exampleuser"                # MySQL username
-  mysql_password                 = "examplepass"                # MySQL password
-  mysql_port                     = 3306                         # MySQL port
+  mysql_shape_name       = "MySQL.VM.Standard.E3.1.8GB" # Instance type for Oracle Cloud MySQL DB system instance
+  mysql_user_name        = "exampleuser"                # MySQL username
+  mysql_password         = "Examplepass1!"                # MySQL password (The password for the administrative user. The password must be between 8 and 32 characters long, and must contain at least 1 numeric character, 1 lowercase character, 1 uppercase character, and 1 special (nonalphanumeric) character.)
+  mysql_port             = 3306                         # MySQL port
 
   # Terraform Service configuration
-  dedicated_terra_host_create = true
-  terra_api_token             = "abc123"
-  terra_parallelism           = "20"
-
-  # Stream Manager Reserved IP Address configuration
-  reserved_public_ip_address_create       = true                                              # true - create new Reserved IP, false - use existing Reserved IP
-  reserved_public_ip_address_existing     = "1.2.3.4"                                         # Reserved IP Address for existing Oracle Cloud Reserved IP
+  terraform_service_instance_type   = "VM.Standard.E4.Flex"
+  terraform_service_instance_ocpu   = 1
+  terraform_service_instance_memory = 4
+  terraform_service_api_key         = "examplekey"
+  terraform_service_parallelism     = 20
 
   # Load Balancer HTTPS/SSL certificate configuration
-  https_oci_certificates_use_existing     = true                  # If you want to use SSL certificate set it to true
+  https_oci_certificates_use_existing     = false                 # If you want to use SSL certificate set it to true
   https_oci_certificates_certificate_name = "red5pro.example.com" # Domain name for your SSL certificate
-  cert_fullchain   = "/PATH/TO/EXISTING/SSL/CERTS/fullchain.pem"
-  cert_private_key = "/PATH/TO/EXISTING/SSL/CERTS/privkey.pem"
-  cert_public_cert = "/PATH/TO/EXISTING/SSL/CERTS/cert.pem"
+  cert_fullchain                          = "/PATH/TO/EXISTING/SSL/CERTS/fullchain.pem"
+  cert_private_key                        = "/PATH/TO/EXISTING/SSL/CERTS/privkey.pem"
+  cert_public_cert                        = "/PATH/TO/EXISTING/SSL/CERTS/cert.pem"
 
   # Stream Manager configuration
   stream_manager_instance_type   = "VM.Standard.E4.Flex" # OCI Instance type for Stream Manager
-  stream_manager_instance_cpu    = 2                     # OCI Instance OCPU Count for Stream Manager(1 OCPU = 2 vCPU)
-  stream_manager_instance_memory = 4                     # OCI Instance Memory size in GB for Stream Manager
+  stream_manager_instance_ocpu   = 2                     # OCI Instance OCPU Count for Stream Manager(1 OCPU = 2 vCPU)
+  stream_manager_instance_memory = 8                     # OCI Instance Memory size in GB for Stream Manager
   stream_manager_api_key         = "examplekey"          # API key for Stream Manager
 
   # Red5 Pro general configuration
@@ -353,7 +332,7 @@ module "red5pro_stream_manager" {
   # Red5 Pro autoscaling Origin node image configuration
   origin_image_create                                      = true                          # Default: true for Autoscaling and Cluster, true - create new Origin node image, false - not create new Origin node image
   origin_image_instance_type                               = "VM.Standard.E4.Flex"         # Instance type for Origin node image
-  origin_image_instance_cpu                                = 2                             # OCI Instance OCPU Count for Origin node image(1 OCPU = 2 vCPU)
+  origin_image_instance_ocpu                               = 1                             # OCI Instance OCPU Count for Origin node image(1 OCPU = 2 vCPU)
   origin_image_instance_memory                             = 4                             # OCI Instance Memory size in GB for Origin node image
   origin_image_red5pro_inspector_enable                    = false                         # true - enable Red5 Pro server inspector, false - disable Red5 Pro server inspector (https://www.red5pro.com/docs/troubleshooting/inspector/overview/)
   origin_image_red5pro_restreamer_enable                   = false                         # true - enable Red5 Pro server restreamer, false - disable Red5 Pro server restreamer (https://www.red5pro.com/docs/special/restreamer/overview/)
@@ -368,33 +347,30 @@ module "red5pro_stream_manager" {
   origin_image_red5pro_round_trip_auth_endpoint_invalidate = "/invalidateCredentials"      # Round trip authentication server endpoint for invalidate
 
   # Red5 Pro autoscaling Node group - (Optional)
-  node_group_create = true                   # Linux or Mac OS only. true - create new Node group, false - not create new Node group
-  node_group_name   = "terraform-node-group" # Node group name
+  node_group_create                    = true                      # Linux or Mac OS only. true - create new Node group, false - not create new Node group
+  node_group_name                      = "terraform-node-group"    # Node group name
   # Origin node configuration
-  node_group_origins               = 1                         # Number of Origins
-  node_group_origins_instance_type = "VM.Standard.E4.Flex-1-4" # Origins OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_origins_capacity      = 30                        # Connections capacity for Origins
+  node_group_origins                   = 1                         # Number of Origins
+  node_group_origins_instance_type     = "VM.Standard.E4.Flex-1-4" # Origins OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
+  node_group_origins_capacity          = 30                        # Connections capacity for Origins
   # Edge node configuration
-  node_group_edges               = 1                         # Number of Edges
-  node_group_edges_instance_type = "VM.Standard.E4.Flex-1-4" # Edges OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_edges_capacity      = 300                       # Connections capacity for Edges
+  node_group_edges                     = 1                         # Number of Edges
+  node_group_edges_instance_type       = "VM.Standard.E4.Flex-1-4" # Edges OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
+  node_group_edges_capacity            = 300                       # Connections capacity for Edges
   # Transcoder node configuration
   node_group_transcoders               = 0                         # Number of Transcoders
   node_group_transcoders_instance_type = "VM.Standard.E4.Flex-1-4" # Transcoders OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
   node_group_transcoders_capacity      = 30                        # Connections capacity for Transcoders
   # Relay node configuration
-  node_group_relays               = 0                         # Number of Relays
-  node_group_relays_instance_type = "VM.Standard.E4.Flex-1-4" # Relays OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_relays_capacity      = 30                        # Connections capacity for Relays
+  node_group_relays                    = 0                         # Number of Relays
+  node_group_relays_instance_type      = "VM.Standard.E4.Flex-1-4" # Relays OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
+  node_group_relays_capacity           = 30                        # Connections capacity for Relays
 }
 
 output "module_output" {
-  value = module.red5pro_stream_manager
+  value = module.red5pro_autoscaling
 }
 ```
 **NOTES**
 
 * To activate HTTPS/SSL you need to add DNS A record for Public IP address and access the Red5 Pro servers with domain name(single/cluster/autoscaling).
-
-## Future updates
-* TBD
