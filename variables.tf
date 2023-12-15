@@ -364,7 +364,7 @@ variable "stream_manager_autoscaling_minimum_capacity" {
 variable "stream_manager_autoscaling_maximum_capacity" {
   description = "value to set the maximum capacity for stream manager autoscaling"
   type        = number
-  default     = 1
+  default     = 2
 }
 variable "red5pro_cluster_key" {
   description = "Red5 Pro node cluster key"
@@ -819,4 +819,14 @@ variable "defined_tags" {
   description = "Predefined defined tags."
   type        = map(string)
   default     = null
+}
+
+variable "ubuntu_version" {
+  description = "Ubuntu version"
+  type        = string
+  default     = "20.04"
+  validation {
+    condition = var.ubuntu_version == "20.04" || var.ubuntu_version == "22.04"
+    error_message = "Please specify the correct ubuntu version, it can either be 20.04 or 22.04"
+  }
 }

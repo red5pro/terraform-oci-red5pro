@@ -26,13 +26,13 @@ resource "local_file" "red5pro_ssh_key_pub" {
 # Oracle Cloud Infrastructure
 ################################################################################
 
-# Get latest Canonical Ubuntu 20.04 image
+# Get latest Canonical Ubuntu image
 data "oci_core_images" "red5pro_image" {
   compartment_id   = var.oracle_compartment_id
   operating_system = "Canonical Ubuntu"
   filter {
     name   = "display_name"
-    values = ["^Canonical-Ubuntu-20.04-([\\.0-9-]+)$"]
+    values = ["^Canonical-Ubuntu-${var.ubuntu_version}-([\\.0-9-]+)$"]
     regex  = true
   }
 }
