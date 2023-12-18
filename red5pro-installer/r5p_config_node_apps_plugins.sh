@@ -101,12 +101,12 @@ config_node_apps_plugins(){
             rm $RED5_HOME/plugins/red5pro-mpegts-plugin*
         fi
     fi
-### Red5Pro Cloudstorage (S3)
+    ### Red5Pro Cloudstorage (S3)
     if [[ "$NODE_CLOUDSTORAGE_ENABLE" == "true" ]]; then
         log_i "Red5Pro OCI Cloudstorage plugin (S3) - enable"
         log_i "HERE need to add OCI Cloudstorage configuration!!!"
-        else
-        log_d "Red5Pro AWS Cloudstorage plugin (S3) - disable"
+    else
+        log_d "Red5Pro OCI Cloudstorage plugin (S3) - disable"
     fi
     ### Red5Pro Restreamer
     if [[ "$NODE_RESTREAMER_ENABLE" == "true" ]]; then
