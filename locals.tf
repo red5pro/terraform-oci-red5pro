@@ -15,9 +15,10 @@ locals {
   mysql_local_enable                = local.autoscaling ? false : var.mysql_db_system_create ? false : true
   terraform_service_instance_create = local.autoscaling ? true : local.cluster && var.terraform_service_instance_create ? true : false
   terra_host                        = local.autoscaling ? oci_core_instance.red5pro_terraform_service[0].private_ip : local.cluster && var.terraform_service_instance_create ? oci_core_instance.red5pro_terraform_service[0].private_ip : "localhost"
-  stream_manager_ip                 = local.autoscaling ? oci_core_public_ip.red5pro_reserved_ip[0].ip_address : local.cluster ? oci_core_instance.red5pro_sm[0].public_ip : null
+  stream_manager_ip                 = local.autoscaling ? var.load_balancer_reserved_ip_create ? oci_core_public_ip.red5pro_reserved_ip[0].ip_address : data.oci_core_public_ip.red5pro_reserved_ip[0].ip_address : local.cluster ? oci_core_instance.red5pro_sm[0].public_ip : null
   ssh_private_key_path              = var.ssh_key_create ? local_file.red5pro_ssh_key_pem[0].filename : var.ssh_private_key_path
   ssh_public_key_path               = var.ssh_key_create ? local_file.red5pro_ssh_key_pub[0].filename : var.ssh_public_key_path
   ssh_private_key                   = var.ssh_key_create ? tls_private_key.red5pro_ssh_key[0].private_key_pem : file(var.ssh_private_key_path)
   ssh_public_key                    = var.ssh_key_create ? tls_private_key.red5pro_ssh_key[0].public_key_openssh : file(var.ssh_public_key_path)
+  load_balancer_reserved_ip_id      = local.autoscaling ? var.load_balancer_reserved_ip_create ? oci_core_public_ip.red5pro_reserved_ip[0].id : data.oci_core_public_ip.red5pro_reserved_ip[0].id : null
 }

@@ -14,7 +14,7 @@ module "red5pro_cluster" {
   source                                = "../../"
   type                                  = "cluster"                                # Deployment type: single, cluster, autoscaling
   name                                  = "red5pro-cluster"                        # Name to be used on all the resources as identifier
-  ubuntu_version                        = "20.04"                                  # Ubuntu version to be used for machine, it can either be 20.04 or 22.04
+  ubuntu_version                        = "22.04"                                  # Ubuntu version to be used for machine, it can either be 20.04 or 22.04
   path_to_red5pro_build                 = "./red5pro-server-0.0.0.b0-release.zip"  # Absolute path or relative path to Red5 Pro server ZIP file
   path_to_terraform_cloud_controller    = "./terraform-cloud-controller-0.0.0.jar" # Absolute path or relative path to Terraform Cloud Controller JAR file
   path_to_terraform_service_build       = "./terraform-service-0.0.0.zip"
@@ -42,10 +42,10 @@ module "red5pro_cluster" {
   # Terraform Service configuration
   terraform_service_instance_create = true
   terraform_service_instance_type   = "VM.Standard.E4.Flex"
-  terraform_service_instance_ocpu   = 1
-  terraform_service_instance_memory = 4
+  terraform_service_instance_ocpu   = 2
+  terraform_service_instance_memory = 8
   terraform_service_api_key         = "examplekey"
-  terraform_service_parallelism     = 20
+  terraform_service_parallelism     = 10
 
   # Stream Manager HTTPS/SSL certificate configuration
   https_letsencrypt_enable                  = true                  # true - create new Let's Encrypt HTTPS/SSL certificate, false - use Red5 Pro server without HTTPS/SSL certificate
