@@ -2,7 +2,7 @@
 
 [Red5 Pro](https://www.red5.net/) is a real-time video streaming server plaform known for its low-latency streaming capabilities, making it ideal for interactive applications like online gaming, streaming events and video conferencing etc.
 
-This a reusable Terraform installer module for [Red5 Pro](https://www.red5pro.com/docs/installation/auto-oci/overview/) that provisions infrastucture over [Oracle Cloud Infrastructure(OCI)](https://www.oracle.com/cloud/).
+This a reusable Terraform installer module for [Red5 Pro](https://www.red5.net/docs/installation/auto-oci/overview/) that provisions infrastucture over [Oracle Cloud Infrastructure(OCI)](https://www.oracle.com/cloud/).
 
 ## This module has 3 variants of Red5 Pro deployments
 
@@ -30,10 +30,10 @@ This a reusable Terraform installer module for [Red5 Pro](https://www.red5pro.co
 
 * Install **Authenticating Oracle Cloud Infrastructure(OCI) CLI** https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
 * Install **jq** Linux or Mac OS only - `apt install jq` or `brew install jq` (It is used in bash scripts to create/delete Stream Manager node group using API) https://jqlang.github.io/jq/download/
-* Download Red5 Pro server build: (Example: red5pro-server-0.0.0.b0-release.zip) https://account.red5pro.com/downloads
-* Download Red5 Pro Autoscale controller for Terraform: (Example: terraform-cloud-controller-0.0.0.jar) https://account.red5pro.com/downloads
-* Download Red5 Pro Terraform Service : (Example: terraform-service-0.0.0.zip) https://account.red5pro.com/downloads
-* Get Red5 Pro License key: (Example: 1111-2222-3333-4444) https://account.red5pro.com
+* Download Red5 Pro server build: (Example: red5pro-server-0.0.0.b0-release.zip) https://account.red5.net/downloads
+* Download Red5 Pro Autoscale controller for Terraform: (Example: terraform-cloud-controller-0.0.0.jar) https://account.red5.net/downloads
+* Download Red5 Pro Terraform Service : (Example: terraform-service-0.0.0.zip) https://account.red5.net/downloads
+* Get Red5 Pro License key: (Example: 1111-2222-3333-4444) https://account.red5.net
 * Prepare [Oracle Cloud Infrastructure(OCI)](https://www.oracle.com/cloud/) Account and create a User for Terraform module. User must have permission to create and manage the following services:
     * Identity and Access Management Rights
         * Virtual Cloud Networks
@@ -67,9 +67,9 @@ cp ~/Downloads/terraform-cloud-controller-0.0.0.jar ./
 cp ~/Downloads/terraform-service-0.0.0.zip ./
 ```
 
-## Red5 Pro Single server deployment (single) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/main/examples/single)
+## Red5 Pro Single server deployment (single) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/master/examples/single)
 
-In the following example, Terraform module will automates the infrastructure provisioning of the [Red5 Pro standalone server](https://www.red5pro.com/docs/installation/installation/oci-install/).
+In the following example, Terraform module will automates the infrastructure provisioning of the [Red5 Pro standalone server](https://www.red5.net/docs/installation/).
 
 * **VCN** - For single server deployment this Terrform module can either create a new or use your existing VCN. If you wish to create a new VCN, set `vcn_create` to `true`, and the script will ignore the other VCN configurations. To use your existing VCN, set `vcn_create` to `false` and include your existing vcn_id, name, dns label, subnet id, and subnet name.
 * **Network Security Group** - For single server deployment this Terrform module can either create a new or use your existing Network Security Group in Oracle Cloud Infrastructure(OCI).
@@ -113,15 +113,15 @@ module "red5pro_single" {
   single_instance_memory = 4                   # Instance Memory for Red5 Pro server
 
   # Red5Pro server configuration
-  red5pro_license_key                         = "1111-2222-3333-4444"         # Red5 Pro license key (https://account.red5pro.com/login)
-  red5pro_api_enable                          = true                          # true - enable Red5 Pro server API, false - disable Red5 Pro server API (https://www.red5pro.com/docs/development/api/overview/)
-  red5pro_api_key                             = "examplekey"                  # Red5 Pro server API key (https://www.red5pro.com/docs/development/api/overview/)
-  red5pro_inspector_enable                    = false                         # true - enable Red5 Pro server inspector, false - disable Red5 Pro server inspector (https://www.red5pro.com/docs/troubleshooting/inspector/overview/)
-  red5pro_restreamer_enable                   = false                         # true - enable Red5 Pro server restreamer, false - disable Red5 Pro server restreamer (https://www.red5pro.com/docs/special/restreamer/overview/)
-  red5pro_socialpusher_enable                 = false                         # true - enable Red5 Pro server socialpusher, false - disable Red5 Pro server socialpusher (https://www.red5pro.com/docs/special/social-media-plugin/overview/)
+  red5pro_license_key                         = "1111-2222-3333-4444"         # Red5 Pro license key (https://account.red5.net/login)
+  red5pro_api_enable                          = true                          # true - enable Red5 Pro server API, false - disable Red5 Pro server API (https://www.red5.net/docs/development/api/overview/)
+  red5pro_api_key                             = "examplekey"                  # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
+  red5pro_inspector_enable                    = false                         # true - enable Red5 Pro server inspector, false - disable Red5 Pro server inspector (https://www.red5.net/docs/troubleshooting/inspector/overview/)
+  red5pro_restreamer_enable                   = false                         # true - enable Red5 Pro server restreamer, false - disable Red5 Pro server restreamer (https://www.red5.net/docs/special/restreamer/overview/)
+  red5pro_socialpusher_enable                 = false                         # true - enable Red5 Pro server socialpusher, false - disable Red5 Pro server socialpusher (https://www.red5.net/docs/special/social-media-plugin/overview/)
   red5pro_suppressor_enable                   = false                         # true - enable Red5 Pro server suppressor, false - disable Red5 Pro server suppressor
-  red5pro_hls_enable                          = false                         # true - enable Red5 Pro server HLS, false - disable Red5 Pro server HLS (https://www.red5pro.com/docs/protocols/hls-plugin/hls-vod/)
-  red5pro_round_trip_auth_enable              = false                         # true - enable Red5 Pro server round trip authentication, false - disable Red5 Pro server round trip authentication (https://www.red5pro.com/docs/special/round-trip-auth/overview/)
+  red5pro_hls_enable                          = false                         # true - enable Red5 Pro server HLS, false - disable Red5 Pro server HLS (https://www.red5.net/docs/protocols/hls-plugin/hls-vod/)
+  red5pro_round_trip_auth_enable              = false                         # true - enable Red5 Pro server round trip authentication, false - disable Red5 Pro server round trip authentication (https://www.red5.net/docs/special/round-trip-auth/overview/)
   red5pro_round_trip_auth_host                = "round-trip-auth.example.com" # Round trip authentication server host
   red5pro_round_trip_auth_port                = 3000                          # Round trip authentication server port
   red5pro_round_trip_auth_protocol            = "http"                        # Round trip authentication server protocol
@@ -136,9 +136,9 @@ output "module_output" {
 
 ---
 
-## Red5 Pro Stream Manager cluster deployment (cluster) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/main/examples/cluster)
+## Red5 Pro Stream Manager cluster deployment (cluster) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/master/examples/cluster)
 
-In the following example, Terraform module will automates the infrastructure provisioning of the [Stream Manager cluster on the Oracle Cloud Infrastructure(OCI)](https://www.red5pro.com/docs/installation/auto-oci/overview/).
+In the following example, Terraform module will automates the infrastructure provisioning of the [Stream Manager cluster on the Oracle Cloud Infrastructure(OCI)](https://www.red5.net/docs/installation/auto-oci/overview/).
 
 * **VCN** - For cluster deployment this Terrform module create VCN, subnets, route table, internet geteway and security list automatically
 * **Network Security Group** - For cluster deployment this Terrform module create Security groups for Stream Manager, nodes and MySQL DB automatically
@@ -151,7 +151,7 @@ In the following example, Terraform module will automates the infrastructure pro
 * **Edge Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Edge Node type for Stream Manager node group (optional)
 * **Transcoder Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Transcoder Node type for Stream Manager node group (optional)
 * **Relay Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Relay Node type for Stream Manager node group (optional)
-* **Autoscaling Node Group** - This is required for creating autoscaling node group using [Stream Manager APIs](https://www.red5pro.com/docs/special/concepts/nodegroup/) automatically as part of Terraform module, If users are not selecting this option then they must create a new node group using [Stream Manager APIs](https://www.red5pro.com/docs/special/concepts/nodegroup/) Manually.
+* **Autoscaling Node Group** - This is required for creating autoscaling node group using [Stream Manager APIs](https://www.red5.net/docs/special/concepts/nodegroup/) automatically as part of Terraform module, If users are not selecting this option then they must create a new node group using [Stream Manager APIs](https://www.red5.net/docs/special/concepts/nodegroup/) Manually.
 
 ```hcl
 module "red5pro_cluster" {
@@ -204,22 +204,22 @@ module "red5pro_cluster" {
   stream_manager_api_key         = "examplekey"          # API key for Stream Manager
 
   # Red5 Pro general configuration
-  red5pro_license_key = "1111-2222-3333-4444" # Red5 Pro license key (https://account.red5pro.com/login)
+  red5pro_license_key = "1111-2222-3333-4444" # Red5 Pro license key (https://account.red5.net/login)
   red5pro_cluster_key = "examplekey"          # Red5 Pro cluster key
-  red5pro_api_enable  = true                  # true - enable Red5 Pro server API, false - disable Red5 Pro server API (https://www.red5pro.com/docs/development/api/overview/)
-  red5pro_api_key     = "examplekey"          # Red5 Pro server API key (https://www.red5pro.com/docs/development/api/overview/)
+  red5pro_api_enable  = true                  # true - enable Red5 Pro server API, false - disable Red5 Pro server API (https://www.red5.net/docs/development/api/overview/)
+  red5pro_api_key     = "examplekey"          # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
 
   # Red5 Pro autoscaling Origin node image configuration
   origin_image_create                                      = true                          # Default: true for Autoscaling and Cluster, true - create new Origin node image, false - not create new Origin node image
   origin_image_instance_type                               = "VM.Standard.E4.Flex"         # Instance type for Origin node image
   origin_image_instance_ocpu                               = 1                             # OCI Instance OCPU Count for Origin node image(1 OCPU = 2 vCPU)
   origin_image_instance_memory                             = 4                             # OCI Instance Memory size in GB for Origin node image
-  origin_image_red5pro_inspector_enable                    = false                         # true - enable Red5 Pro server inspector, false - disable Red5 Pro server inspector (https://www.red5pro.com/docs/troubleshooting/inspector/overview/)
-  origin_image_red5pro_restreamer_enable                   = false                         # true - enable Red5 Pro server restreamer, false - disable Red5 Pro server restreamer (https://www.red5pro.com/docs/special/restreamer/overview/)
-  origin_image_red5pro_socialpusher_enable                 = false                         # true - enable Red5 Pro server socialpusher, false - disable Red5 Pro server socialpusher (https://www.red5pro.com/docs/special/social-media-plugin/overview/)
+  origin_image_red5pro_inspector_enable                    = false                         # true - enable Red5 Pro server inspector, false - disable Red5 Pro server inspector (https://www.red5.net/docs/troubleshooting/inspector/overview/)
+  origin_image_red5pro_restreamer_enable                   = false                         # true - enable Red5 Pro server restreamer, false - disable Red5 Pro server restreamer (https://www.red5.net/docs/special/restreamer/overview/)
+  origin_image_red5pro_socialpusher_enable                 = false                         # true - enable Red5 Pro server socialpusher, false - disable Red5 Pro server socialpusher (https://www.red5.net/docs/special/social-media-plugin/overview/)
   origin_image_red5pro_suppressor_enable                   = false                         # true - enable Red5 Pro server suppressor, false - disable Red5 Pro server suppressor
-  origin_image_red5pro_hls_enable                          = false                         # true - enable Red5 Pro server HLS, false - disable Red5 Pro server HLS (https://www.red5pro.com/docs/protocols/hls-plugin/hls-vod/)
-  origin_image_red5pro_round_trip_auth_enable              = false                         # true - enable Red5 Pro server round trip authentication, false - disable Red5 Pro server round trip authentication (https://www.red5pro.com/docs/special/round-trip-auth/overview/)
+  origin_image_red5pro_hls_enable                          = false                         # true - enable Red5 Pro server HLS, false - disable Red5 Pro server HLS (https://www.red5.net/docs/protocols/hls-plugin/hls-vod/)
+  origin_image_red5pro_round_trip_auth_enable              = false                         # true - enable Red5 Pro server round trip authentication, false - disable Red5 Pro server round trip authentication (https://www.red5.net/docs/special/round-trip-auth/overview/)
   origin_image_red5pro_round_trip_auth_host                = "round-trip-auth.example.com" # Round trip authentication server host
   origin_image_red5pro_round_trip_auth_port                = 3000                          # Round trip authentication server port
   origin_image_red5pro_round_trip_auth_protocol            = "http"                        # Round trip authentication server protocol
@@ -254,9 +254,9 @@ output "module_output" {
 
 ---
 
-## Red5 Pro Stream Manager cluster with Oracle Cloud autoscaling Stream Managers (autoscaling) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/main/examples/autoscaling)
+## Red5 Pro Stream Manager cluster with Oracle Cloud autoscaling Stream Managers (autoscaling) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/master/examples/autoscaling)
 
-In the following example, Terraform module will automates the infrastructure provisioning of the [Stream Manager cluster with autoscaling and loadbalancer on the Oracle Cloud Infrastructure(OCI)](https://www.red5pro.com/docs/installation/auto-oci/overview/).
+In the following example, Terraform module will automates the infrastructure provisioning of the [Stream Manager cluster with autoscaling and loadbalancer on the Oracle Cloud Infrastructure(OCI)](https://www.red5.net/docs/installation/auto-oci/overview/).
 
 * **VCN** - For cluster deployment this Terrform module create VCN, subnets, route table, internet geteway and security list automatically
 * **Network Security Group** - For cluster deployment this Terrform module create Security groups for Stream Manager, nodes and MySQL DB automatically
@@ -272,7 +272,7 @@ In the following example, Terraform module will automates the infrastructure pro
 * **Edge Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Edge Node type for Stream Manager node group (optional)
 * **Transcoder Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Transcoder Node type for Stream Manager node group (optional)
 * **Relay Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Relay Node type for Stream Manager node group (optional)
-* **Autoscaling Node Group** - This is required for creating autoscaling node group using [Stream Manager APIs](https://www.red5pro.com/docs/special/concepts/nodegroup/) automatically as part of Terraform module, If users are not selecting this option then they must create a new node group using [Stream Manager APIs](https://www.red5pro.com/docs/special/concepts/nodegroup/) Manually.
+* **Autoscaling Node Group** - This is required for creating autoscaling node group using [Stream Manager APIs](https://www.red5.net/docs/special/concepts/nodegroup/) automatically as part of Terraform module, If users are not selecting this option then they must create a new node group using [Stream Manager APIs](https://www.red5.net/docs/special/concepts/nodegroup/) Manually.
 
 ```hcl
 module "red5pro_autoscaling" {
@@ -330,22 +330,22 @@ module "red5pro_autoscaling" {
   load_balancer_reserved_ip        = "1.2.3.4"      # Reserved IP for Load Balancer
 
   # Red5 Pro general configuration
-  red5pro_license_key = "1111-2222-3333-4444" # Red5 Pro license key (https://account.red5pro.com/login)
+  red5pro_license_key = "1111-2222-3333-4444" # Red5 Pro license key (https://account.red5.net/login)
   red5pro_cluster_key = "examplekey"          # Red5 Pro cluster key
-  red5pro_api_enable  = true                  # true - enable Red5 Pro server API, false - disable Red5 Pro server API (https://www.red5pro.com/docs/development/api/overview/)
-  red5pro_api_key     = "examplekey"          # Red5 Pro server API key (https://www.red5pro.com/docs/development/api/overview/)
+  red5pro_api_enable  = true                  # true - enable Red5 Pro server API, false - disable Red5 Pro server API (https://www.red5.net/docs/development/api/overview/)
+  red5pro_api_key     = "examplekey"          # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
 
   # Red5 Pro autoscaling Origin node image configuration
   origin_image_create                                      = true                          # Default: true for Autoscaling and Cluster, true - create new Origin node image, false - not create new Origin node image
   origin_image_instance_type                               = "VM.Standard.E4.Flex"         # Instance type for Origin node image
   origin_image_instance_ocpu                               = 1                             # OCI Instance OCPU Count for Origin node image(1 OCPU = 2 vCPU)
   origin_image_instance_memory                             = 4                             # OCI Instance Memory size in GB for Origin node image
-  origin_image_red5pro_inspector_enable                    = false                         # true - enable Red5 Pro server inspector, false - disable Red5 Pro server inspector (https://www.red5pro.com/docs/troubleshooting/inspector/overview/)
-  origin_image_red5pro_restreamer_enable                   = false                         # true - enable Red5 Pro server restreamer, false - disable Red5 Pro server restreamer (https://www.red5pro.com/docs/special/restreamer/overview/)
-  origin_image_red5pro_socialpusher_enable                 = false                         # true - enable Red5 Pro server socialpusher, false - disable Red5 Pro server socialpusher (https://www.red5pro.com/docs/special/social-media-plugin/overview/)
+  origin_image_red5pro_inspector_enable                    = false                         # true - enable Red5 Pro server inspector, false - disable Red5 Pro server inspector (https://www.red5.net/docs/troubleshooting/inspector/overview/)
+  origin_image_red5pro_restreamer_enable                   = false                         # true - enable Red5 Pro server restreamer, false - disable Red5 Pro server restreamer (https://www.red5.net/docs/special/restreamer/overview/)
+  origin_image_red5pro_socialpusher_enable                 = false                         # true - enable Red5 Pro server socialpusher, false - disable Red5 Pro server socialpusher (https://www.red5.net/docs/special/social-media-plugin/overview/)
   origin_image_red5pro_suppressor_enable                   = false                         # true - enable Red5 Pro server suppressor, false - disable Red5 Pro server suppressor
-  origin_image_red5pro_hls_enable                          = false                         # true - enable Red5 Pro server HLS, false - disable Red5 Pro server HLS (https://www.red5pro.com/docs/protocols/hls-plugin/hls-vod/)
-  origin_image_red5pro_round_trip_auth_enable              = false                         # true - enable Red5 Pro server round trip authentication, false - disable Red5 Pro server round trip authentication (https://www.red5pro.com/docs/special/round-trip-auth/overview/)
+  origin_image_red5pro_hls_enable                          = false                         # true - enable Red5 Pro server HLS, false - disable Red5 Pro server HLS (https://www.red5.net/docs/protocols/hls-plugin/hls-vod/)
+  origin_image_red5pro_round_trip_auth_enable              = false                         # true - enable Red5 Pro server round trip authentication, false - disable Red5 Pro server round trip authentication (https://www.red5.net/docs/special/round-trip-auth/overview/)
   origin_image_red5pro_round_trip_auth_host                = "round-trip-auth.example.com" # Round trip authentication server host
   origin_image_red5pro_round_trip_auth_port                = 3000                          # Round trip authentication server port
   origin_image_red5pro_round_trip_auth_protocol            = "http"                        # Round trip authentication server protocol

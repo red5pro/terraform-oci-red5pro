@@ -1,6 +1,6 @@
 # OCI Red5 Pro Stream Manager cluster with Oracle Cloud autoscaling Stream Managers
 
-In the following example, Terraform module will automates the infrastructure provisioning of the [Stream Manager cluster with autoscaling and loadbalancer on the Oracle Cloud Infrastructure(OCI)](https://www.red5pro.com/docs/installation/auto-oci/overview/).
+In the following example, Terraform module will automates the infrastructure provisioning of the [Stream Manager cluster with autoscaling and loadbalancer on the Oracle Cloud Infrastructure(OCI)](https://www.red5.net/docs/installation/auto-oci/overview/).
 
 * **VCN** - For cluster deployment this Terrform module create VCN, subnets, route table, internet geteway and security list automatically
 * **Network Security Group** - For cluster deployment this Terrform module create Security groups for Stream Manager, nodes and MySQL DB automatically
@@ -16,7 +16,7 @@ In the following example, Terraform module will automates the infrastructure pro
 * **Edge Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Edge Node type for Stream Manager node group (optional)
 * **Transcoder Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Transcoder Node type for Stream Manager node group (optional)
 * **Relay Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Relay Node type for Stream Manager node group (optional)
-* **Autoscaling Node Group** - This is required for creating autoscaling node group using [Stream Manager APIs](https://www.red5pro.com/docs/special/concepts/nodegroup/) automatically as part of Terraform module, If users are not selecting this option then they must create a new node group using [Stream Manager APIs](https://www.red5pro.com/docs/special/concepts/nodegroup/) Manually.
+* **Autoscaling Node Group** - This is required for creating autoscaling node group using [Stream Manager APIs](https://www.red5.net/docs/special/concepts/nodegroup/) automatically as part of Terraform module, If users are not selecting this option then they must create a new node group using [Stream Manager APIs](https://www.red5.net/docs/special/concepts/nodegroup/) Manually.
 
 ## Preparation
 
@@ -38,10 +38,10 @@ In the following example, Terraform module will automates the infrastructure pro
 
 * Install **Authenticating Oracle Cloud Infrastructure(OCI) CLI** https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
 * Install **jq** Linux or Mac OS only - `apt install jq` or `brew install jq` (It is used in bash scripts to create/delete Stream Manager node group using API) https://jqlang.github.io/jq/download/
-* Download Red5 Pro server build: (Example: red5pro-server-0.0.0.b0-release.zip) https://account.red5pro.com/downloads
-* Download Red5 Pro Autoscale controller for Terraform: (Example: terraform-cloud-controller-0.0.0.jar) https://account.red5pro.com/downloads
-* Download Red5 Pro Terraform Service : (Example: terraform-service-0.0.0.zip) https://account.red5pro.com/downloads
-* Get Red5 Pro License key: (Example: 1111-2222-3333-4444) https://account.red5pro.com
+* Download Red5 Pro server build: (Example: red5pro-server-0.0.0.b0-release.zip) https://account.red5.net/downloads
+* Download Red5 Pro Autoscale controller for Terraform: (Example: terraform-cloud-controller-0.0.0.jar) https://account.red5.net/downloads
+* Download Red5 Pro Terraform Service : (Example: terraform-service-0.0.0.zip) https://account.red5.net/downloads
+* Get Red5 Pro License key: (Example: 1111-2222-3333-4444) https://account.red5.net
 * Prepare [Oracle Cloud Infrastructure(OCI)](https://www.oracle.com/cloud/) Account and create a User for Terraform module. User must have permission to create and manage the following services:
     * Identity and Access Management Rights
         * Virtual Cloud Networks
