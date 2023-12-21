@@ -1,7 +1,7 @@
 
 # Oracle Cloud Infrastructure(OCI) Red5 Pro single server
 
-In the following example, Terraform module will automates the infrastructure provisioning of the [Red5 Pro standalone server](https://www.red5pro.com/docs/installation/installation/oci-install/).
+In the following example, Terraform module will automates the infrastructure provisioning of the [Red5 Pro standalone server](https://www.red5.net/docs/installation/installation/oci-install/).
 
 * **VCN** - For single server deployment this Terrform module can either create a new or use your existing VCN. If you wish to create a new VCN, set `vcn_create` to `true`, and the script will ignore the other VCN configurations. To use your existing VCN, set `vcn_create` to `false` and include your existing vcn_id, name, dns label, subnet id, and subnet name.
 * **Network Security Group** - For single server deployment this Terrform module can either create a new or use your existing Network Security Group in Oracle Cloud Infrastructure(OCI).
@@ -28,10 +28,10 @@ In the following example, Terraform module will automates the infrastructure pro
 
 * Install **Authenticating Oracle Cloud Infrastructure(OCI) CLI** https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
 * Install **jq** Linux or Mac OS only - `apt install jq` or `brew install jq` (It is used in bash scripts to create/delete Stream Manager node group using API) https://jqlang.github.io/jq/download/
-* Download Red5 Pro server build: (Example: red5pro-server-0.0.0.b0-release.zip) https://account.red5pro.com/downloads
-* Download Red5 Pro Autoscale controller for Terraform: (Example: terraform-cloud-controller-0.0.0.jar) https://account.red5pro.com/downloads
-* Download Red5 Pro Terraform Service : (Example: terraform-service-0.0.0.zip) https://account.red5pro.com/downloads
-* Get Red5 Pro License key: (Example: 1111-2222-3333-4444) https://account.red5pro.com
+* Download Red5 Pro server build: (Example: red5pro-server-0.0.0.b0-release.zip) https://account.red5.net/downloads
+* Download Red5 Pro Autoscale controller for Terraform: (Example: terraform-cloud-controller-0.0.0.jar) https://account.red5.net/downloads
+* Download Red5 Pro Terraform Service : (Example: terraform-service-0.0.0.zip) https://account.red5.net/downloads
+* Get Red5 Pro License key: (Example: 1111-2222-3333-4444) https://account.red5.net
 * Prepare [Oracle Cloud Infrastructure(OCI)](https://www.oracle.com/cloud/) Account and create a User for Terraform module. User must have permission to create and manage the following services:
     * Identity and Access Management Rights
         * Virtual Cloud Networks
