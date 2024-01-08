@@ -1133,8 +1133,31 @@ resource "null_resource" "stop_node_relay" {
 }
 
 ################################################################################
-# Create node group (Stream Manager API)
+# Create/Delete node group (Stream Manager API)
 ################################################################################
+
+resource "time_sleep" "wait" {
+    depends_on = [
+      oci_core_instance.red5pro_sm[0],
+      oci_load_balancer_load_balancer.red5pro_lb[0],
+      oci_core_instance.red5pro_terraform_service[0],
+      oci_core_instance_pool.red5pro_instance_pool[0],
+      oci_core_network_security_group.red5pro_terraform_service_network_security_group[0],
+      oci_core_network_security_group_security_rule.red5pro_terraform_service_nsg_rule_egress[0],
+      oci_core_network_security_group_security_rule.red5pro_terraform_service_nsg_security_rule_ingress_tcp[0],
+      oci_core_network_security_group_security_rule.red5pro_terraform_service_nsg_security_rule_ingress_tcp[1],
+      oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_rule_egress[0],
+      oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_security_rule_ingress_tcp[0],
+      oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_security_rule_ingress_tcp[1],
+      oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_security_rule_ingress_tcp[2],
+      oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_security_rule_ingress_tcp[3],
+      oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_security_rule_ingress_tcp[4],
+      oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_security_rule_ingress_tcp[5],
+      oci_core_route_table_attachment.red5pro_route_table_attachment[0],
+    ]
+
+  destroy_duration = "90s"
+}
 
 resource "null_resource" "node_group" {
   count = local.cluster_or_autoscaling && var.node_group_create ? 1 : 0
@@ -1183,19 +1206,10 @@ resource "null_resource" "node_group" {
     command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_node_group.sh '${self.triggers.SM_IP}' '${self.triggers.SM_API_KEY}'"
   }
 
-  provisioner "local-exec" {
-    when    = destroy
-    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_nodes_oci_cli.sh '${self.triggers.NODE_INSTANCE_NAME}' '${self.triggers.OCI_CLI_COMPARTMENT_ID}' '${self.triggers.OCI_CLI_USER}' '${self.triggers.OCI_CLI_FINGERPRINT}' '${self.triggers.OCI_CLI_TENANCY}' '${self.triggers.OCI_CLI_REGION}' '${self.triggers.OCI_CLI_KEY_FILE}'"
-  }
+  # provisioner "local-exec" {
+  #   when    = destroy
+  #   command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_nodes_oci_cli.sh '${self.triggers.NODE_INSTANCE_NAME}' '${self.triggers.OCI_CLI_COMPARTMENT_ID}' '${self.triggers.OCI_CLI_USER}' '${self.triggers.OCI_CLI_FINGERPRINT}' '${self.triggers.OCI_CLI_TENANCY}' '${self.triggers.OCI_CLI_REGION}' '${self.triggers.OCI_CLI_KEY_FILE}'"
+  # }
 
-  depends_on = [
-    oci_core_instance.red5pro_sm[0],
-    oci_load_balancer_load_balancer.red5pro_lb[0],
-    oci_core_instance.red5pro_terraform_service[0],
-    oci_core_instance_pool.red5pro_instance_pool[0],
-    oci_core_network_security_group.red5pro_terraform_service_network_security_group[0],
-    oci_core_network_security_group_security_rule.red5pro_terraform_service_nsg_rule_egress[0],
-    oci_core_network_security_group_security_rule.red5pro_terraform_service_nsg_security_rule_ingress_tcp[0],
-    oci_core_network_security_group_security_rule.red5pro_terraform_service_nsg_security_rule_ingress_tcp[1]
-    ]
+  depends_on = [time_sleep.wait]
 }
