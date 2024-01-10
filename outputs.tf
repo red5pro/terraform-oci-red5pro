@@ -64,7 +64,7 @@ output "load_balancer_http_url" {
 }
 output "load_balancer_https_url" {
   description = "Load Balancer HTTPS URL"
-  value       = local.autoscaling ? var.https_oci_certificates_use_existing ? "https://${var.https_oci_certificates_certificate_name}:443" : null : null
+  value       = local.autoscaling ? var.lb_https_certificate_create ? "https://${var.lb_https_certificate_name}:443" : null : null
 }
 output "single_red5pro_server_ip" {
   description = "Single Red5 Pro Server IP"
