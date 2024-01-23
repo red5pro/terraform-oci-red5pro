@@ -474,7 +474,7 @@ resource "oci_load_balancer_listener" "red5pro_lb_listener_5080" {
 }
 
 resource "oci_load_balancer_listener" "red5pro_lb_listener_443" {
-  count                    = local.autoscaling && var.https_oci_certificates_use_existing ? 1 : 0
+  count                    = local.autoscaling && var.lb_https_certificate_create ? 1 : 0
   load_balancer_id         = oci_load_balancer_load_balancer.red5pro_lb[0].id
   name                     = "https"
   default_backend_set_name = oci_load_balancer_backend_set.red5pro_lb_backend_set[0].name
@@ -482,8 +482,9 @@ resource "oci_load_balancer_listener" "red5pro_lb_listener_443" {
   protocol                 = "HTTP"
 
   ssl_configuration {
-    certificate_name        = var.https_oci_certificates_certificate_name
+    certificate_name        = var.lb_https_certificate_name
     verify_peer_certificate = false
+    cipher_suite_name       = var.lb_https_certificate_cipher_suite_name
     protocols               = ["TLSv1.1", "TLSv1.2"]
     server_order_preference = "ENABLED"
   }
@@ -492,12 +493,12 @@ resource "oci_load_balancer_listener" "red5pro_lb_listener_443" {
 # OCI SSL certificate
 
 resource "oci_load_balancer_certificate" "red5pro_lb_ssl_cert" {
-  count              = local.autoscaling && var.https_oci_certificates_use_existing ? 1 : 0
+  count              = local.autoscaling && var.lb_https_certificate_create ? 1 : 0
   load_balancer_id   = oci_load_balancer_load_balancer.red5pro_lb[0].id
-  #ca_certificate     = file(var.cert_fullchain)
-  certificate_name   = var.https_oci_certificates_certificate_name
-  private_key        = file(var.cert_private_key)
-  public_certificate = file(var.cert_public_cert)
+  certificate_name   = var.lb_https_certificate_name
+  ca_certificate     = var.lb_https_certificate_fullchain != "" ? file(var.lb_https_certificate_fullchain) : null
+  private_key        = file(var.lb_https_certificate_private_key)
+  public_certificate = file(var.lb_https_certificate_public_cert)
 
   lifecycle {
     create_before_destroy = true
