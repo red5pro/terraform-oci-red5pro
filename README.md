@@ -230,19 +230,23 @@ module "red5pro_cluster" {
   node_group_create                    = true                      # Linux or Mac OS only. true - create new Node group, false - not create new Node group
   node_group_name                      = "terraform-node-group"    # Node group name
   # Origin node configuration
-  node_group_origins                   = 1                         # Number of Origins
+  node_group_origins_min               = 1                         # Number of minimum Origins
+  node_group_origins_max               = 20                        # Number of maximum Origins
   node_group_origins_instance_type     = "VM.Standard.E4.Flex-1-4" # Origins OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
   node_group_origins_capacity          = 30                        # Connections capacity for Origins
   # Edge node configuration
-  node_group_edges                     = 1                         # Number of Edges
+  node_group_edges_min                 = 1                         # Number of minimum Edges
+  node_group_edges_max                 = 40                        # Number of maximum Edges
   node_group_edges_instance_type       = "VM.Standard.E4.Flex-1-4" # Edges OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
   node_group_edges_capacity            = 300                       # Connections capacity for Edges
   # Transcoder node configuration
-  node_group_transcoders               = 0                         # Number of Transcoders
+  node_group_transcoders_min           = 0                         # Number of minimum Transcoders
+  node_group_transcoders_max           = 20                        # Number of maximum Transcoders
   node_group_transcoders_instance_type = "VM.Standard.E4.Flex-1-4" # Transcoders OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
   node_group_transcoders_capacity      = 30                        # Connections capacity for Transcoders
   # Relay node configuration
-  node_group_relays                    = 0                         # Number of Relays
+  node_group_relays_min                = 0                         # Number of minimum Relays
+  node_group_relays_max                = 20                        # Number of maximum Relays
   node_group_relays_instance_type      = "VM.Standard.E4.Flex-1-4" # Relays OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
   node_group_relays_capacity           = 30                        # Connections capacity for Relays
 }
@@ -356,19 +360,23 @@ module "red5pro_autoscaling" {
   node_group_create                    = true                      # Linux or Mac OS only. true - create new Node group, false - not create new Node group
   node_group_name                      = "terraform-node-group"    # Node group name
   # Origin node configuration
-  node_group_origins                   = 1                         # Number of Origins
+  node_group_origins_min               = 1                         # Number of minimum Origins
+  node_group_origins_max               = 20                        # Number of maximum Origins
   node_group_origins_instance_type     = "VM.Standard.E4.Flex-1-4" # Origins OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
   node_group_origins_capacity          = 30                        # Connections capacity for Origins
   # Edge node configuration
-  node_group_edges                     = 1                         # Number of Edges
+  node_group_edges_min                 = 1                         # Number of minimum Edges
+  node_group_edges_max                 = 40                        # Number of maximum Edges
   node_group_edges_instance_type       = "VM.Standard.E4.Flex-1-4" # Edges OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
   node_group_edges_capacity            = 300                       # Connections capacity for Edges
   # Transcoder node configuration
-  node_group_transcoders               = 0                         # Number of Transcoders
+  node_group_transcoders_min           = 0                         # Number of minimum Transcoders
+  node_group_transcoders_max           = 20                        # Number of maximum Transcoders
   node_group_transcoders_instance_type = "VM.Standard.E4.Flex-1-4" # Transcoders OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
   node_group_transcoders_capacity      = 30                        # Connections capacity for Transcoders
   # Relay node configuration
-  node_group_relays                    = 0                         # Number of Relays
+  node_group_relays_min                = 0                         # Number of minimum Relays
+  node_group_relays_max                = 20                        # Number of maximum Relays
   node_group_relays_instance_type      = "VM.Standard.E4.Flex-1-4" # Relays OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
   node_group_relays_capacity           = 30                        # Connections capacity for Relays
 }
