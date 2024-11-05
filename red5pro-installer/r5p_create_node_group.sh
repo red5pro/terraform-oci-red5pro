@@ -1,225 +1,136 @@
 #!/bin/bash
 
-# NAME
-# SM_IP
-# SM_API_KEY
-# NODE_GROUP_REGION
+# SM_URL="https://oles-terra-sm2.red5pro.net"
+# R5AS_AUTH_USER="admin"
+# R5AS_AUTH_PASS="xyz123"
 
-# NODE_GROUP_NAME="terra-node-group"
+# NODE_GROUP_REGION="us-ashburn-1"
+# NODE_ENVIRONMENT="terra"
+# NODE_SUBNET_NAME="red5-ci-deployments-multiregion-subnet-public"
+# NODE_SECURITY_GROUP_NAME="red5-ci-deployments-multiregion-node-nsg"
+# NODE_IMAGE_NAME="as-node-b3367-b290"
 
 # ORIGINS_MIN=1
-# EDGES_MIN=1
-# TRANSCODERS_MIN=1
-# RELAYS_MIN=1
+# EDGES_MIN=0
+# TRANSCODERS_MIN=0
+# RELAYS_MIN=0
 
 # ORIGINS_MAX=1
 # EDGES_MAX=1
 # TRANSCODERS_MAX=1
 # RELAYS_MAX=1
 
-# ORIGIN_INSTANCE_TYPE="c-4"
-# EDGE_INSTANCE_TYPE="c-4"
-# TRANSCODER_INSTANCE_TYPE="c-4"
-# RELAY_INSTANCE_TYPE="c-4"
+# ORIGIN_INSTANCE_TYPE="VM.Standard.E4.Flex-1-4"
+# EDGE_INSTANCE_TYPE="VM.Standard.E4.Flex-1-4"
+# TRANSCODER_INSTANCE_TYPE="VM.Standard.E4.Flex-1-4"
+# RELAY_INSTANCE_TYPE="VM.Standard.E4.Flex-1-4"
 
-# ORIGIN_CAPACITY="30"
-# EDGE_CAPACITY="300"
-# TRANSCODER_CAPACITY="30"
-# RELAY_CAPACITY="30"
+# ORIGIN_VOLUME_SIZE="50"
+# EDGE_VOLUME_SIZE="50"
+# TRANSCODER_VOLUME_SIZE="50"
+# RELAY_VOLUME_SIZE="50"
 
-# ORIGIN_IMAGE_NAME="origin-image"
-# EDGE_IMAGE_NAME="edge-image"
-# TRANSCODER_IMAGE_NAME="transcoder-image"
-# RELAY_IMAGE_NAME="relay-image"
-
-nodes_name="${NAME}-node"
-timestamp=$(date +%s)
+#PATH_TO_JSON_TEMPLATES="./nodegroup-json-templates"
 
 log_i() {
     log
     printf "\033[0;32m [INFO]  --- %s \033[0m\n" "${@}"
 }
+log_d() {
+    log
+    printf "\033[0;34m [DEBUG]  --- %s \033[0m\n" "${@}"
+}
 log_w() {
     log
-    printf "\033[0;35m [WARN] --- %s \033[0m\n" "${@}"
+    printf "\033[0;33m [WARN] --- %s \033[0m\n" "${@}"
 }
 log_e() {
     log
     printf "\033[0;31m [ERROR]  --- %s \033[0m\n" "${@}"
-    exit 1
 }
 log() {
     echo -n "[$(date '+%Y-%m-%d %H:%M:%S')]"
 }
 
-prepare_json_templates(){
-    log_i "Preparing JSON templates"
-    log_i "Check available images for Origin, Edge, Transcoder, Relay"
+prepare_json_templates() {
+    log_i "Preparing JSON templates for node group: $NODE_GROUP_TYPE"
 
-    if [[ -n "$ORIGIN_IMAGE_NAME" || "$ORIGIN_IMAGE_NAME" != "null" ]]; then
-        if [[ -z "$EDGE_IMAGE_NAME" || "$EDGE_IMAGE_NAME" == "null" ]]; then
-            log_i "Edge image is not set. Using Origin image for Edge"
-            EDGE_IMAGE_NAME=$ORIGIN_IMAGE_NAME
-        fi
-        if [[ -z "$TRANSCODER_IMAGE_NAME" || "$TRANSCODER_IMAGE_NAME" == "null" ]]; then
-            log_i "Transcoder image is not set. Using Origin image for Transcoder"
-            TRANSCODER_IMAGE_NAME=$ORIGIN_IMAGE_NAME
-        fi
-        if [[ -z "$RELAY_IMAGE_NAME" || "$RELAY_IMAGE_NAME" == "null" ]]; then
-            log_i "Relay image is not set. Using Origin image for Relay"
-            RELAY_IMAGE_NAME=$ORIGIN_IMAGE_NAME
-        fi
-    else
-        log_e "Main Origin image is not set. Exit."
-    fi
+    local node_env_pattern='NODE_ENVIRONMENT'
+    local node_env_new="${NODE_ENVIRONMENT}"
 
-    log_i "-------------------------------------------"
-    log_i "Origin image: $ORIGIN_IMAGE_NAME"
-    log_i "Edge image: $EDGE_IMAGE_NAME"
-    log_i "Transcoder image: $TRANSCODER_IMAGE_NAME"
-    log_i "Relay image: $RELAY_IMAGE_NAME"
-    log_i "-------------------------------------------"
+    local node_subnet_pattern='NODE_SUBNET_NAME'
+    local node_subnet_new="${NODE_SUBNET_NAME}"
 
-    launch_config_o='{"launchconfig":{"name":"'${launch_config_name}'","description":"Launch config Origin","image":"'$ORIGIN_IMAGE_NAME'","version":"0.0.3","targets":{"target":[{"role":"origin","instanceType":"'$ORIGIN_INSTANCE_TYPE'","connectionCapacity":"'$ORIGIN_CAPACITY'"}]},"properties":{"property":[{"name":"property-name","value":"property-value"}]},"metadata":{"meta":[{"key":"Name","value":"'${nodes_name}'"}]}}}'
-    launch_config_oe='{"launchconfig":{"name":"'${launch_config_name}'","description":"Launch config Origin,Edge","image":"'$ORIGIN_IMAGE_NAME'","version":"0.0.3","targets":{"target":[{"role":"origin","instanceType":"'$ORIGIN_INSTANCE_TYPE'","connectionCapacity":"'$ORIGIN_CAPACITY'"},{"role":"edge","instanceType":"'$EDGE_INSTANCE_TYPE'","connectionCapacity":"'$EDGE_CAPACITY'","image":"'$EDGE_IMAGE_NAME'"}]},"properties":{"property":[{"name":"property-name","value":"property-value"}]},"metadata":{"meta":[{"key":"Name","value":"'${nodes_name}'"}]}}}'
-    launch_config_oer='{"launchconfig":{"name":"'${launch_config_name}'","description":"Launch config Origin,Edge,Relay","image":"'$ORIGIN_IMAGE_NAME'","version":"0.0.3","targets":{"target":[{"role":"origin","instanceType":"'$ORIGIN_INSTANCE_TYPE'","connectionCapacity":"'$ORIGIN_CAPACITY'"},{"role":"edge","instanceType":"'$EDGE_INSTANCE_TYPE'","connectionCapacity":"'$EDGE_CAPACITY'","image":"'$EDGE_IMAGE_NAME'"},{"role":"relay","instanceType":"'$RELAY_INSTANCE_TYPE'","connectionCapacity":"'$RELAY_CAPACITY'","image":"'$RELAY_IMAGE_NAME'"}]},"properties":{"property":[{"name":"property-name","value":"property-value"}]},"metadata":{"meta":[{"key":"Name","value":"'${nodes_name}'"}]}}}'
-    launch_config_oet='{"launchconfig":{"name":"'${launch_config_name}'","description":"Launch config Origin,Edge,Transcoder","image":"'$ORIGIN_IMAGE_NAME'","version":"0.0.3","targets":{"target":[{"role":"origin","instanceType":"'$ORIGIN_INSTANCE_TYPE'","connectionCapacity":"'$ORIGIN_CAPACITY'"},{"role":"edge","instanceType":"'$EDGE_INSTANCE_TYPE'","connectionCapacity":"'$EDGE_CAPACITY'","image":"'$EDGE_IMAGE_NAME'"},{"role":"transcoder","instanceType":"'$TRANSCODER_INSTANCE_TYPE'","connectionCapacity":"'$TRANSCODER_CAPACITY'","image":"'$TRANSCODER_IMAGE_NAME'"}]},"properties":{"property":[{"name":"property-name","value":"property-value"}]},"metadata":{"meta":[{"key":"Name","value":"'${nodes_name}'"}]}}}'
-    launch_config_oetr='{"launchconfig":{"name":"'${launch_config_name}'","description":"Launch config Origin,Edge,Transcoder,Relay","image":"'$ORIGIN_IMAGE_NAME'","version":"0.0.3","targets":{"target":[{"role":"origin","instanceType":"'$ORIGIN_INSTANCE_TYPE'","connectionCapacity":"'$ORIGIN_CAPACITY'"},{"role":"edge","instanceType":"'$EDGE_INSTANCE_TYPE'","connectionCapacity":"'$EDGE_CAPACITY'","image":"'$EDGE_IMAGE_NAME'"},{"role":"relay","instanceType":"'$RELAY_INSTANCE_TYPE'","connectionCapacity":"'$RELAY_CAPACITY'","image":"'$RELAY_IMAGE_NAME'"},{"role":"transcoder","instanceType":"'$TRANSCODER_INSTANCE_TYPE'","connectionCapacity":"'$TRANSCODER_CAPACITY'","image":"'$TRANSCODER_IMAGE_NAME'"}]},"properties":{"property":[{"name":"property-name","value":"property-value"}]},"metadata":{"meta":[{"key":"Name","value":"'${nodes_name}'"}]}}}'
+    local node_security_group_pattern='NODE_SECURITY_GROUP_NAME'
+    local node_security_group_new="${NODE_SECURITY_GROUP_NAME}"
 
-    scale_policy_o='{"policy":{"name":"'${scale_policy_name}'","description":"Terraform Scale policy Origin","type":"com.red5pro.services.autoscaling.model.ScalePolicyMaster","version": "0.0.3","targets":{"region":[{"name":"default","target":[{"role":"origin","maxLimit":'$ORIGINS_MAX',"scaleAdjustment":1.0,"minLimit":'$ORIGINS_MIN'.0}]}]}}}'
-    scale_policy_oe='{"policy":{"name":"'${scale_policy_name}'","description":"Terraform Scale policy Origin, Edge","type":"com.red5pro.services.autoscaling.model.ScalePolicyMaster","version": "0.0.3","targets":{"region":[{"name":"default","target":[{"role":"edge","maxLimit":'$EDGES_MAX',"scaleAdjustment":1.0,"minLimit":'$EDGES_MIN'.0},{"role":"origin","maxLimit":'$ORIGINS_MAX',"scaleAdjustment":1.0,"minLimit":'$ORIGINS_MIN'.0}]}]}}}'
-    scale_policy_oer='{"policy":{"name":"'${scale_policy_name}'","description":"Terraform Scale policy Origin, Edge, Relay","type":"com.red5pro.services.autoscaling.model.ScalePolicyMaster","version": "0.0.3","targets":{"region":[{"name":"default","target":[{"role":"edge","maxLimit":'$EDGES_MAX',"scaleAdjustment":1.0,"minLimit":'$EDGES_MIN'.0},{"role":"origin","maxLimit":'$ORIGINS_MAX',"scaleAdjustment":1.0,"minLimit":'$ORIGINS_MIN'.0},{"role":"relay","maxLimit":'$RELAYS_MAX',"scaleAdjustment":1.0,"minLimit":'$RELAYS_MIN'.0}]}]}}}'
-    scale_policy_oet='{"policy":{"name":"'${scale_policy_name}'","description":"Terraform Scale policy Origin, Edge, Transcoder","type":"com.red5pro.services.autoscaling.model.ScalePolicyMaster","version": "0.0.3","targets":{"region":[{"name":"default","target":[{"role":"edge","maxLimit":'$EDGES_MAX',"scaleAdjustment":1.0,"minLimit":'$EDGES_MIN'.0},{"role":"origin","maxLimit":'$ORIGINS_MAX',"scaleAdjustment":1.0,"minLimit":'$ORIGINS_MIN'.0},{"role":"transcoder","maxLimit":'$TRANSCODERS_MAX',"scaleAdjustment":1.0,"minLimit":'$TRANSCODERS_MIN'.0}]}]}}}'
-    scale_policy_oetr='{"policy":{"name":"'${scale_policy_name}'","description":"Terraform Scale policy Origin, Edge, Transcoder, Relay","type":"com.red5pro.services.autoscaling.model.ScalePolicyMaster","version": "0.0.3","targets":{"region":[{"name":"default","target":[{"role":"edge","maxLimit":'$EDGES_MAX',"scaleAdjustment":1.0,"minLimit":'$EDGES_MIN'.0},{"role":"origin","maxLimit":'$ORIGINS_MAX',"scaleAdjustment":1.0,"minLimit":'$ORIGINS_MIN'.0},{"role":"transcoder","maxLimit":'$TRANSCODERS_MAX',"scaleAdjustment":1.0,"minLimit":'$TRANSCODERS_MIN'.0},{"role":"relay","maxLimit":'$RELAYS_MAX',"scaleAdjustment":1.0,"minLimit":'$RELAYS_MIN'.0}]}]}}}'
-}
+    local node_image_name_pattern='NODE_IMAGE_NAME'
+    local node_image_name_new="${NODE_IMAGE_NAME}"
 
-check_stream_manager(){
-    log_i "Checking Stream Manager status..."
-    
-    SM_STATUS_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/debug/cloudcontroller?accessToken=$SM_API_KEY"
+    local node_group_region_pattern='NODE_GROUP_REGION'
+    local node_group_region_new="${NODE_GROUP_REGION}"
 
-    for i in {1..20}; do
-        curl -s -m 5 -o /dev/null -w "%{http_code}" "$SM_STATUS_URL" > /dev/null
-        if [ $? -eq 0 ]; then
-            code_resp=$(curl -s -o /dev/null -w "%{http_code}" "$SM_STATUS_URL")
-            if [ "$code_resp" -eq 200 ]; then
-                log_i "Stream Manager is running. Status code: $code_resp"
-                break
-            else
-                log_i "Stream Manager is not running. Status code: $code_resp"
-            fi
-        else
-            log_w "Cycle $i - Stream Manager is not running!"
-        fi
-        
-        if [ "$i" -eq 20 ]; then
-            log_e "EXIT..."
-        fi
-        sleep 5
-    done
-}
+    local origins_volume_size_pattern='ORIGIN_VOLUME_SIZE'
+    local origins_volume_size_new="${ORIGIN_VOLUME_SIZE}"
+    local origins_instance_type_pattern='ORIGIN_INSTANCE_TYPE'
+    local origins_instance_type_new="${ORIGIN_INSTANCE_TYPE}"
+    local origins_min_pattern='ORIGINS_MIN'
+    local origins_min_new="${ORIGINS_MIN}"
+    local origins_max_pattern='ORIGINS_MAX'
+    local origins_max_new="${ORIGINS_MAX}"
 
-create_scale_policy(){
-    log_i "Creating a new Scale Policy with name: $scale_policy_name"
-    
-    CREATE_SCALE_POLICY_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/configurations/scalepolicy?accessToken=$SM_API_KEY"
+    local edges_volume_size_pattern='EDGE_VOLUME_SIZE'
+    local edges_volume_size_new="${EDGE_VOLUME_SIZE}"
+    local edges_instance_type_pattern='EDGE_INSTANCE_TYPE'
+    local edges_instance_type_new="${EDGE_INSTANCE_TYPE}"
+    local edges_min_pattern='EDGES_MIN'
+    local edges_min_new="${EDGES_MIN}"
+    local edges_max_pattern='EDGES_MAX'
+    local edges_max_new="${EDGES_MAX}"
 
-    resp=$(curl -s --location --request POST "$CREATE_SCALE_POLICY_URL" --header 'Content-Type: application/json' -d "$scale_policy")
-    scale_policy_name_resp=$(echo "$resp" | jq -r '.policy.name')
+    local transcoders_volume_size_pattern='TRANSCODER_VOLUME_SIZE'
+    local transcoders_volume_size_new="${TRANSCODER_VOLUME_SIZE}"
+    local transcoders_instance_type_pattern='TRANSCODER_INSTANCE_TYPE'
+    local transcoders_instance_type_new="${TRANSCODER_INSTANCE_TYPE}"
+    local transcoders_min_pattern='TRANSCODERS_MIN'
+    local transcoders_min_new="${TRANSCODERS_MIN}"
+    local transcoders_max_pattern='TRANSCODERS_MAX'
+    local transcoders_max_new="${TRANSCODERS_MAX}"
 
-    if [[ "$scale_policy_name_resp" == "$scale_policy_name" ]]; then
-        log_i "Scale policy config created successfully."
-    else
-        log_w "Response: $resp"
-        log_e "Scale policy was not created!!! EXIT..."
-    fi
-}
+    local relays_volume_size_pattern='RELAY_VOLUME_SIZE'
+    local relays_volume_size_new="${RELAY_VOLUME_SIZE}"
+    local relays_instance_type_pattern='RELAY_INSTANCE_TYPE'
+    local relays_instance_type_new="${RELAY_INSTANCE_TYPE}"
+    local relays_min_pattern='RELAYS_MIN'
+    local relays_min_new="${RELAYS_MIN}"
+    local relays_max_pattern='RELAYS_MAX'
+    local relays_max_new="${RELAYS_MAX}"
 
-create_launch_config(){
-    log_i "Creating a new Launch Config with name: $launch_config_name"
+    gsed -e "s|$node_env_pattern|$node_env_new|" \
+        -e "s|$node_subnet_pattern|$node_subnet_new|" \
+        -e "s|$node_security_group_pattern|$node_security_group_new|" \
+        -e "s|$node_image_name_pattern|$node_image_name_new|" \
+        -e "s|$node_group_region_pattern|$node_group_region_new|" \
+        -e "s|$origins_volume_size_pattern|$origins_volume_size_new|" \
+        -e "s|$origins_instance_type_pattern|$origins_instance_type_new|" \
+        -e "s|$origins_min_pattern|$origins_min_new|" \
+        -e "s|$origins_max_pattern|$origins_max_new|" \
+        -e "s|$edges_volume_size_pattern|$edges_volume_size_new|" \
+        -e "s|$edges_instance_type_pattern|$edges_instance_type_new|" \
+        -e "s|$edges_min_pattern|$edges_min_new|" \
+        -e "s|$edges_max_pattern|$edges_max_new|" \
+        -e "s|$transcoders_volume_size_pattern|$transcoders_volume_size_new|" \
+        -e "s|$transcoders_instance_type_pattern|$transcoders_instance_type_new|" \
+        -e "s|$transcoders_min_pattern|$transcoders_min_new|" \
+        -e "s|$transcoders_max_pattern|$transcoders_max_new|" \
+        -e "s|$relays_volume_size_pattern|$relays_volume_size_new|" \
+        -e "s|$relays_instance_type_pattern|$relays_instance_type_new|" \
+        -e "s|$relays_min_pattern|$relays_min_new|" \
+        -e "s|$relays_max_pattern|$relays_max_new|" \
+        "$nodegroup_config_json" >"$nodegroup_config_json_mod"
 
-    CREATE_LAUNCH_CONFIG_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/configurations/launchconfig?accessToken=$SM_API_KEY"
-    
-    resp=$(curl -s --location --request POST "$CREATE_LAUNCH_CONFIG_URL" --header 'Content-Type: application/json' -d "$launch_config")
-    launch_config_name_resp=$(echo "$resp" | jq -r '.name')
-
-    if [[ "$launch_config_name_resp" == "$launch_config_name" ]]; then
-        log_i "Launch config created successfully."
-    else
-        log_w "Response: $resp"
-        log_e "Launch config was not created!!! EXIT..."
-    fi
-}
-
-create_new_node_group(){
-    log_i "Creating a new Node Group with name: $NODE_GROUP_NAME"
-
-    CREATE_NODE_GROUP_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/nodegroup?accessToken=$SM_API_KEY"   
-    node_group="{"regions":["$NODE_GROUP_REGION"],"launchConfig":"$launch_config_name","scalePolicy":"$scale_policy_name","name":"$NODE_GROUP_NAME"}"
-
-    resp=$(curl -s --location --request POST "$CREATE_NODE_GROUP_URL" --header 'Content-Type: application/json' -d "$node_group")
-    node_group_name_resp=$(echo "$resp" | jq -r '.name')
-
-    if [[ "$node_group_name_resp" == "$NODE_GROUP_NAME" ]]; then
-        log_i "Node group created successfully."
-    else
-        log_w "Response: $resp"
-        log_e "Node group was not created!!! EXIT..."
-    fi
-}
-
-add_origin_to_node_group(){
-    log_i "Starting a new Origin ..."
-
-    CREATE_ORIGIN_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/nodegroup/$NODE_GROUP_NAME/node/origin?accessToken=$SM_API_KEY"
-    resp=$(curl -s --location --request POST $CREATE_ORIGIN_URL)
-    origin_resp=$(echo "$resp" | jq -r '.group')
-
-    if [[ "$origin_resp" == "$NODE_GROUP_NAME" ]]; then
-        log_i "Origin started successfully."
-    else
-        log_w "Response: $resp"
-        log_e "Origin was not started!!! EXIT..."
-    fi
-}
-
-check_node_group(){
-    log_i "Checking states of nodes in new node group."
-
-    NODES_URL="http://$SM_IP:5080/streammanager/api/4.0/admin/nodegroup/$NODE_GROUP_NAME/node?accessToken=$SM_API_KEY"
-    
-    for i in {1..10};
-    do
-        resp=$(curl -s "$NODES_URL")
-        echo "$resp" |jq -r '.[] | [.identifier, .role, .state] | join(" ")' > temp.txt
-        
-        nodes=$(awk '{print $1}' < temp.txt)
-        node_bad_state=0
-        
-        for index in $nodes
-        do
-            node_role=$(grep "$index" temp.txt | awk '{print $2}')
-            node_state=$(grep "$index" temp.txt | awk '{print $3}')
-            if [[ "$node_state" == "inservice" ]]; then
-                log_i "Node: $index, role: $node_role, state: $node_state - READY"
-            else
-                log_w "Node: $index, role: $node_role, state: $node_state - NOT READY"
-                node_bad_state=1
-            fi
-        done
-        
-        if [[ $node_bad_state -ne 1 ]]; then
-            log_i "All nodes are ready to go! :)"
-            if [ -f temp.txt ]; then
-                rm temp.txt
-            fi
-            break
-        fi
-        if [[ $i -eq 10 ]]; then
-            log_e "Something wrong with nodes states. (Terraform service can't deploy nodes or nodes can't connect to SM). EXIT..."
-        fi
-        sleep 30
-    done
+    log_d "JSON template: $nodegroup_config_json_mod"
+    cat "$nodegroup_config_json_mod"
 }
 
 if [ -z "$ORIGINS_MIN" ]; then
@@ -246,53 +157,170 @@ elif [ "$ORIGINS_MIN" -gt 0 ] && [ "$EDGES_MIN" -gt 0 ]; then
 elif [ "$ORIGINS_MIN" -gt 0 ]; then
     NODE_GROUP_TYPE="o"
 else
-    log_e "Node group type was not found: $NODE_GROUP_TYPE, EXIT...";
+    log_e "Node group type was not found: $NODE_GROUP_TYPE, EXIT..."
+    exit 1
 fi
 
 log_i "NODE_GROUP_TYPE: $NODE_GROUP_TYPE"
 
 case $NODE_GROUP_TYPE in
-    o) 
-        scale_policy_name="${NAME}-scale-policy-${ORIGINS_MIN}o-${timestamp}"
-        launch_config_name="${NAME}-launch-config-o-${timestamp}"
-        prepare_json_templates
-        scale_policy=$scale_policy_o
-        launch_config=$launch_config_o
+o)
+    nodegroup_config_name="nodegroup-o"
+    nodegroup_config_json="$PATH_TO_JSON_TEMPLATES/nodegroup_config_o.json"
+    nodegroup_config_json_mod="$PATH_TO_JSON_TEMPLATES/nodegroup_config_o_mod.json"
     ;;
-    oe) 
-        scale_policy_name="${NAME}-scale-policy-${ORIGINS_MIN}o-${EDGES_MIN}e-${timestamp}"
-        launch_config_name="${NAME}-launch-config-oe-${timestamp}"
-        prepare_json_templates
-        scale_policy=$scale_policy_oe
-        launch_config=$launch_config_oe
+oe)
+    nodegroup_config_name="nodegroup-oe"
+    nodegroup_config_json="$PATH_TO_JSON_TEMPLATES/nodegroup_config_oe.json"
+    nodegroup_config_json_mod="$PATH_TO_JSON_TEMPLATES/nodegroup_config_oe_mod.json"
     ;;
-    oer) 
-        scale_policy_name="${NAME}-scale-policy-${ORIGINS_MIN}o-${EDGES_MIN}e-${RELAYS_MIN}r-${timestamp}"
-        launch_config_name="${NAME}-launch-config-oer-${timestamp}"
-        prepare_json_templates
-        scale_policy=$scale_policy_oer
-        launch_config=$launch_config_oer
+oer)
+    nodegroup_config_name="nodegroup-oer"
+    nodegroup_config_json="$PATH_TO_JSON_TEMPLATES/nodegroup_config_oer.json"
+    nodegroup_config_json_mod="$PATH_TO_JSON_TEMPLATES/nodegroup_config_oer_mod.json"
     ;;
-    oet) 
-        scale_policy_name="${NAME}-scale-policy-${ORIGINS_MIN}o-${EDGES_MIN}e-${TRANSCODERS_MIN}t-${timestamp}"
-        launch_config_name="${NAME}-launch-config-oet-${timestamp}"
-        prepare_json_templates
-        scale_policy=$scale_policy_oet
-        launch_config=$launch_config_oet
+oet)
+    nodegroup_config_name="nodegroup-oet"
+    nodegroup_config_json="$PATH_TO_JSON_TEMPLATES/nodegroup_config_oet.json"
+    nodegroup_config_json_mod="$PATH_TO_JSON_TEMPLATES/nodegroup_config_oet_mod.json"
     ;;
-    oetr) 
-        scale_policy_name="${NAME}-scale-policy-${ORIGINS_MIN}o-${EDGES_MIN}e-${TRANSCODERS_MIN}t-${RELAYS_MIN}r-${timestamp}"
-        launch_config_name="${NAME}-launch-config-oetr-${timestamp}"
-        prepare_json_templates
-        scale_policy=$scale_policy_oetr
-        launch_config=$launch_config_oetr
+oetr)
+    nodegroup_config_name="nodegroup-oetr"
+    nodegroup_config_json="$PATH_TO_JSON_TEMPLATES/nodegroup_config_oetr.json"
+    nodegroup_config_json_mod="$PATH_TO_JSON_TEMPLATES/nodegroup_config_oetr_mod.json"
     ;;
-    *) log_e " Node group type was not found: $NODE_GROUP_TYPE, EXIT...";
+*)
+    log_e "Node group type was not found: $NODE_GROUP_TYPE, EXIT..."
+    exit 1
+    ;;
 esac
 
+check_stream_manager() {
+    log_i "Checking Stream Manager status..."
+
+    SM_STATUS_URL="$SM_URL/as/v1/admin/healthz"
+
+    for i in {1..20}; do
+        curl --insecure -s -m 5 -o /dev/null -w "%{http_code}" "$SM_STATUS_URL" >/dev/null
+        if [ $? -eq 0 ]; then
+            code_resp=$(curl --insecure -s -o /dev/null -w "%{http_code}" "$SM_STATUS_URL")
+            if [ "$code_resp" -eq 200 ]; then
+                log_i "Stream Manager is running. Status code: $code_resp"
+                break
+            else
+                log_i "Stream Manager is not running. Status code: $code_resp"
+            fi
+        else
+            log_w "Stream Manager is not running! - Attempt $i"
+        fi
+
+        if [ "$i" -eq 20 ]; then
+            log_e "EXIT..."
+            exit 1
+        fi
+        sleep 30
+    done
+}
+
+# base64 --version
+
+# echo -n 'username:password' | base64
+
+create_jwT_token() {
+    log_i "Creating JWT token..."
+    USER_AND_PASSWORD_IN_BASE64=$(echo -n "$R5AS_AUTH_USER:$R5AS_AUTH_PASS" | base64)
+
+    for i in {1..5}; do
+        JVT_TOKEN_JSON=$(curl --insecure -s -X 'PUT' "$SM_URL/as/v1/auth/login" -H 'accept: application/json' -H "Authorization: Basic $USER_AND_PASSWORD_IN_BASE64")
+        JVT_TOKEN=$(jq -r '.token' <<<"$JVT_TOKEN_JSON")
+
+        if [ -z "$JVT_TOKEN" ] || [ "$JVT_TOKEN" == "null" ]; then
+            log_w "JWT token was not created! - Attempt $i"
+            log_d "JVT_TOKEN_JSON: $JVT_TOKEN_JSON"
+        else
+            log_i "JWT token created successfully."
+            break
+        fi
+
+        if [ "$i" -eq 5 ]; then
+            log_e "JWT token was not created!!! EXIT..."
+            exit 1
+        fi
+        sleep 5
+    done
+}
+
+create_new_node_group() {
+    log_i "Creating a new Node Group with name: $nodegroup_config_name"
+
+    for i in {1..5}; do
+        node_group_resp=$(curl --insecure -s -o /dev/null -w "%{http_code}" --location --request POST "$SM_URL/as/v1/admin/nodegroup" --header "Authorization: Bearer ${JVT_TOKEN}" --header 'Content-Type: application/json' --data "@$nodegroup_config_json_mod")
+
+        if [[ "$node_group_resp" == "200" ]]; then
+            log_i "Node group created successfully."
+            break
+        else
+            log_w "Node group was not created! - Attempt $i"
+        fi
+
+        if [ "$i" -eq 5 ]; then
+            node_group_resp_error=$(curl --insecure -s --request POST "$SM_URL/as/v1/admin/nodegroup" --header "Authorization: Bearer ${JVT_TOKEN}" --header 'Content-Type: application/json' --data "@$nodegroup_config_json_mod")
+            log_d "Node group response with error: $node_group_resp_error"
+            log_e "Node group was not created!!! EXIT..."
+            exit 1
+        fi
+        sleep 30
+    done
+}
+
+check_node_group() {
+    log_i "Checking states of nodes in new node group, Name: $nodegroup_config_name"
+
+    NODES_URL="$SM_URL/as/v1/admin/nodegroup/status/$nodegroup_config_name"
+    
+    for i in {1..20}; do
+        curl --insecure -s --request GET "$NODES_URL" --header "Authorization: Bearer ${JVT_TOKEN}" | jq -r '.[] | [.scalingEvent.nodeId, .nodeEvent.publicIp // "null", .nodeEvent.privateIp // "null", .nodeEvent.nodeRoleName // "null", .scalingEvent.state, .scalingEvent.test // "null"] | join(" ")' > temp.txt
+
+        node_bad_state=0
+
+        if [ ! -s temp.txt ]; then
+            log_d "Nodes are not ready yet! - Attempt $i"
+            node_bad_state=1
+        else
+            while read line; do
+                node_id=$(echo "$line" | awk '{print $1}')
+                node_public_ip=$(echo "$line" | awk '{print $2}')
+                node_private_ip=$(echo "$line" | awk '{print $3}')
+                node_role=$(echo "$line" | awk '{print $4}')
+                node_state=$(echo "$line" | awk '{print $5}')
+
+                if [[ "$node_state" == "INSERVICE" ]]; then
+                    log_i "NodeID: $node_id, NodePublicIP: $node_public_ip, NodePrivateIP: $node_private_ip, NodeRole: $node_role, NodeState: $node_state - READY"
+                else
+                    log_d "NodeID: $node_id, NodePublicIP: $node_public_ip, NodePrivateIP: $node_private_ip, NodeRole: $node_role, NodeState: $node_state - NOT READY"
+                    node_bad_state=1
+                fi
+            done <temp.txt
+        fi
+
+        if [[ $node_bad_state -ne 1 ]]; then
+            log_i "All nodes are ready to go! :)"
+            if [ -f temp.txt ]; then
+                rm temp.txt
+            fi
+            break
+        fi
+
+        if [[ $i -eq 10 ]]; then
+            log_e "Something wrong with nodes states. (SM2.0 was not able to create nodes or nodes can't connect to SM). EXIT..."
+            exit 1
+        fi
+        sleep 30
+    done
+}
+
+prepare_json_templates
 check_stream_manager
-create_scale_policy
-create_launch_config
+create_jwT_token
 create_new_node_group
-add_origin_to_node_group
 check_node_group
