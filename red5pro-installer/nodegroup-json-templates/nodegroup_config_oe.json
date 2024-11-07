@@ -20,14 +20,16 @@
         "origin": {
             "name": "origin",
             "imageName": "origin_image",
-            "capabilities": ["PUBLISH"]
+            "capabilities": ["PUBLISH"],
+            "propertyOverrides": []
         },
         "edge": {
             "name": "edge",
             "imageName": "edge_image",
             "parentRoleName": "origin",
             "parentCardinality": "GLOBAL",
-            "capabilities": ["SUBSCRIBE"]
+            "capabilities": ["SUBSCRIBE"],
+            "propertyOverrides": []
         }
     },
     "groups": {

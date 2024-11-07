@@ -240,8 +240,8 @@ resource "tls_self_signed_cert" "ca_cert" {
 resource "tls_cert_request" "kafka_server_csr" {
   count           = local.cluster_or_autoscale ? 1 : 0
   private_key_pem = tls_private_key.kafka_server_key[0].private_key_pem
-  ip_addresses = [local.kafka_ip]
-  dns_names    = ["kafka0"]
+  ip_addresses    = [local.kafka_ip]
+  dns_names       = ["kafka0"]
 
   subject {
     country             = "US"
@@ -542,9 +542,9 @@ resource "oci_load_balancer_listener" "red5pro_lb_listener_https" {
 
 # OCI LB SSL certificate
 resource "oci_load_balancer_certificate" "red5pro_lb_ssl_cert" {
-  count              = local.autoscale && var.https_ssl_certificate == "imported" ? 1 : 0
-  load_balancer_id   = oci_load_balancer_load_balancer.red5pro_lb[0].id
-  certificate_name   = var.https_ssl_certificate_domain_name
+  count            = local.autoscale && var.https_ssl_certificate == "imported" ? 1 : 0
+  load_balancer_id = oci_load_balancer_load_balancer.red5pro_lb[0].id
+  certificate_name = var.https_ssl_certificate_domain_name
   # ca_certificate     = var.lb_https_certificate_fullchain != "" ? file(var.lb_https_certificate_fullchain) : null
   private_key        = file(var.https_ssl_certificate_key_path)
   public_certificate = file(var.https_ssl_certificate_cert_path)
@@ -801,7 +801,7 @@ resource "null_resource" "stop_stream_manager" {
 }
 
 # Stop Origin Node instance using OCI CLI
-resource "null_resource" "stop_node_origin" {
+resource "null_resource" "stop_node" {
   count = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
   provisioner "local-exec" {
     command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node[0].id}"
@@ -836,7 +836,7 @@ resource "time_sleep" "wait_for_delete_nodegroup" {
     oci_core_network_security_group_security_rule.red5pro_kafka_nsg_security_rule_ingress[1],
     oci_core_route_table_attachment.red5pro_route_table_attachment,
   ]
-  destroy_duration = "240s"
+  destroy_duration = "300s"
 }
 
 resource "null_resource" "node_group" {
@@ -851,31 +851,49 @@ resource "null_resource" "node_group" {
     when    = create
     command = "bash ${abspath(path.module)}/red5pro-installer/r5p_create_node_group.sh"
     environment = {
-      SM_URL                   = "${local.stream_manager_url}"
-      R5AS_AUTH_USER           = "${var.stream_manager_auth_user}"
-      R5AS_AUTH_PASS           = "${var.stream_manager_auth_password}"
-      NODE_GROUP_REGION        = "${var.oracle_region}"
-      NODE_ENVIRONMENT         = "${var.name}"
-      NODE_SUBNET_NAME         = "${local.subnet_name}"
-      NODE_SECURITY_GROUP_NAME = "${oci_core_network_security_group.red5pro_node_network_security_group[0].display_name}"
-      NODE_IMAGE_NAME          = "${oci_core_image.red5pro_node_image[0].display_name}"
-      ORIGINS_MIN              = "${var.node_group_origins_min}"
-      ORIGINS_MAX              = "${var.node_group_origins_max}"
-      ORIGIN_INSTANCE_TYPE     = "${var.node_group_origins_instance_type}"
-      ORIGIN_VOLUME_SIZE       = "${var.node_group_origins_volume_size}"
-      EDGES_MIN                = "${var.node_group_edges_min}"
-      EDGES_MAX                = "${var.node_group_edges_max}"
-      EDGE_INSTANCE_TYPE       = "${var.node_group_edges_instance_type}"
-      EDGE_VOLUME_SIZE         = "${var.node_group_edges_volume_size}"
-      TRANSCODERS_MIN          = "${var.node_group_transcoders_min}"
-      TRANSCODERS_MAX          = "${var.node_group_transcoders_max}"
-      TRANSCODER_INSTANCE_TYPE = "${var.node_group_transcoders_instance_type}"
-      TRANSCODER_VOLUME_SIZE   = "${var.node_group_transcoders_volume_size}"
-      RELAYS_MIN               = "${var.node_group_relays_min}"
-      RELAYS_MAX               = "${var.node_group_relays_max}"
-      RELAY_INSTANCE_TYPE      = "${var.node_group_relays_instance_type}"
-      RELAY_VOLUME_SIZE        = "${var.node_group_relays_volume_size}"
-      PATH_TO_JSON_TEMPLATES   = "${abspath(path.module)}/red5pro-installer/nodegroup-json-templates"
+      SM_URL                                   = "${local.stream_manager_url}"
+      R5AS_AUTH_USER                           = "${var.stream_manager_auth_user}"
+      R5AS_AUTH_PASS                           = "${var.stream_manager_auth_password}"
+      NODE_GROUP_REGION                        = "${var.oracle_region}"
+      NODE_ENVIRONMENT                         = "${var.name}"
+      NODE_SUBNET_NAME                         = "${local.subnet_name}"
+      NODE_SECURITY_GROUP_NAME                 = "${oci_core_network_security_group.red5pro_node_network_security_group[0].display_name}"
+      NODE_IMAGE_NAME                          = "${oci_core_image.red5pro_node_image[0].display_name}"
+      ORIGINS_MIN                              = "${var.node_group_origins_min}"
+      ORIGINS_MAX                              = "${var.node_group_origins_max}"
+      ORIGIN_INSTANCE_TYPE                     = "${var.node_group_origins_instance_type}"
+      ORIGIN_VOLUME_SIZE                       = "${var.node_group_origins_volume_size}"
+      EDGES_MIN                                = "${var.node_group_edges_min}"
+      EDGES_MAX                                = "${var.node_group_edges_max}"
+      EDGE_INSTANCE_TYPE                       = "${var.node_group_edges_instance_type}"
+      EDGE_VOLUME_SIZE                         = "${var.node_group_edges_volume_size}"
+      TRANSCODERS_MIN                          = "${var.node_group_transcoders_min}"
+      TRANSCODERS_MAX                          = "${var.node_group_transcoders_max}"
+      TRANSCODER_INSTANCE_TYPE                 = "${var.node_group_transcoders_instance_type}"
+      TRANSCODER_VOLUME_SIZE                   = "${var.node_group_transcoders_volume_size}"
+      RELAYS_MIN                               = "${var.node_group_relays_min}"
+      RELAYS_MAX                               = "${var.node_group_relays_max}"
+      RELAY_INSTANCE_TYPE                      = "${var.node_group_relays_instance_type}"
+      RELAY_VOLUME_SIZE                        = "${var.node_group_relays_volume_size}"
+      PATH_TO_JSON_TEMPLATES                   = "${abspath(path.module)}/red5pro-installer/nodegroup-json-templates"
+      NODE_ROUND_TRIP_AUTH_ENABLE              = "${var.node_config_round_trip_auth.enable}"
+      NODE_ROUNT_TRIP_AUTH_TARGET_NODES        = "${join(",", var.node_config_round_trip_auth.target_nodes)}"
+      NODE_ROUND_TRIP_AUTH_HOST                = "${var.node_config_round_trip_auth.auth_host}"
+      NODE_ROUND_TRIP_AUTH_PORT                = "${var.node_config_round_trip_auth.auth_port}"
+      NODE_ROUND_TRIP_AUTH_PROTOCOL            = "${var.node_config_round_trip_auth.auth_protocol}"
+      NODE_ROUND_TRIP_AUTH_ENDPOINT_VALIDATE   = "${var.node_config_round_trip_auth.auth_endpoint_validate}"
+      NODE_ROUND_TRIP_AUTH_ENDPOINT_INVALIDATE = "${var.node_config_round_trip_auth.auth_endpoint_invalidate}"
+      NODE_WEBHOOK_ENABLE                      = "${var.node_config_webhooks.enable}"
+      NODE_WEBHOOK_TARGET_NODES                = "${join(",", var.node_config_webhooks.target_nodes)}"
+      NODE_WEBHOOK_ENDPOINT                    = "${var.node_config_webhooks.webhook_endpoint}"
+      NODE_SOCIAL_PUSHER_ENABLE                = "${var.node_config_social_pusher.enable}"
+      NODE_SOCIAL_PUSHER_TARGET_NODES          = "${join(",", var.node_config_social_pusher.target_nodes)}"
+      NODE_RESTREAMER_ENABLE                   = "${var.node_config_restreamer.enable}"
+      NODE_RESTREAMER_TARGET_NODES             = "${join(",", var.node_config_restreamer.target_nodes)}"
+      NODE_RESTREAMER_TSINGEST                 = "${var.node_config_restreamer.restreamer_tsingest}"
+      NODE_RESTREAMER_IPCAM                    = "${var.node_config_restreamer.restreamer_ipcam}"
+      NODE_RESTREAMER_WHIP                     = "${var.node_config_restreamer.restreamer_whip}"
+      NODE_RESTREAMER_SRTINGEST                = "${var.node_config_restreamer.restreamer_srtingest}"
     }
   }
 

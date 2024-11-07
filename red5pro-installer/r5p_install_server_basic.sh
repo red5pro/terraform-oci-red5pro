@@ -7,7 +7,7 @@ RED5_HOME="/usr/local/red5pro"
 CURRENT_DIRECTORY=$(pwd)
 TEMP_FOLDER="$CURRENT_DIRECTORY/tmp"
 
-PACKAGES_DEFAULT=(jsvc ntp git unzip libvdpau1)
+PACKAGES_DEFAULT=(jsvc ntp git unzip libvdpau1 ffmpeg)
 PACKAGES_1604=(default-jre libva1 libva-drm1 libva-x11-1)
 PACKAGES_1804=(libva2 libva-drm2 libva-x11-2)
 PACKAGES_2004=(libva2 libva-drm2 libva-x11-2)
@@ -88,7 +88,7 @@ check_linux_and_java_versions(){
 }
 
 install_pkg(){
-    for i in {1..5};
+    for i in {1..20};
     do
         
         local install_issuse=0;
@@ -114,11 +114,11 @@ install_pkg(){
         if [ $install_issuse -eq 0 ]; then
             break
         fi
-        if [ $i -ge 5 ]; then
+        if [ $i -ge 20 ]; then
             log_e "Something wrong with packages installation!!! Exit."
             exit 1
         fi
-        sleep 20
+        sleep 30
     done
 }
 
@@ -183,12 +183,13 @@ linux_optimization(){
     ulimit -n 1000000
 }
 
-log_i "Check if apt is locked"
-
-while lsof /var/lib/apt/lists/lock ; do 
-    log_i "apt is locked, wait 20 sec"
-    sleep 20
-done
+if command -v flock &> /dev/null; then
+    log_i "Check if apt is locked"
+    while ! flock -n /var/lib/apt/lists/lock true; do 
+        echo "apt is locked, wait 5 sec"
+        sleep 5
+    done
+fi
 
 PACKAGES=("${PACKAGES_DEFAULT[@]}")
 install_pkg

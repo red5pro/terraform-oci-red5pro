@@ -722,3 +722,57 @@ variable "ubuntu_version" {
     error_message = "Please specify the correct ubuntu version, currently only 22.04 is supported"
   }
 }
+
+# Extra configuration for Red5 Pro autoscaling nodes
+variable "node_config_webhooks" {
+  description = "Webhooks configuration - (Optional) https://www.red5.net/docs/special/webhooks/overview/"
+  type = object({
+    enable           = bool
+    target_nodes     = list(string)
+    webhook_endpoint = string
+  })
+  default = {
+    enable           = false
+    target_nodes     = []
+    webhook_endpoint = ""
+  }
+}
+variable "node_config_round_trip_auth" {
+  description = "Round trip authentication configuration - (Optional) https://www.red5.net/docs/special/authplugin/simple-auth/"
+  type = object({
+    enable                   = bool
+    target_nodes             = list(string)
+    auth_host                = string
+    auth_port                = number
+    auth_protocol            = string
+    auth_endpoint_validate   = string
+    auth_endpoint_invalidate = string
+  })
+  default = {
+    enable                   = false
+    target_nodes             = []
+    auth_host                = ""
+    auth_port                = 443
+    auth_protocol            = "https"
+    auth_endpoint_validate   = "/validateCredentials"
+    auth_endpoint_invalidate = "/invalidateCredentials"
+  }
+}
+variable "node_config_social_pusher" {
+  description = "Social Pusher configuration - (Optional) https://www.red5.net/docs/development/social-media-plugin/rest-api/"
+  type = object({
+    enable       = bool
+    target_nodes = list(string)
+  })
+}
+variable "node_config_restreamer" {
+  description = "Restreamer configuration - (Optional) https://www.red5.net/docs/special/restreamer/overview/"
+  type = object({
+    enable               = bool
+    target_nodes         = list(string)
+    restreamer_tsingest  = bool
+    restreamer_ipcam     = bool
+    restreamer_whip      = bool
+    restreamer_srtingest = bool
+  })
+}

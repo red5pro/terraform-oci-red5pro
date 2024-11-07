@@ -30,26 +30,30 @@
         "origin": {
             "name": "origin",
             "imageName": "origin_image",
-            "capabilities": ["PUBLISH"]
+            "capabilities": ["PUBLISH"],
+            "propertyOverrides": []
         },
         "edge": {
             "name": "edge",
             "imageName": "edge_image",
 			"parentRoleName": "relay",
 			"parentCardinality": "AUTOGROUP",
-            "capabilities": ["SUBSCRIBE"]
+            "capabilities": ["SUBSCRIBE"],
+            "propertyOverrides": []
         },
         "transcoder": {
             "name": "transcoder",
             "imageName": "transcoder_image",
-            "capabilities": ["TRANSCODE"]
+            "capabilities": ["TRANSCODE"],
+            "propertyOverrides": []
         },
         "relay": {
             "name": "relay",
             "imageName": "relay_image",
             "parentRoleName": "origin",
             "parentCardinality": "GLOBAL",
-            "capabilities": []
+            "capabilities": [],
+            "propertyOverrides": []
         }
     },
     "groups": {

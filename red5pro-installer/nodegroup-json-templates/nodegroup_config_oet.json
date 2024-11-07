@@ -25,19 +25,22 @@
         "origin": {
             "name": "origin",
             "imageName": "origin_image",
-            "capabilities": ["PUBLISH"]
+            "capabilities": ["PUBLISH"],
+            "propertyOverrides": []
         },
         "edge": {
             "name": "edge",
             "imageName": "edge_image",
             "parentRoleName": "origin",
             "parentCardinality": "GLOBAL",
-            "capabilities": ["SUBSCRIBE"]
+            "capabilities": ["SUBSCRIBE"],
+            "propertyOverrides": []
         },
         "transcoder": {
             "name": "transcoder",
             "imageName": "transcoder_image",
-            "capabilities": ["TRANSCODE"]
+            "capabilities": ["TRANSCODE"],
+            "propertyOverrides": []
         }
     },
     "groups": {

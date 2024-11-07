@@ -1,6 +1,10 @@
 #!/bin/bash
 ############################################################################################################
-# Install Stream Manager 2.0 in Docker containers (docker-compose)
+# Script Name: r5p_install_sm2_oci.sh
+# Description: This script install Stream Manager 2.0 instance with Docker containers (docker-compose)
+# AUTHOR: Oles Prykhodko
+# COMPANY: Infrared5, Inc.
+# Date: 2024-11-07
 ############################################################################################################
 
 # OCI_PRIVATE_KEY_PATH=""
@@ -47,7 +51,7 @@ log() {
 }
 
 install_pkg(){
-    for i in {1..5};
+    for i in {1..20};
     do
         
         local install_issuse=0;
@@ -73,11 +77,11 @@ install_pkg(){
         if [ $install_issuse -eq 0 ]; then
             break
         fi
-        if [ $i -ge 5 ]; then
+        if [ $i -ge 20 ]; then
             log_e "Something wrong with packages installation!!! Exit."
             exit 1
         fi
-        sleep 20
+        sleep 30
     done
 }
 
@@ -173,7 +177,7 @@ config_sm(){
 pull_docker_images(){
     log_i "Pull Docker images"
     cd "$SM_HOME"
-    if docker compose pull; then
+    if docker compose pull > /dev/null 2>&1; then
         log_i "Docker images pulled"
     else
         log_e "Docker images not pulled"
@@ -208,12 +212,13 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-log_i "Check if apt is locked"
-
-while lsof /var/lib/apt/lists/lock ; do 
-    log_i "apt is locked, wait 20 sec"
-    sleep 20
-done
+if command -v flock &> /dev/null; then
+    log_i "Check if apt is locked"
+    while ! flock -n /var/lib/apt/lists/lock true; do 
+        echo "apt is locked, wait 5 sec"
+        sleep 5
+    done
+fi
 
 install_pkg
 install_docker

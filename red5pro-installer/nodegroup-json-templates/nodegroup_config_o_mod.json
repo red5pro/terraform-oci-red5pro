@@ -1,0 +1,87 @@
+{
+  "name": "nodegroup-o",
+  "description": "Stream Manager 2.0 OCI Node group with Origin only",
+  "cloudProperties": "environment=terra;subnet=red5-ci-deployments-multiregion-subnet-public;security_group=red5-ci-deployments-multiregion-node-nsg",
+  "cloudPlatform": "OCI",
+  "isScalingPaused": false,
+  "images": {
+    "origin_image": {
+      "name": "origin_image",
+      "image": "as-node-b3367-b290",
+      "cloudProperties": "instance_type=VM.Standard.E4.Flex-1-4;volume_size=50"
+    }
+  },
+  "roles": {
+    "origin": {
+      "name": "origin",
+      "imageName": "origin_image",
+      "capabilities": [
+        "PUBLISH",
+        "SUBSCRIBE",
+        "TRANSCODE"
+      ],
+      "propertyOverrides": [
+        {
+          "fileName": "webapps/live/WEB-INF/red5-web.properties",
+          "properties": {
+            "server.validateCredentialsEndPoint": "/validate",
+            "server.invalidateCredentialsEndPoint": "/invalidate",
+            "server.host": "rta-host.com.ua",
+            "server.port": "443",
+            "server.protocol": "https://"
+          }
+        },
+        {
+          "fileName": "webapps/live/WEB-INF/red5-web.xml",
+          "blocks": [
+            "R5AS-RTA"
+          ]
+        },
+        {
+          "fileName": "webapps/live/WEB-INF/red5-web.properties",
+          "properties": {
+            "webhooks.endpoint": "https://webhook-endpoint.com.ua"
+          }
+        },
+        {
+          "fileName": "webapps/root/WEB-INF/web.xml",
+          "blocks": [
+            "R5AS-SOCIAL-PUSHER"
+          ]
+        },
+        {
+          "fileName": "conf/restreamer-plugin.properties",
+          "properties": {
+            "enable.tsingest": "true",
+            "enable.ipcam": "false",
+            "enable.whip": "true",
+            "enable.srtingest": "false"
+          }
+        }
+      ]
+    }
+  },
+  "groups": {
+    "default": {
+      "subGroupName": "default",
+      "nodeGroupName": "nodegroup-o",
+      "groupType": "main",
+      "rulesByRole": {
+        "origin": {
+          "nodeGroupName": "nodegroup-o",
+          "subGroupName": "default",
+          "nodeRoleName": "origin",
+          "min": "1",
+          "max": "1",
+          "increment": 1,
+          "outExpression": "avg(cpu.loadavg.1min) / avg(cpu.processors) > 1.0",
+          "inExpression": "avg(cpu.loadavg.1min) / avg(cpu.processors) < 0.2",
+          "capacityRankingExpression": "cpu.loadavg.1min / cpu.processors",
+          "capacityLimitExpression": "2.0"
+        }
+      },
+      "cloudProperties": "region=us-ashburn-1"
+    }
+  },
+  "internalVersionCount": 0
+}
