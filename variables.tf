@@ -544,36 +544,11 @@ variable "https_ssl_certificate_key_path" {
   default     = ""
 }
 
-# variable "lb_https_certificate_create" {
-#   description = "Use existing Oracle Cloud Managed certificate (autoscaling)"
-#   type        = bool
-#   default     = false
-# }
 variable "lb_https_certificate_cipher_suite_name" {
   description = "The name of the cipher suite to use for HTTPS or SSL connections. RSA use oci-default-ssl-cipher-suite-v1, ECDSA use oci-modern-ssl-cipher-suite-v1 https://docs.oracle.com/en-us/iaas/Content/Balance/Tasks/managingciphersuites_topic-Predefined_Cipher_Suites.htm"
   type        = string
   default     = "oci-modern-ssl-cipher-suite-v1"
 }
-# variable "lb_https_certificate_name" {
-#   description = "Oracle Cloud Managed certificate name (autoscaling)"
-#   type        = string
-#   default     = ""
-# }
-# variable "lb_https_certificate_private_key" {
-#   description = "File path for SSL/TLS Certificate Private Key (autoscaling)"
-#   type        = string
-#   default     = ""
-# }
-# variable "lb_https_certificate_public_cert" {
-#   description = "File path for SSL/TLS Certificate Public Cert (autoscaling)"
-#   type        = string
-#   default     = ""
-# }
-# variable "lb_https_certificate_fullchain" {
-#   description = "File path for SSL/TLS Certificate Fullchain (autoscaling)"
-#   type        = string
-#   default     = ""
-# }
 
 # Red5 Pro Origin node image configuration
 variable "node_image_create" {
