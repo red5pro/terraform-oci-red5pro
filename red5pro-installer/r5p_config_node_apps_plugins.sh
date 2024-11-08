@@ -3,8 +3,6 @@
 # 
 ############################################################################################################
 
-# NODE_API_ENABLE=true
-# NODE_API_KEY
 # NODE_INSPECTOR_ENABLE=true
 # NODE_RESTREAMER_ENABLE=true
 # NODE_SOCIALPUSHER_ENABLE=true
@@ -58,26 +56,6 @@ config_node_apps_plugins(){
     ### Videobandwidth
     if [ -d "$RED5_HOME/webapps/videobandwidth" ]; then
         rm -r $RED5_HOME/webapps/videobandwidth
-    fi
-
-    if [[ "$NODE_API_ENABLE" == "true" ]]; then
-        log_i "Red5Pro WEBAPP API - enable"
-
-        if [ -z "$NODE_API_KEY" ]; then
-            log_e "Parameter NODE_API_KEY is empty. EXIT."
-            exit 1
-        fi
-        local token_pattern='security.accessToken=.*'
-        local token_new="security.accessToken=${NODE_API_KEY}"
-        
-        sed -i -e "s|$token_pattern|$token_new|" "$RED5_HOME/webapps/api/WEB-INF/red5-web.properties"
-        echo " " >> $RED5_HOME/webapps/api/WEB-INF/security/hosts.txt
-        echo "*" >> $RED5_HOME/webapps/api/WEB-INF/security/hosts.txt
-    else
-        log_d "Red5Pro WEBAPP API - disable"
-        if [ -d "$RED5_HOME/webapps/api" ]; then
-            rm -r $RED5_HOME/webapps/api
-        fi
     fi
 
     ### Inspector

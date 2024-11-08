@@ -753,7 +753,7 @@ variable "node_config_round_trip_auth" {
     target_nodes             = []
     auth_host                = ""
     auth_port                = 443
-    auth_protocol            = "https"
+    auth_protocol            = "https://"
     auth_endpoint_validate   = "/validateCredentials"
     auth_endpoint_invalidate = "/invalidateCredentials"
   }
@@ -764,6 +764,10 @@ variable "node_config_social_pusher" {
     enable       = bool
     target_nodes = list(string)
   })
+  default = {
+    enable       = false
+    target_nodes = []
+  }
 }
 variable "node_config_restreamer" {
   description = "Restreamer configuration - (Optional) https://www.red5.net/docs/special/restreamer/overview/"
@@ -775,4 +779,12 @@ variable "node_config_restreamer" {
     restreamer_whip      = bool
     restreamer_srtingest = bool
   })
+  default = {
+    enable               = false
+    target_nodes         = []
+    restreamer_tsingest  = false
+    restreamer_ipcam     = false
+    restreamer_whip      = false
+    restreamer_srtingest = false
+  }
 }

@@ -297,7 +297,7 @@ generate_node_config_json() {
 
     for i in "${target_nodes_nodes_array[@]}"
     do
-        log_i "TARGET_NODE=$i"
+        # log_i "TARGET_NODE=$i"
         jq -s '.[0] + .[1]' "$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_$i.json" "$node_config_json" > "$PATH_TO_JSON_TEMPLATES/property_overrides/temp.json"
         mv "$PATH_TO_JSON_TEMPLATES/property_overrides/temp.json" "$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_$i.json"
     done

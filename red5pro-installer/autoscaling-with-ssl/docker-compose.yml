@@ -340,34 +340,34 @@ services:
        traefik.http.middlewares.strip-prefix-1.redirectregex.permanent: true
        traefik.http.middlewares.strip-prefix-2.stripprefixregex.regex: /[a-z0-9_]+
 
-  kafka-ui:
-    container_name: kafka-ui
-    image: provectuslabs/kafka-ui:latest
-    restart: unless-stopped
-    ports:
-      - 8090:8080
-    depends_on:
-      kafka0:
-        condition: service_healthy
-    environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: ${KAFKA_IP}:9092
-      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SASL_SSL
-      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE: ${KAFKA_SSL_TRUSTSTORE_CERTIFICATES}
-      # Caused by: javax.net.ssl.SSLHandshakeException: PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
-      KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM: PLAIN
-      KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: org.apache.kafka.common.security.plain.PlainLoginModule required username="client" password="${KAFKA_CLIENT_PASSWORD}";
-      KAFKA_CLUSTERS_0_METRICS_PORT: 9997
-      KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: first
-      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://kafka-connect0:8083
-      DYNAMIC_CONFIG_ENABLED: 'true'
-      KAFKA_CLUSTERS_0_AUDIT_TOPICAUDITENABLED: 'true'
-      KAFKA_CLUSTERS_0_AUDIT_CONSOLEAUDITENABLED: 'true'
-      SERVER_SERVLET_CONTEXT_PATH: /kafka
-    labels:
-      traefik.enable: true
-      traefik.http.routers.kafka-ui.rule: PathPrefix(`/kafka`) && (Host(`${TRAEFIK_HOST:?Ensure TRAEFIK_HOST is set to the DNS name of your server.}`) || Host(`${TRAEFIK_IP:?Ensure TRAEFIK_IP is set to the Public IP of your server.}`))
-      traefik.http.routers.kafka-ui.entrypoints: websecure
+  # kafka-ui:
+  #   container_name: kafka-ui
+  #   image: provectuslabs/kafka-ui:latest
+  #   restart: unless-stopped
+  #   ports:
+  #     - 8090:8080
+  #   depends_on:
+  #     kafka0:
+  #       condition: service_healthy
+  #   environment:
+  #     KAFKA_CLUSTERS_0_NAME: local
+  #     KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: ${KAFKA_IP}:9092
+  #     KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SASL_SSL
+  #     KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE: ${KAFKA_SSL_TRUSTSTORE_CERTIFICATES}
+  #     # Caused by: javax.net.ssl.SSLHandshakeException: PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+  #     KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM: PLAIN
+  #     KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: org.apache.kafka.common.security.plain.PlainLoginModule required username="client" password="${KAFKA_CLIENT_PASSWORD}";
+  #     KAFKA_CLUSTERS_0_METRICS_PORT: 9997
+  #     KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: first
+  #     KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://kafka-connect0:8083
+  #     DYNAMIC_CONFIG_ENABLED: 'true'
+  #     KAFKA_CLUSTERS_0_AUDIT_TOPICAUDITENABLED: 'true'
+  #     KAFKA_CLUSTERS_0_AUDIT_CONSOLEAUDITENABLED: 'true'
+  #     SERVER_SERVLET_CONTEXT_PATH: /kafka
+  #   labels:
+  #     traefik.enable: true
+  #     traefik.http.routers.kafka-ui.rule: PathPrefix(`/kafka`) && (Host(`${TRAEFIK_HOST:?Ensure TRAEFIK_HOST is set to the DNS name of your server.}`) || Host(`${TRAEFIK_IP:?Ensure TRAEFIK_IP is set to the Public IP of your server.}`))
+  #     traefik.http.routers.kafka-ui.entrypoints: websecure
 
   as-debug-ui:
     image: "red5pro/as-debug-ui:latest"

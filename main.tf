@@ -394,7 +394,7 @@ resource "oci_core_instance" "red5pro_sm" {
           mkdir -p /usr/local/stream-manager/certs
           echo "${try(file(var.https_ssl_certificate_cert_path), "")}" > /usr/local/stream-manager/certs/cert.pem
           echo "${try(file(var.https_ssl_certificate_key_path), "")}" > /usr/local/stream-manager/certs/privkey.pem
-          echo "${local.ssh_public_key}" > /usr/local/stream-manager/keys/red5pro_ssh_public_key.pub
+          echo -n "${local.ssh_public_key}" > /usr/local/stream-manager/keys/red5pro_ssh_public_key.pub
           echo "${try(file(var.oracle_private_key_path), "")}" > /usr/local/stream-manager/keys/oracle_private_api_key.pem
           chmod 400 /usr/local/stream-manager/keys/privkey.pem
           chmod 400 /usr/local/stream-manager/keys/oracle_private_api_key.pem
@@ -753,7 +753,6 @@ resource "oci_core_instance" "red5pro_node" {
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_server_basic.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_config_node.sh",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_config_node_apps_plugins.sh",
     ]
     connection {
       host        = self.public_ip

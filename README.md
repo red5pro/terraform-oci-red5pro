@@ -8,7 +8,7 @@ This is a reusable Terraform module that provisions infrastructure on [Oracle Cl
 
 ### Install Terraform
 
-- Visit the [Terraform download page](https://developer.hashicorp.com/terraform/downloads) and ensure you get version 1.7.5 or higher.
+- Visit the [Terraform download page](https://developer.hashicorp.com/terraform/downloads) and ensure you get version 1.8.2 or higher.
 - Download the suitable version for your operating system.
 - Extract the compressed file and copy the Terraform binary to a location within your system's PATH.
 - Configure PATH for **Linux/macOS**:

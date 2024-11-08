@@ -183,6 +183,28 @@ linux_optimization(){
     ulimit -n 1000000
 }
 
+config_red5pro_api(){
+    if [[ "$NODE_API_ENABLE" == "true" ]]; then
+        log_i "Red5Pro WEBAPP API - enable"
+
+        if [ -z "$NODE_API_KEY" ]; then
+            log_e "Parameter NODE_API_KEY is empty. EXIT."
+            exit 1
+        fi
+        local token_pattern='security.accessToken=.*'
+        local token_new="security.accessToken=${NODE_API_KEY}"
+        
+        sed -i -e "s|$token_pattern|$token_new|" "$RED5_HOME/webapps/api/WEB-INF/red5-web.properties"
+        echo " " >> $RED5_HOME/webapps/api/WEB-INF/security/hosts.txt
+        echo "*" >> $RED5_HOME/webapps/api/WEB-INF/security/hosts.txt
+    else
+        log_d "Red5Pro WEBAPP API - disable"
+        if [ -d "$RED5_HOME/webapps/api" ]; then
+            rm -r $RED5_HOME/webapps/api
+        fi
+    fi
+}
+
 if command -v flock &> /dev/null; then
     log_i "Check if apt is locked"
     while ! flock -n /var/lib/apt/lists/lock true; do 
@@ -198,3 +220,4 @@ check_linux_and_java_versions
 install_pkg
 install_red5pro_service
 linux_optimization
+config_red5pro_api
