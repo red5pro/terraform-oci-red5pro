@@ -81,7 +81,7 @@ variable "vcn_cidr_block" {
 variable "subnet_cidr_block" {
   description = "Oracle Cloud Subnet IP range"
   type        = string
-  default     = "10.5.1.0/22"
+  default     = "10.5.0.0/22"
 }
 
 # Security group configuration
