@@ -67,7 +67,7 @@ install_pkg(){
         do
             PKG_OK=$(dpkg-query -W --showformat='${Status}\n' ${PACKAGES[$index]}|grep "install ok installed")
             if [ -z "$PKG_OK" ]; then
-                log_i "${PACKAGES[$index]} utility didn't install, didn't find MIRROR !!! "
+                log_i "${PACKAGES[$index]} utility didn't install. Will try again"
                 install_issuse=$(($install_issuse+1));
             else
                 log_i "${PACKAGES[$index]} utility installed"
@@ -148,15 +148,6 @@ config_sm(){
             ls -la "$CURRENT_DIRECTORY/autoscaling-with-ssl/"
             exit 1
         fi
-
-        # Copy traefik.yaml
-        # if [ -f "$CURRENT_DIRECTORY/autoscaling-with-ssl/traefik.yaml" ]; then
-        #     cp -r "$CURRENT_DIRECTORY/autoscaling-with-ssl/traefik.yaml" "$SM_HOME/certs/traefik.yaml"
-        # else 
-        #     log_e "File $CURRENT_DIRECTORY/autoscaling-with-ssl/traefik.yaml not found"
-        #     ls -la "$CURRENT_DIRECTORY/autoscaling-with-ssl/"
-        #     exit 1
-        # fi
     else 
         log_i "Stream Manager 2.0 without SSL"
 
@@ -170,8 +161,8 @@ config_sm(){
         fi
     fi
 
-    log_i "Debug info"
-    cat "$SM_HOME/.env"
+    # log_i "Debug info"
+    # cat "$SM_HOME/.env"
 }
 
 pull_docker_images(){

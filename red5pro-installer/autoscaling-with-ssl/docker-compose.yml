@@ -285,7 +285,7 @@ services:
       --certificatesresolvers.myresolver.acme.tlschallenge=${TRAEFIK_TLS_CHALLENGE:-false}
       --certificatesresolvers.myresolver.acme.email=oles@red5.net
       --certificatesresolvers.myresolver.acme.storage=/certs/red5.json
-      --providers.file.filename=/scripts/traefik.yaml
+      ${TRAEFIK_CMD}
     ports:
       - "80:80"
       - "443:443"
@@ -375,7 +375,7 @@ services:
     labels:
       traefik.enable: true
       traefik.http.routers.caddy.entrypoints: websecure
-      traefik.http.routers.caddy.tls.certresolver: myresolver
+      #traefik.http.routers.caddy.tls.certresolver: myresolver
       traefik.http.routers.caddy.rule: PathPrefix(`/`) && (Host(`${TRAEFIK_HOST:?Ensure TRAEFIK_HOST is set to the DNS name of your server.}`) || Host(`${TRAEFIK_IP:?Ensure TRAEFIK_IP is set to the Public IP of your server.}`))
 
 volumes:

@@ -81,7 +81,7 @@ variable "vcn_cidr_block" {
 variable "subnet_cidr_block" {
   description = "Oracle Cloud Subnet IP range"
   type        = string
-  default     = "10.5.1.0/24"
+  default     = "10.5.1.0/22"
 }
 
 # Security group configuration
@@ -213,7 +213,7 @@ variable "network_security_group_stream_manager_ingress" {
     {
       description = "Stream Manager 2.0 - Kafka (TCP)"
       protocol    = "6"
-      source      = "0.0.0.0/0"
+      source      = "10.5.0.0/16"
       port_min    = 9092
       port_max    = 9092
     }
@@ -309,7 +309,7 @@ variable "network_security_group_kafka_ingress" {
     {
       description = "Kafka standalone instance - Kafka (TCP)"
       protocol    = "6"
-      source      = "0.0.0.0/0"
+      source      = "10.5.0.0/16"
       port_min    = 9092
       port_max    = 9092
     }

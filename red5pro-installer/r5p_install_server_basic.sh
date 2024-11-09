@@ -104,7 +104,7 @@ install_pkg(){
         do
             PKG_OK=$(dpkg-query -W --showformat='${Status}\n' ${PACKAGES[$index]}|grep "install ok installed")
             if [ -z "$PKG_OK" ]; then
-                log_i "${PACKAGES[$index]} utility didn't install, didn't find MIRROR !!! "
+                log_i "${PACKAGES[$index]} utility didn't install. Will try again"
                 install_issuse=$(($install_issuse+1));
             else
                 log_i "${PACKAGES[$index]} utility installed"

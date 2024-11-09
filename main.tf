@@ -411,9 +411,10 @@ resource "oci_core_instance" "red5pro_sm" {
           TF_VAR_oci_compartment_id=${var.oracle_compartment_id}
           TF_VAR_oci_fingerprint=${var.oracle_fingerprint}
           TF_VAR_r5p_license_key=${var.red5pro_license_key}
-          TRAEFIK_TLS_CHALLENGE=false
+          TRAEFIK_TLS_CHALLENGE=${local.stream_manager_ssl == "letsencrypt" ? "true" : "false"}
           TRAEFIK_HOST=${var.https_ssl_certificate_domain_name}
           TRAEFIK_SSL_EMAIL=${var.https_ssl_certificate_email}
+          TRAEFIK_CMD=${local.stream_manager_ssl == "imported" ? "--providers.file.filename=/scripts/traefik.yaml" : ""}
         EOF
     )
   }
@@ -834,8 +835,10 @@ resource "time_sleep" "wait_for_delete_nodegroup" {
     oci_core_network_security_group_security_rule.red5pro_kafka_nsg_security_rule_ingress[0],
     oci_core_network_security_group_security_rule.red5pro_kafka_nsg_security_rule_ingress[1],
     oci_core_route_table_attachment.red5pro_route_table_attachment,
+    oci_core_vcn.red5pro_vcn,
+    oci_core_network_security_group.red5pro_node_network_security_group[0],
   ]
-  destroy_duration = "300s"
+  destroy_duration = "60s"
 }
 
 resource "null_resource" "node_group" {
