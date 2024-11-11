@@ -838,7 +838,7 @@ resource "time_sleep" "wait_for_delete_nodegroup" {
     oci_core_vcn.red5pro_vcn,
     oci_core_network_security_group.red5pro_node_network_security_group[0],
   ]
-  destroy_duration = "60s"
+  destroy_duration = "90s"
 }
 
 resource "null_resource" "node_group" {
