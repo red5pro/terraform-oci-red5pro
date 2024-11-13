@@ -471,6 +471,7 @@ resource "null_resource" "red5pro_sm" {
       "echo 'TRAEFIK_IP=${oci_core_instance.red5pro_sm[0].public_ip}' | sudo tee -a /usr/local/stream-manager/.env",
       "export SM_SSL='${local.stream_manager_ssl}'",
       "export SM_STANDALONE='${local.stream_manager_standalone}'",
+      "export SM_SSL_DOMAIN='${var.https_ssl_certificate_domain_name}'",
       "cd /home/ubuntu/red5pro-installer/",
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_sm2_oci.sh",
@@ -710,7 +711,7 @@ resource "oci_autoscaling_auto_scaling_configuration" "red5pro_autoscaling_confi
 # Red5 Pro Autoscaling Node - Origin/Edge/Transcoders/Relay (OCI Instance)
 ################################################################################
 
-# Origin Node instance for OCI Custom Image
+# Node instance for OCI Custom Image
 resource "oci_core_instance" "red5pro_node" {
   count               = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
@@ -790,7 +791,7 @@ resource "oci_core_instance" "red5pro_node" {
 # Red5 Pro Autoscaling Nodes create images - Origin/Edge/Transcoders/Relay (OCI Custom Images)
 ####################################################################################################
 
-# Origin node - Create image (OCI Custom Images)
+# Node - Create image (OCI Custom Images)
 resource "oci_core_image" "red5pro_node_image" {
   count          = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
   compartment_id = var.oracle_compartment_id
@@ -822,7 +823,7 @@ resource "null_resource" "stop_stream_manager" {
   depends_on = [oci_core_image.red5pro_sm_image[0]]
 }
 
-# Stop Origin Node instance using OCI CLI
+# Stop Node instance using OCI CLI
 resource "null_resource" "stop_node" {
   count = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
   provisioner "local-exec" {
@@ -927,4 +928,11 @@ resource "null_resource" "node_group" {
   }
 
   depends_on = [time_sleep.wait_for_delete_nodegroup[0]]
+
+  lifecycle {
+    precondition {
+      condition     = var.node_image_create == true
+      error_message = "ERROR! Node group creation requires the creation of a Node image for the node group. Please set the 'node_image_create' variable to 'true' and re-run the Terraform apply."
+    }
+  }
 }

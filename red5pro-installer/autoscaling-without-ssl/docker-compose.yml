@@ -271,7 +271,6 @@ services:
     image: traefik
     restart: unless-stopped
     command:
-      --log.level=DEBUG
       --api.insecure=true
       --api.dashboard=true
       --providers.docker=true

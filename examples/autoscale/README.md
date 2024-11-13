@@ -6,7 +6,7 @@ In the following example, Terraform module will automates the infrastructure pro
 ## Terraform Deployed Resources (autoscale)
 
 - VCN
-- Subnets (Private and Public)
+- Public subnet
 - Internet getaway
 - Route table
 - Security list

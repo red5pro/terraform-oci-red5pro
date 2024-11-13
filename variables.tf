@@ -550,7 +550,7 @@ variable "lb_https_certificate_cipher_suite_name" {
   default     = "oci-modern-ssl-cipher-suite-v1"
 }
 
-# Red5 Pro Origin node image configuration
+# Red5 Pro Node image configuration
 variable "node_image_create" {
   description = "Create new Node image true/false."
   type        = bool

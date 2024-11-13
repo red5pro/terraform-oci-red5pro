@@ -78,7 +78,7 @@ In the following example, Terraform module will automates the infrastructure pro
 #### Terraform Deployed Resources (standalone)
 
 - VCN
-- Subnets (Private and Public)
+- Public subnet
 - Internet getaway
 - Route table
 - Security list
@@ -102,7 +102,7 @@ provider "oci" {
 }
 
 module "red5pro" {
-  source                = "../../"
+  source                = "red5pro/red5pro/oci"
   type                  = "standalone"                            # Deployment type: standalone, cluster, autoscale
   name                  = "red5pro-standalone"                    # Name to be used on all the resources as identifier
   path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
@@ -165,7 +165,7 @@ In the following example, Terraform module will automates the infrastructure pro
 #### Terraform Deployed Resources (cluster)
 
 - VCN
-- Subnets (Private and Public)
+- Public subnet
 - Internet getaway
 - Route table
 - Security list
@@ -194,7 +194,7 @@ provider "oci" {
 }
 
 module "red5pro" {
-  source                = "../../"
+  source                = "red5pro/red5pro/oci"
   type                  = "cluster"                               # Deployment type: standalone, cluster, autoscale
   name                  = "red5pro-cluster"                       # Name to be used on all the resources as identifier
   path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
@@ -316,7 +316,7 @@ In the following example, Terraform module will automates the infrastructure pro
 #### Terraform Deployed Resources (autoscale)
 
 - VCN
-- Subnets (Private and Public)
+- Public subnet
 - Internet getaway
 - Route table
 - Security list
@@ -347,7 +347,7 @@ provider "oci" {
 }
 
 module "red5pro" {
-  source                = "../../"
+  source                = "red5pro/red5pro/oci"
   type                  = "autoscale"                             # Deployment type: standalone, cluster, autoscale
   name                  = "red5pro-auto"                          # Name to be used on all the resources as identifier
   path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
