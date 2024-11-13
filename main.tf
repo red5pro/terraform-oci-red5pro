@@ -180,6 +180,26 @@ resource "oci_core_instance" "red5pro_standalone" {
 # Kafka keys and certificates
 ################################################################################
 
+# Generate random admin usernames for Kafka cluster
+resource "random_string" "kafka_admin_username" {
+  count   = local.cluster_or_autoscale ? 1 : 0
+  length  = 8
+  special = false
+  upper   = false
+  lower   = true
+  numeric = false
+}
+
+# Generate random client usernames for Kafka cluster
+resource "random_string" "kafka_client_username" {
+  count   = local.cluster_or_autoscale ? 1 : 0
+  length  = 8
+  special = false
+  upper   = false
+  lower   = true
+  numeric = false
+}
+
 # Generate random IDs for Kafka cluster
 resource "random_id" "kafka_cluster_id" {
   count       = local.cluster_or_autoscale ? 1 : 0
@@ -330,8 +350,8 @@ resource "null_resource" "red5pro_kafka" {
       "echo 'ssl.keystore.key=${local.kafka_ssl_keystore_key}' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
       "echo 'ssl.truststore.certificates=${local.kafka_ssl_truststore_cert}' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
       "echo 'ssl.keystore.certificate.chain=${local.kafka_ssl_keystore_cert_chain}' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
-      "echo 'listener.name.broker.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"admin\" password=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_admin=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_client=\"${nonsensitive(random_id.kafka_client_password[0].id)}\";' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
-      "echo 'listener.name.controller.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"admin\" password=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_admin=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_client=\"${nonsensitive(random_id.kafka_client_password[0].id)}\";' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
+      "echo 'listener.name.broker.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${nonsensitive(random_string.kafka_admin_username[0].result)}\" password=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_admin_username[0].result)}=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_client_username[0].result)}=\"${nonsensitive(random_id.kafka_client_password[0].id)}\";' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
+      "echo 'listener.name.controller.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${nonsensitive(random_string.kafka_admin_username[0].result)}\" password=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_admin_username[0].result)}=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_client_username[0].result)}=\"${nonsensitive(random_id.kafka_client_password[0].id)}\";' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
       "echo 'advertised.listeners=BROKER://${local.kafka_ip}:9092' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
       "export KAFKA_ARCHIVE_URL='${var.kafka_standalone_instance_arhive_url}'",
       "export KAFKA_CLUSTER_ID='${random_id.kafka_cluster_id[0].b64_std}'",
@@ -401,7 +421,9 @@ resource "oci_core_instance" "red5pro_sm" {
           ############################ .env file #########################################################
           cat >> /usr/local/stream-manager/.env <<- EOM
           KAFKA_CLUSTER_ID=${random_id.kafka_cluster_id[0].b64_std}
+          KAFKA_ADMIN_USERNAME=${random_string.kafka_admin_username[0].result}
           KAFKA_ADMIN_PASSWORD=${random_id.kafka_admin_password[0].id}
+          KAFKA_CLIENT_USERNAME=${random_string.kafka_client_username[0].result}
           KAFKA_CLIENT_PASSWORD=${random_id.kafka_client_password[0].id}
           R5AS_AUTH_SECRET=${random_password.r5as_auth_secret[0].result}
           R5AS_AUTH_USER=${var.stream_manager_auth_user}

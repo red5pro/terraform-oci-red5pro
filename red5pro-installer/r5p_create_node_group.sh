@@ -496,4 +496,4 @@ create_new_node_group
 check_node_group
 
 # Delete temporary file
-rm "$nodegroup_config_json_mod"
+rm -f "$nodegroup_config_json_mod"
