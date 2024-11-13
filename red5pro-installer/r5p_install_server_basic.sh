@@ -7,7 +7,7 @@ RED5_HOME="/usr/local/red5pro"
 CURRENT_DIRECTORY=$(pwd)
 TEMP_FOLDER="$CURRENT_DIRECTORY/tmp"
 
-PACKAGES_DEFAULT=(jsvc ntp git unzip libvdpau1)
+PACKAGES_DEFAULT=(jsvc ntp git unzip libvdpau1 ffmpeg)
 PACKAGES_1604=(default-jre libva1 libva-drm1 libva-x11-1)
 PACKAGES_1804=(libva2 libva-drm2 libva-x11-2)
 PACKAGES_2004=(libva2 libva-drm2 libva-x11-2)
@@ -88,7 +88,7 @@ check_linux_and_java_versions(){
 }
 
 install_pkg(){
-    for i in {1..5};
+    for i in {1..20};
     do
         
         local install_issuse=0;
@@ -104,7 +104,7 @@ install_pkg(){
         do
             PKG_OK=$(dpkg-query -W --showformat='${Status}\n' ${PACKAGES[$index]}|grep "install ok installed")
             if [ -z "$PKG_OK" ]; then
-                log_i "${PACKAGES[$index]} utility didn't install, didn't find MIRROR !!! "
+                log_i "${PACKAGES[$index]} utility didn't install. Will try again"
                 install_issuse=$(($install_issuse+1));
             else
                 log_i "${PACKAGES[$index]} utility installed"
@@ -114,11 +114,11 @@ install_pkg(){
         if [ $install_issuse -eq 0 ]; then
             break
         fi
-        if [ $i -ge 5 ]; then
+        if [ $i -ge 20 ]; then
             log_e "Something wrong with packages installation!!! Exit."
             exit 1
         fi
-        sleep 20
+        sleep 30
     done
 }
 
@@ -183,12 +183,35 @@ linux_optimization(){
     ulimit -n 1000000
 }
 
-log_i "Check if apt is locked"
+config_red5pro_api(){
+    if [[ "$NODE_API_ENABLE" == "true" ]]; then
+        log_i "Red5Pro WEBAPP API - enable"
 
-while lsof /var/lib/apt/lists/lock ; do 
-    log_i "apt is locked, wait 20 sec"
-    sleep 20
-done
+        if [ -z "$NODE_API_KEY" ]; then
+            log_e "Parameter NODE_API_KEY is empty. EXIT."
+            exit 1
+        fi
+        local token_pattern='security.accessToken=.*'
+        local token_new="security.accessToken=${NODE_API_KEY}"
+        
+        sed -i -e "s|$token_pattern|$token_new|" "$RED5_HOME/webapps/api/WEB-INF/red5-web.properties"
+        echo " " >> $RED5_HOME/webapps/api/WEB-INF/security/hosts.txt
+        echo "*" >> $RED5_HOME/webapps/api/WEB-INF/security/hosts.txt
+    else
+        log_d "Red5Pro WEBAPP API - disable"
+        if [ -d "$RED5_HOME/webapps/api" ]; then
+            rm -r $RED5_HOME/webapps/api
+        fi
+    fi
+}
+
+if command -v flock &> /dev/null; then
+    log_i "Check if apt is locked"
+    while ! flock -n /var/lib/apt/lists/lock true; do 
+        echo "apt is locked, wait 5 sec"
+        sleep 5
+    done
+fi
 
 PACKAGES=("${PACKAGES_DEFAULT[@]}")
 install_pkg
@@ -197,3 +220,4 @@ check_linux_and_java_versions
 install_pkg
 install_red5pro_service
 linux_optimization
+config_red5pro_api

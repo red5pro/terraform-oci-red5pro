@@ -12,10 +12,11 @@
         }
     },
     "roles": {
-        "allinone": {
-            "name": "allinone",
+        "origin": {
+            "name": "origin",
             "imageName": "origin_image",
-            "capabilities": ["PUBLISH", "SUBSCRIBE", "TRANSCODE"]
+            "capabilities": ["PUBLISH", "SUBSCRIBE", "TRANSCODE"],
+            "propertyOverrides": []
         }
     },
     "groups": {
@@ -24,10 +25,10 @@
             "nodeGroupName": "nodegroup-o",
             "groupType": "main",
             "rulesByRole": {
-                "allinone": {
+                "origin": {
                     "nodeGroupName": "nodegroup-o",
                     "subGroupName": "default",
-                    "nodeRoleName": "allinone",
+                    "nodeRoleName": "origin",
                     "min": "ORIGINS_MIN",
                     "max": "ORIGINS_MAX",
                     "increment": 1,

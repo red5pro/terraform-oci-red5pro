@@ -82,7 +82,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_standalone_nsg
   source_type               = "CIDR_BLOCK"
   stateless                 = false
   dynamic "tcp_options" {
-    for_each = var.network_security_group_standalone_ingress[count.index].protocol == 6 ? [1] : []
+    for_each = var.network_security_group_standalone_ingress[count.index].protocol == "6" ? [1] : []
     content {
       destination_port_range {
         min = var.network_security_group_standalone_ingress[count.index].port_min
@@ -91,7 +91,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_standalone_nsg
     }
   }
   dynamic "udp_options" {
-    for_each = var.network_security_group_standalone_ingress[count.index].protocol == 17 ? [1] : []
+    for_each = var.network_security_group_standalone_ingress[count.index].protocol == "17" ? [1] : []
     content {
       destination_port_range {
         min = var.network_security_group_standalone_ingress[count.index].port_min
@@ -99,9 +99,9 @@ resource "oci_core_network_security_group_security_rule" "red5pro_standalone_nsg
       }
     }
   }
-  lifecycle {
-    ignore_changes = [direction, protocol, source, source_type, tcp_options]
-  }
+  # lifecycle {
+  #   ignore_changes = [direction, protocol, source, source_type, tcp_options]
+  # }
 }
 
 # Network Security group for Stream Manager
@@ -122,7 +122,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager
   source_type               = "CIDR_BLOCK"
   stateless                 = false
   dynamic "tcp_options" {
-    for_each = var.network_security_group_stream_manager_ingress[count.index].protocol == 6 ? [1] : []
+    for_each = var.network_security_group_stream_manager_ingress[count.index].protocol == "6" ? [1] : []
     content {
       destination_port_range {
         min = var.network_security_group_stream_manager_ingress[count.index].port_min
@@ -131,7 +131,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager
     }
   }
   dynamic "udp_options" {
-    for_each = var.network_security_group_stream_manager_ingress[count.index].protocol == 17 ? [1] : []
+    for_each = var.network_security_group_stream_manager_ingress[count.index].protocol == "17" ? [1] : []
     content {
       destination_port_range {
         min = var.network_security_group_stream_manager_ingress[count.index].port_min
@@ -139,9 +139,9 @@ resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager
       }
     }
   }
-  lifecycle {
-    ignore_changes = [direction, protocol, source, source_type, tcp_options]
-  }
+  # lifecycle {
+  #   ignore_changes = [direction, protocol, source, source_type, tcp_options]
+  # }
 }
 
 # Network Security group for SM Nodes
@@ -162,7 +162,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_node_nsg_secur
   source_type               = "CIDR_BLOCK"
   stateless                 = false
   dynamic "tcp_options" {
-    for_each = var.network_security_group_node_ingress[count.index].protocol == 6 ? [1] : []
+    for_each = var.network_security_group_node_ingress[count.index].protocol == "6" ? [1] : []
     content {
       destination_port_range {
         min = var.network_security_group_node_ingress[count.index].port_min
@@ -171,7 +171,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_node_nsg_secur
     }
   }
   dynamic "udp_options" {
-    for_each = var.network_security_group_node_ingress[count.index].protocol == 17 ? [1] : []
+    for_each = var.network_security_group_node_ingress[count.index].protocol == "17" ? [1] : []
     content {
       destination_port_range {
         min = var.network_security_group_node_ingress[count.index].port_min
@@ -179,9 +179,9 @@ resource "oci_core_network_security_group_security_rule" "red5pro_node_nsg_secur
       }
     }
   }
-  lifecycle {
-    ignore_changes = [direction, protocol, source, source_type, tcp_options]
-  }
+  # lifecycle {
+  #   ignore_changes = [direction, protocol, source, source_type, tcp_options]
+  # }
 }
 
 # Network Security group for Kafka server
@@ -202,7 +202,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_kafka_nsg_secu
   source_type               = "CIDR_BLOCK"
   stateless                 = false
   dynamic "tcp_options" {
-    for_each = var.network_security_group_kafka_ingress[count.index].protocol == 6 ? [1] : []
+    for_each = var.network_security_group_kafka_ingress[count.index].protocol == "6" ? [1] : []
     content {
       destination_port_range {
         min = var.network_security_group_kafka_ingress[count.index].port_min
@@ -211,7 +211,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_kafka_nsg_secu
     }
   }
   dynamic "udp_options" {
-    for_each = var.network_security_group_kafka_ingress[count.index].protocol == 17 ? [1] : []
+    for_each = var.network_security_group_kafka_ingress[count.index].protocol == "17" ? [1] : []
     content {
       destination_port_range {
         min = var.network_security_group_kafka_ingress[count.index].port_min
@@ -219,7 +219,7 @@ resource "oci_core_network_security_group_security_rule" "red5pro_kafka_nsg_secu
       }
     }
   }
-  lifecycle {
-    ignore_changes = [direction, protocol, source, source_type, tcp_options]
-  }
+  # lifecycle {
+  #   ignore_changes = [direction, protocol, source, source_type, tcp_options]
+  # }
 }

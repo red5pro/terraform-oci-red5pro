@@ -78,7 +78,7 @@ In the following example, Terraform module will automates the infrastructure pro
 #### Terraform Deployed Resources (standalone)
 
 - VCN
-- Subnets (Private and Public)
+- Public subnet
 - Internet getaway
 - Route table
 - Security list
@@ -102,7 +102,7 @@ provider "oci" {
 }
 
 module "red5pro" {
-  source                = "../../"
+  source                = "red5pro/red5pro/oci"
   type                  = "standalone"                            # Deployment type: standalone, cluster, autoscale
   name                  = "red5pro-standalone"                    # Name to be used on all the resources as identifier
   path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
@@ -165,7 +165,7 @@ In the following example, Terraform module will automates the infrastructure pro
 #### Terraform Deployed Resources (cluster)
 
 - VCN
-- Subnets (Private and Public)
+- Public subnet
 - Internet getaway
 - Route table
 - Security list
@@ -194,7 +194,7 @@ provider "oci" {
 }
 
 module "red5pro" {
-  source                = "../../"
+  source                = "red5pro/red5pro/oci"
   type                  = "cluster"                               # Deployment type: standalone, cluster, autoscale
   name                  = "red5pro-cluster"                       # Name to be used on all the resources as identifier
   path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
@@ -246,11 +246,43 @@ module "red5pro" {
   # https_ssl_certificate_cert_path   = "/PATH/TO/SSL/CERT/fullchain.pem"
   # https_ssl_certificate_key_path    = "/PATH/TO/SSL/KEY/privkey.pem"
 
-  # Red5 Pro autoscaling Origin node image configuration
+  # Red5 Pro autoscaling Node image configuration
   node_image_create          = true                  # Default: true for Autoscaling and Cluster, true - create new Red5 Pro Node image, false - do not create new Red5 Pro Node image
   node_image_instance_type   = "VM.Standard.E4.Flex" # Instance type for Red5 Pro Node image
   node_image_instance_ocpu   = 1                     # OCI Instance OCPU Count for Red5 Pro Node image (1 OCPU = 2 vCPU)
   node_image_instance_memory = 4                     # OCI Instance Memory size in GB for Red5 Pro Node image
+
+  # Extra configuration for Red5 Pro autoscaling nodes
+  # Webhooks configuration - (Optional) https://www.red5.net/docs/special/webhooks/overview/
+  node_config_webhooks = {
+    enable           = false,
+    target_nodes     = ["origin", "edge", "transcoder"],
+    webhook_endpoint = "https://test.webhook.app/api/v1/broadcast/webhook"
+  }
+  # Round trip authentication configuration - (Optional) https://www.red5.net/docs/special/authplugin/simple-auth/
+  node_config_round_trip_auth = {
+    enable                   = false,
+    target_nodes             = ["origin", "edge", "transcoder"],
+    auth_host                = "round-trip-auth.example.com",
+    auth_port                = 443,
+    auth_protocol            = "https://",
+    auth_endpoint_validate   = "/validateCredentials",
+    auth_endpoint_invalidate = "/invalidateCredentials"
+  }
+  # Restreamer configuration - (Optional) https://www.red5.net/docs/special/restreamer/overview/
+  node_config_restreamer = {
+    enable               = false,
+    target_nodes         = ["origin", "transcoder"],
+    restreamer_tsingest  = true,
+    restreamer_ipcam     = true,
+    restreamer_whip      = true,
+    restreamer_srtingest = true
+  }
+  # Social Pusher configuration - (Optional) https://www.red5.net/docs/development/social-media-plugin/rest-api/
+  node_config_social_pusher = {
+    enable       = false,
+    target_nodes = ["origin", "edge", "transcoder"],
+  }
 
   # Red5 Pro autoscaling Node group - (Optional)
   node_group_create                    = true                      # Linux or Mac OS only. true - create new Node group, false - not create new Node group
@@ -284,7 +316,7 @@ In the following example, Terraform module will automates the infrastructure pro
 #### Terraform Deployed Resources (autoscale)
 
 - VCN
-- Subnets (Private and Public)
+- Public subnet
 - Internet getaway
 - Route table
 - Security list
@@ -315,7 +347,7 @@ provider "oci" {
 }
 
 module "red5pro" {
-  source                = "../../"
+  source                = "red5pro/red5pro/oci"
   type                  = "autoscale"                             # Deployment type: standalone, cluster, autoscale
   name                  = "red5pro-auto"                          # Name to be used on all the resources as identifier
   path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
@@ -367,11 +399,43 @@ module "red5pro" {
   # https_ssl_certificate_cert_path   = "/PATH/TO/SSL/CERT/fullchain.pem"
   # https_ssl_certificate_key_path    = "/PATH/TO/SSL/KEY/privkey.pem"
 
-  # Red5 Pro autoscaling Origin node image configuration
+  # Red5 Pro autoscaling Node image configuration
   node_image_create          = true                  # Default: true for Autoscaling and Cluster, true - create new Red5 Pro Node image, false - do not create new Red5 Pro Node image
   node_image_instance_type   = "VM.Standard.E4.Flex" # Instance type for Red5 Pro Node image
   node_image_instance_ocpu   = 1                     # OCI Instance OCPU Count for Red5 Pro Node image (1 OCPU = 2 vCPU)
   node_image_instance_memory = 4                     # OCI Instance Memory size in GB for Red5 Pro Node image
+
+  # Extra configuration for Red5 Pro autoscaling nodes
+  # Webhooks configuration - (Optional) https://www.red5.net/docs/special/webhooks/overview/
+  node_config_webhooks = {
+    enable           = false,
+    target_nodes     = ["origin", "edge", "transcoder"],
+    webhook_endpoint = "https://test.webhook.app/api/v1/broadcast/webhook"
+  }
+  # Round trip authentication configuration - (Optional) https://www.red5.net/docs/special/authplugin/simple-auth/
+  node_config_round_trip_auth = {
+    enable                   = false,
+    target_nodes             = ["origin", "edge", "transcoder"],
+    auth_host                = "round-trip-auth.example.com",
+    auth_port                = 443,
+    auth_protocol            = "https://",
+    auth_endpoint_validate   = "/validateCredentials",
+    auth_endpoint_invalidate = "/invalidateCredentials"
+  }
+  # Restreamer configuration - (Optional) https://www.red5.net/docs/special/restreamer/overview/
+  node_config_restreamer = {
+    enable               = false,
+    target_nodes         = ["origin", "transcoder"],
+    restreamer_tsingest  = true,
+    restreamer_ipcam     = true,
+    restreamer_whip      = true,
+    restreamer_srtingest = true
+  }
+  # Social Pusher configuration - (Optional) https://www.red5.net/docs/development/social-media-plugin/rest-api/
+  node_config_social_pusher = {
+    enable       = false,
+    target_nodes = ["origin", "edge", "transcoder"],
+  }
 
   # Red5 Pro autoscaling Node group - (Optional)
   node_group_create                    = true                      # Linux or Mac OS only. true - create new Node group, false - not create new Node group

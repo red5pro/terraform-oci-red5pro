@@ -180,6 +180,26 @@ resource "oci_core_instance" "red5pro_standalone" {
 # Kafka keys and certificates
 ################################################################################
 
+# Generate random admin usernames for Kafka cluster
+resource "random_string" "kafka_admin_username" {
+  count   = local.cluster_or_autoscale ? 1 : 0
+  length  = 8
+  special = false
+  upper   = false
+  lower   = true
+  numeric = false
+}
+
+# Generate random client usernames for Kafka cluster
+resource "random_string" "kafka_client_username" {
+  count   = local.cluster_or_autoscale ? 1 : 0
+  length  = 8
+  special = false
+  upper   = false
+  lower   = true
+  numeric = false
+}
+
 # Generate random IDs for Kafka cluster
 resource "random_id" "kafka_cluster_id" {
   count       = local.cluster_or_autoscale ? 1 : 0
@@ -240,8 +260,8 @@ resource "tls_self_signed_cert" "ca_cert" {
 resource "tls_cert_request" "kafka_server_csr" {
   count           = local.cluster_or_autoscale ? 1 : 0
   private_key_pem = tls_private_key.kafka_server_key[0].private_key_pem
-  ip_addresses = [local.kafka_ip]
-  dns_names    = ["kafka0"]
+  ip_addresses    = [local.kafka_ip]
+  dns_names       = ["kafka0"]
 
   subject {
     country             = "US"
@@ -330,8 +350,8 @@ resource "null_resource" "red5pro_kafka" {
       "echo 'ssl.keystore.key=${local.kafka_ssl_keystore_key}' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
       "echo 'ssl.truststore.certificates=${local.kafka_ssl_truststore_cert}' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
       "echo 'ssl.keystore.certificate.chain=${local.kafka_ssl_keystore_cert_chain}' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
-      "echo 'listener.name.broker.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"admin\" password=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_admin=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_client=\"${nonsensitive(random_id.kafka_client_password[0].id)}\";' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
-      "echo 'listener.name.controller.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"admin\" password=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_admin=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_client=\"${nonsensitive(random_id.kafka_client_password[0].id)}\";' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
+      "echo 'listener.name.broker.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${nonsensitive(random_string.kafka_admin_username[0].result)}\" password=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_admin_username[0].result)}=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_client_username[0].result)}=\"${nonsensitive(random_id.kafka_client_password[0].id)}\";' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
+      "echo 'listener.name.controller.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${nonsensitive(random_string.kafka_admin_username[0].result)}\" password=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_admin_username[0].result)}=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_client_username[0].result)}=\"${nonsensitive(random_id.kafka_client_password[0].id)}\";' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
       "echo 'advertised.listeners=BROKER://${local.kafka_ip}:9092' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
       "export KAFKA_ARCHIVE_URL='${var.kafka_standalone_instance_arhive_url}'",
       "export KAFKA_CLUSTER_ID='${random_id.kafka_cluster_id[0].b64_std}'",
@@ -394,14 +414,16 @@ resource "oci_core_instance" "red5pro_sm" {
           mkdir -p /usr/local/stream-manager/certs
           echo "${try(file(var.https_ssl_certificate_cert_path), "")}" > /usr/local/stream-manager/certs/cert.pem
           echo "${try(file(var.https_ssl_certificate_key_path), "")}" > /usr/local/stream-manager/certs/privkey.pem
-          echo "${local.ssh_public_key}" > /usr/local/stream-manager/keys/red5pro_ssh_public_key.pub
+          echo -n "${local.ssh_public_key}" > /usr/local/stream-manager/keys/red5pro_ssh_public_key.pub
           echo "${try(file(var.oracle_private_key_path), "")}" > /usr/local/stream-manager/keys/oracle_private_api_key.pem
           chmod 400 /usr/local/stream-manager/keys/privkey.pem
           chmod 400 /usr/local/stream-manager/keys/oracle_private_api_key.pem
           ############################ .env file #########################################################
           cat >> /usr/local/stream-manager/.env <<- EOM
           KAFKA_CLUSTER_ID=${random_id.kafka_cluster_id[0].b64_std}
+          KAFKA_ADMIN_USERNAME=${random_string.kafka_admin_username[0].result}
           KAFKA_ADMIN_PASSWORD=${random_id.kafka_admin_password[0].id}
+          KAFKA_CLIENT_USERNAME=${random_string.kafka_client_username[0].result}
           KAFKA_CLIENT_PASSWORD=${random_id.kafka_client_password[0].id}
           R5AS_AUTH_SECRET=${random_password.r5as_auth_secret[0].result}
           R5AS_AUTH_USER=${var.stream_manager_auth_user}
@@ -411,9 +433,10 @@ resource "oci_core_instance" "red5pro_sm" {
           TF_VAR_oci_compartment_id=${var.oracle_compartment_id}
           TF_VAR_oci_fingerprint=${var.oracle_fingerprint}
           TF_VAR_r5p_license_key=${var.red5pro_license_key}
-          TRAEFIK_TLS_CHALLENGE=false
+          TRAEFIK_TLS_CHALLENGE=${local.stream_manager_ssl == "letsencrypt" ? "true" : "false"}
           TRAEFIK_HOST=${var.https_ssl_certificate_domain_name}
           TRAEFIK_SSL_EMAIL=${var.https_ssl_certificate_email}
+          TRAEFIK_CMD=${local.stream_manager_ssl == "imported" ? "--providers.file.filename=/scripts/traefik.yaml" : ""}
         EOF
     )
   }
@@ -448,6 +471,7 @@ resource "null_resource" "red5pro_sm" {
       "echo 'TRAEFIK_IP=${oci_core_instance.red5pro_sm[0].public_ip}' | sudo tee -a /usr/local/stream-manager/.env",
       "export SM_SSL='${local.stream_manager_ssl}'",
       "export SM_STANDALONE='${local.stream_manager_standalone}'",
+      "export SM_SSL_DOMAIN='${var.https_ssl_certificate_domain_name}'",
       "cd /home/ubuntu/red5pro-installer/",
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_sm2_oci.sh",
@@ -542,9 +566,9 @@ resource "oci_load_balancer_listener" "red5pro_lb_listener_https" {
 
 # OCI LB SSL certificate
 resource "oci_load_balancer_certificate" "red5pro_lb_ssl_cert" {
-  count              = local.autoscale && var.https_ssl_certificate == "imported" ? 1 : 0
-  load_balancer_id   = oci_load_balancer_load_balancer.red5pro_lb[0].id
-  certificate_name   = var.https_ssl_certificate_domain_name
+  count            = local.autoscale && var.https_ssl_certificate == "imported" ? 1 : 0
+  load_balancer_id = oci_load_balancer_load_balancer.red5pro_lb[0].id
+  certificate_name = var.https_ssl_certificate_domain_name
   # ca_certificate     = var.lb_https_certificate_fullchain != "" ? file(var.lb_https_certificate_fullchain) : null
   private_key        = file(var.https_ssl_certificate_key_path)
   public_certificate = file(var.https_ssl_certificate_cert_path)
@@ -687,7 +711,7 @@ resource "oci_autoscaling_auto_scaling_configuration" "red5pro_autoscaling_confi
 # Red5 Pro Autoscaling Node - Origin/Edge/Transcoders/Relay (OCI Instance)
 ################################################################################
 
-# Origin Node instance for OCI Custom Image
+# Node instance for OCI Custom Image
 resource "oci_core_instance" "red5pro_node" {
   count               = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
@@ -753,7 +777,6 @@ resource "oci_core_instance" "red5pro_node" {
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_server_basic.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_config_node.sh",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_config_node_apps_plugins.sh",
     ]
     connection {
       host        = self.public_ip
@@ -768,7 +791,7 @@ resource "oci_core_instance" "red5pro_node" {
 # Red5 Pro Autoscaling Nodes create images - Origin/Edge/Transcoders/Relay (OCI Custom Images)
 ####################################################################################################
 
-# Origin node - Create image (OCI Custom Images)
+# Node - Create image (OCI Custom Images)
 resource "oci_core_image" "red5pro_node_image" {
   count          = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
   compartment_id = var.oracle_compartment_id
@@ -800,8 +823,8 @@ resource "null_resource" "stop_stream_manager" {
   depends_on = [oci_core_image.red5pro_sm_image[0]]
 }
 
-# Stop Origin Node instance using OCI CLI
-resource "null_resource" "stop_node_origin" {
+# Stop Node instance using OCI CLI
+resource "null_resource" "stop_node" {
   count = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
   provisioner "local-exec" {
     command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node[0].id}"
@@ -835,8 +858,10 @@ resource "time_sleep" "wait_for_delete_nodegroup" {
     oci_core_network_security_group_security_rule.red5pro_kafka_nsg_security_rule_ingress[0],
     oci_core_network_security_group_security_rule.red5pro_kafka_nsg_security_rule_ingress[1],
     oci_core_route_table_attachment.red5pro_route_table_attachment,
+    oci_core_vcn.red5pro_vcn,
+    oci_core_network_security_group.red5pro_node_network_security_group[0],
   ]
-  destroy_duration = "240s"
+  destroy_duration = "90s"
 }
 
 resource "null_resource" "node_group" {
@@ -851,31 +876,49 @@ resource "null_resource" "node_group" {
     when    = create
     command = "bash ${abspath(path.module)}/red5pro-installer/r5p_create_node_group.sh"
     environment = {
-      SM_URL                   = "${local.stream_manager_url}"
-      R5AS_AUTH_USER           = "${var.stream_manager_auth_user}"
-      R5AS_AUTH_PASS           = "${var.stream_manager_auth_password}"
-      NODE_GROUP_REGION        = "${var.oracle_region}"
-      NODE_ENVIRONMENT         = "${var.name}"
-      NODE_SUBNET_NAME         = "${local.subnet_name}"
-      NODE_SECURITY_GROUP_NAME = "${oci_core_network_security_group.red5pro_node_network_security_group[0].display_name}"
-      NODE_IMAGE_NAME          = "${oci_core_image.red5pro_node_image[0].display_name}"
-      ORIGINS_MIN              = "${var.node_group_origins_min}"
-      ORIGINS_MAX              = "${var.node_group_origins_max}"
-      ORIGIN_INSTANCE_TYPE     = "${var.node_group_origins_instance_type}"
-      ORIGIN_VOLUME_SIZE       = "${var.node_group_origins_volume_size}"
-      EDGES_MIN                = "${var.node_group_edges_min}"
-      EDGES_MAX                = "${var.node_group_edges_max}"
-      EDGE_INSTANCE_TYPE       = "${var.node_group_edges_instance_type}"
-      EDGE_VOLUME_SIZE         = "${var.node_group_edges_volume_size}"
-      TRANSCODERS_MIN          = "${var.node_group_transcoders_min}"
-      TRANSCODERS_MAX          = "${var.node_group_transcoders_max}"
-      TRANSCODER_INSTANCE_TYPE = "${var.node_group_transcoders_instance_type}"
-      TRANSCODER_VOLUME_SIZE   = "${var.node_group_transcoders_volume_size}"
-      RELAYS_MIN               = "${var.node_group_relays_min}"
-      RELAYS_MAX               = "${var.node_group_relays_max}"
-      RELAY_INSTANCE_TYPE      = "${var.node_group_relays_instance_type}"
-      RELAY_VOLUME_SIZE        = "${var.node_group_relays_volume_size}"
-      PATH_TO_JSON_TEMPLATES   = "${abspath(path.module)}/red5pro-installer/nodegroup-json-templates"
+      SM_URL                                   = "${local.stream_manager_url}"
+      R5AS_AUTH_USER                           = "${var.stream_manager_auth_user}"
+      R5AS_AUTH_PASS                           = "${var.stream_manager_auth_password}"
+      NODE_GROUP_REGION                        = "${var.oracle_region}"
+      NODE_ENVIRONMENT                         = "${var.name}"
+      NODE_SUBNET_NAME                         = "${local.subnet_name}"
+      NODE_SECURITY_GROUP_NAME                 = "${oci_core_network_security_group.red5pro_node_network_security_group[0].display_name}"
+      NODE_IMAGE_NAME                          = "${oci_core_image.red5pro_node_image[0].display_name}"
+      ORIGINS_MIN                              = "${var.node_group_origins_min}"
+      ORIGINS_MAX                              = "${var.node_group_origins_max}"
+      ORIGIN_INSTANCE_TYPE                     = "${var.node_group_origins_instance_type}"
+      ORIGIN_VOLUME_SIZE                       = "${var.node_group_origins_volume_size}"
+      EDGES_MIN                                = "${var.node_group_edges_min}"
+      EDGES_MAX                                = "${var.node_group_edges_max}"
+      EDGE_INSTANCE_TYPE                       = "${var.node_group_edges_instance_type}"
+      EDGE_VOLUME_SIZE                         = "${var.node_group_edges_volume_size}"
+      TRANSCODERS_MIN                          = "${var.node_group_transcoders_min}"
+      TRANSCODERS_MAX                          = "${var.node_group_transcoders_max}"
+      TRANSCODER_INSTANCE_TYPE                 = "${var.node_group_transcoders_instance_type}"
+      TRANSCODER_VOLUME_SIZE                   = "${var.node_group_transcoders_volume_size}"
+      RELAYS_MIN                               = "${var.node_group_relays_min}"
+      RELAYS_MAX                               = "${var.node_group_relays_max}"
+      RELAY_INSTANCE_TYPE                      = "${var.node_group_relays_instance_type}"
+      RELAY_VOLUME_SIZE                        = "${var.node_group_relays_volume_size}"
+      PATH_TO_JSON_TEMPLATES                   = "${abspath(path.module)}/red5pro-installer/nodegroup-json-templates"
+      NODE_ROUND_TRIP_AUTH_ENABLE              = "${var.node_config_round_trip_auth.enable}"
+      NODE_ROUNT_TRIP_AUTH_TARGET_NODES        = "${join(",", var.node_config_round_trip_auth.target_nodes)}"
+      NODE_ROUND_TRIP_AUTH_HOST                = "${var.node_config_round_trip_auth.auth_host}"
+      NODE_ROUND_TRIP_AUTH_PORT                = "${var.node_config_round_trip_auth.auth_port}"
+      NODE_ROUND_TRIP_AUTH_PROTOCOL            = "${var.node_config_round_trip_auth.auth_protocol}"
+      NODE_ROUND_TRIP_AUTH_ENDPOINT_VALIDATE   = "${var.node_config_round_trip_auth.auth_endpoint_validate}"
+      NODE_ROUND_TRIP_AUTH_ENDPOINT_INVALIDATE = "${var.node_config_round_trip_auth.auth_endpoint_invalidate}"
+      NODE_WEBHOOK_ENABLE                      = "${var.node_config_webhooks.enable}"
+      NODE_WEBHOOK_TARGET_NODES                = "${join(",", var.node_config_webhooks.target_nodes)}"
+      NODE_WEBHOOK_ENDPOINT                    = "${var.node_config_webhooks.webhook_endpoint}"
+      NODE_SOCIAL_PUSHER_ENABLE                = "${var.node_config_social_pusher.enable}"
+      NODE_SOCIAL_PUSHER_TARGET_NODES          = "${join(",", var.node_config_social_pusher.target_nodes)}"
+      NODE_RESTREAMER_ENABLE                   = "${var.node_config_restreamer.enable}"
+      NODE_RESTREAMER_TARGET_NODES             = "${join(",", var.node_config_restreamer.target_nodes)}"
+      NODE_RESTREAMER_TSINGEST                 = "${var.node_config_restreamer.restreamer_tsingest}"
+      NODE_RESTREAMER_IPCAM                    = "${var.node_config_restreamer.restreamer_ipcam}"
+      NODE_RESTREAMER_WHIP                     = "${var.node_config_restreamer.restreamer_whip}"
+      NODE_RESTREAMER_SRTINGEST                = "${var.node_config_restreamer.restreamer_srtingest}"
     }
   }
 
@@ -885,4 +928,11 @@ resource "null_resource" "node_group" {
   }
 
   depends_on = [time_sleep.wait_for_delete_nodegroup[0]]
+
+  lifecycle {
+    precondition {
+      condition     = var.node_image_create == true
+      error_message = "ERROR! Node group creation requires the creation of a Node image for the node group. Please set the 'node_image_create' variable to 'true' and re-run the Terraform apply."
+    }
+  }
 }

@@ -56,5 +56,5 @@ output "standalone_red5pro_server_https_url" {
 }
 output "manual_dns_record" {
   description = "Manual DNS Record"
-  value       = var.https_ssl_certificate != "none" ? "Please create DNS A record for Stream Manager 2.0. '${var.https_ssl_certificate_domain_name} - ${local.cluster_or_autoscale ? local.stream_manager_ip : oci_core_instance.red5pro_standalone[0].public_ip}'" : ""
+  value       = var.https_ssl_certificate != "none" ? "Please create DNS A record for Stream Manager 2.0: '${var.https_ssl_certificate_domain_name} - ${local.cluster_or_autoscale ? local.stream_manager_ip : oci_core_instance.red5pro_standalone[0].public_ip}'" : ""
 }

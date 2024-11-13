@@ -81,7 +81,7 @@ variable "vcn_cidr_block" {
 variable "subnet_cidr_block" {
   description = "Oracle Cloud Subnet IP range"
   type        = string
-  default     = "10.5.1.0/24"
+  default     = "10.5.0.0/22"
 }
 
 # Security group configuration
@@ -213,7 +213,7 @@ variable "network_security_group_stream_manager_ingress" {
     {
       description = "Stream Manager 2.0 - Kafka (TCP)"
       protocol    = "6"
-      source      = "0.0.0.0/0"
+      source      = "10.5.0.0/16"
       port_min    = 9092
       port_max    = 9092
     }
@@ -309,7 +309,7 @@ variable "network_security_group_kafka_ingress" {
     {
       description = "Kafka standalone instance - Kafka (TCP)"
       protocol    = "6"
-      source      = "0.0.0.0/0"
+      source      = "10.5.0.0/16"
       port_min    = 9092
       port_max    = 9092
     }
@@ -544,38 +544,13 @@ variable "https_ssl_certificate_key_path" {
   default     = ""
 }
 
-# variable "lb_https_certificate_create" {
-#   description = "Use existing Oracle Cloud Managed certificate (autoscaling)"
-#   type        = bool
-#   default     = false
-# }
 variable "lb_https_certificate_cipher_suite_name" {
   description = "The name of the cipher suite to use for HTTPS or SSL connections. RSA use oci-default-ssl-cipher-suite-v1, ECDSA use oci-modern-ssl-cipher-suite-v1 https://docs.oracle.com/en-us/iaas/Content/Balance/Tasks/managingciphersuites_topic-Predefined_Cipher_Suites.htm"
   type        = string
   default     = "oci-modern-ssl-cipher-suite-v1"
 }
-# variable "lb_https_certificate_name" {
-#   description = "Oracle Cloud Managed certificate name (autoscaling)"
-#   type        = string
-#   default     = ""
-# }
-# variable "lb_https_certificate_private_key" {
-#   description = "File path for SSL/TLS Certificate Private Key (autoscaling)"
-#   type        = string
-#   default     = ""
-# }
-# variable "lb_https_certificate_public_cert" {
-#   description = "File path for SSL/TLS Certificate Public Cert (autoscaling)"
-#   type        = string
-#   default     = ""
-# }
-# variable "lb_https_certificate_fullchain" {
-#   description = "File path for SSL/TLS Certificate Fullchain (autoscaling)"
-#   type        = string
-#   default     = ""
-# }
 
-# Red5 Pro Origin node image configuration
+# Red5 Pro Node image configuration
 variable "node_image_create" {
   description = "Create new Node image true/false."
   type        = bool
@@ -720,5 +695,71 @@ variable "ubuntu_version" {
   validation {
     condition     = var.ubuntu_version == "22.04"
     error_message = "Please specify the correct ubuntu version, currently only 22.04 is supported"
+  }
+}
+
+# Extra configuration for Red5 Pro autoscaling nodes
+variable "node_config_webhooks" {
+  description = "Webhooks configuration - (Optional) https://www.red5.net/docs/special/webhooks/overview/"
+  type = object({
+    enable           = bool
+    target_nodes     = list(string)
+    webhook_endpoint = string
+  })
+  default = {
+    enable           = false
+    target_nodes     = []
+    webhook_endpoint = ""
+  }
+}
+variable "node_config_round_trip_auth" {
+  description = "Round trip authentication configuration - (Optional) https://www.red5.net/docs/special/authplugin/simple-auth/"
+  type = object({
+    enable                   = bool
+    target_nodes             = list(string)
+    auth_host                = string
+    auth_port                = number
+    auth_protocol            = string
+    auth_endpoint_validate   = string
+    auth_endpoint_invalidate = string
+  })
+  default = {
+    enable                   = false
+    target_nodes             = []
+    auth_host                = ""
+    auth_port                = 443
+    auth_protocol            = "https://"
+    auth_endpoint_validate   = "/validateCredentials"
+    auth_endpoint_invalidate = "/invalidateCredentials"
+  }
+}
+variable "node_config_social_pusher" {
+  description = "Social Pusher configuration - (Optional) https://www.red5.net/docs/development/social-media-plugin/rest-api/"
+  type = object({
+    enable       = bool
+    target_nodes = list(string)
+  })
+  default = {
+    enable       = false
+    target_nodes = []
+  }
+}
+variable "node_config_restreamer" {
+  description = "Restreamer configuration - (Optional) https://www.red5.net/docs/special/restreamer/overview/"
+  type = object({
+    enable               = bool
+    target_nodes         = list(string)
+    restreamer_tsingest  = bool
+    restreamer_ipcam     = bool
+    restreamer_whip      = bool
+    restreamer_srtingest = bool
+  })
+  default = {
+    enable               = false
+    target_nodes         = []
+    restreamer_tsingest  = false
+    restreamer_ipcam     = false
+    restreamer_whip      = false
+    restreamer_srtingest = false
   }
 }

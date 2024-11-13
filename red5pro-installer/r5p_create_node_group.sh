@@ -1,8 +1,15 @@
 #!/bin/bash
+############################################################################################################
+# Script Name: r5p_create_node_group.sh
+# Description: This script creates a new Node Group in Stream Manager 2.0 and checks the states of the nodes.
+# AUTHOR: Oles Prykhodko
+# COMPANY: Infrared5, Inc.
+# Date: 2024-11-07
+############################################################################################################
 
-# SM_URL="https://oles-terra-sm2.red5pro.net"
-# R5AS_AUTH_USER="admin"
-# R5AS_AUTH_PASS="xyz123"
+# SM_URL="https://red5pro.example.com"
+# R5AS_AUTH_USER="user"
+# R5AS_AUTH_PASS="password"
 
 # NODE_GROUP_REGION="us-ashburn-1"
 # NODE_ENVIRONMENT="terra"
@@ -30,7 +37,39 @@
 # TRANSCODER_VOLUME_SIZE="50"
 # RELAY_VOLUME_SIZE="50"
 
-#PATH_TO_JSON_TEMPLATES="./nodegroup-json-templates"
+# PATH_TO_JSON_TEMPLATES="./nodegroup-json-templates"
+
+# NODE_ROUND_TRIP_AUTH_ENABLE=true
+# NODE_ROUNT_TRIP_AUTH_TARGET_NODES="origin,edge,transcoder" # origin,edge,transcoder,relay
+# NODE_ROUND_TRIP_AUTH_HOST="rta-host.com.ua"
+# NODE_ROUND_TRIP_AUTH_PORT="443"
+# NODE_ROUND_TRIP_AUTH_PROTOCOL="https://"
+# NODE_ROUND_TRIP_AUTH_ENDPOINT_VALIDATE="/validate"
+# NODE_ROUND_TRIP_AUTH_ENDPOINT_INVALIDATE="/invalidate"
+
+# NODE_WEBHOOK_ENABLE=true
+# NODE_WEBHOOK_TARGET_NODES="origin,edge,transcoder"
+# NODE_WEBHOOK_ENDPOINT="https://webhook-endpoint.com.ua"
+
+# NODE_SOCIAL_PUSHER_ENABLE=true
+# NODE_SOCIAL_PUSHER_TARGET_NODES="origin,edge,transcoder"
+
+# NODE_RESTREAMER_ENABLE=true
+# NODE_RESTREAMER_TARGET_NODES="origin,edge,transcoder"
+# NODE_RESTREAMER_TSINGEST=true
+# NODE_RESTREAMER_IPCAM=false
+# NODE_RESTREAMER_WHIP=true
+# NODE_RESTREAMER_SRTINGEST=false
+
+# Static variables for JSON templates
+node_config_rta_json="$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_rta.json"
+node_config_rta_json_mod="$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_rta_mod.json"
+node_config_webhook_json="$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_webhooks.json"
+node_config_webhook_json_mod="$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_webhooks_mod.json"
+node_config_social_pusher_json="$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_social_pusher.json"
+node_config_social_pusher_json_mod="$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_social_pusher_mod.json"
+node_config_restreamer_json="$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_restreamer.json"
+node_config_restreamer_json_mod="$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_restreamer_mod.json"
 
 log_i() {
     log
@@ -106,7 +145,7 @@ prepare_json_templates() {
     local relays_max_pattern='RELAYS_MAX'
     local relays_max_new="${RELAYS_MAX}"
 
-    gsed -e "s|$node_env_pattern|$node_env_new|" \
+    sed -e "s|$node_env_pattern|$node_env_new|" \
         -e "s|$node_subnet_pattern|$node_subnet_new|" \
         -e "s|$node_security_group_pattern|$node_security_group_new|" \
         -e "s|$node_image_name_pattern|$node_image_name_new|" \
@@ -128,11 +167,144 @@ prepare_json_templates() {
         -e "s|$relays_min_pattern|$relays_min_new|" \
         -e "s|$relays_max_pattern|$relays_max_new|" \
         "$nodegroup_config_json" >"$nodegroup_config_json_mod"
+}
+
+prepare_node_config_json() {
+    log_i "Preparing Node config JSON template for node group: $NODE_GROUP_TYPE"
+    
+    # Node config - Round Trip Auth
+    if [ "$NODE_ROUND_TRIP_AUTH_ENABLE" == "true" ]; then
+        log_i "Node Round Trip Auth is enabled"
+        local node_rta_host_pattern='NODE_ROUND_TRIP_AUTH_HOST'
+        local node_rta_host_new="${NODE_ROUND_TRIP_AUTH_HOST}"
+
+        local node_rta_port_pattern='NODE_ROUND_TRIP_AUTH_PORT'
+        local node_rta_port_new="${NODE_ROUND_TRIP_AUTH_PORT}"
+
+        local node_rta_protocol_pattern='NODE_ROUND_TRIP_AUTH_PROTOCOL'
+        local node_rta_protocol_new="${NODE_ROUND_TRIP_AUTH_PROTOCOL}"
+
+        local node_rta_endpoint_validate_pattern='NODE_ROUND_TRIP_AUTH_ENDPOINT_VALIDATE'
+        local node_rta_endpoint_validate_new="${NODE_ROUND_TRIP_AUTH_ENDPOINT_VALIDATE}"
+
+        local node_rta_endpoint_invalidate_pattern='NODE_ROUND_TRIP_AUTH_ENDPOINT_INVALIDATE'
+        local node_rta_endpoint_invalidate_new="${NODE_ROUND_TRIP_AUTH_ENDPOINT_INVALIDATE}"
+
+        sed -e "s|$node_rta_host_pattern|$node_rta_host_new|" \
+            -e "s|$node_rta_port_pattern|$node_rta_port_new|" \
+            -e "s|$node_rta_protocol_pattern|$node_rta_protocol_new|" \
+            -e "s|$node_rta_endpoint_validate_pattern|$node_rta_endpoint_validate_new|" \
+            -e "s|$node_rta_endpoint_invalidate_pattern|$node_rta_endpoint_invalidate_new|" \
+            "$node_config_rta_json" >"$node_config_rta_json_mod"
+    else
+        log_i "Node Round Trip Auth is disabled"
+        echo "[]" >"$node_config_rta_json_mod"
+    fi
+
+    # Node config - Webhook    
+    if [ "$NODE_WEBHOOK_ENABLE" == "true" ]; then
+        log_i "Node Webhook is enabled"
+
+        local node_webhook_pattern='NODE_WEBHOOK_ENDPOINT'
+        local node_webhook_new="${NODE_WEBHOOK_ENDPOINT}"
+
+        sed -e "s|$node_webhook_pattern|$node_webhook_new|" "$node_config_webhook_json" >"$node_config_webhook_json_mod"
+
+    else
+        log_i "Node Webhook is disabled"
+        echo "[]" >"$node_config_webhook_json_mod"
+    fi
+
+    # Node config - Social Pusher
+    if [ "$NODE_SOCIAL_PUSHER_ENABLE" == "true" ]; then
+        log_i "Node Social Pusher is enabled"
+        cp "$node_config_social_pusher_json" "$node_config_social_pusher_json_mod"
+    else
+        log_i "Node Social Pusher is disabled"
+        echo "[]" >"$node_config_social_pusher_json_mod"
+    fi
+
+    # Node config - Restreamer
+    if [ "$NODE_RESTREAMER_ENABLE" == "true" ]; then
+        log_i "Node Restreamer is enabled"
+        local node_restreamer_tsingest_pattern='NODE_RESTREAMER_TSINGEST'
+        local node_restreamer_tsingest_new="${NODE_RESTREAMER_TSINGEST}"
+
+        local node_restreamer_ipcam_pattern='NODE_RESTREAMER_IPCAM'
+        local node_restreamer_ipcam_new="${NODE_RESTREAMER_IPCAM}"
+
+        local node_restreamer_whip_pattern='NODE_RESTREAMER_WHIP'
+        local node_restreamer_whip_new="${NODE_RESTREAMER_WHIP}"
+
+        local node_restreamer_srtingest_pattern='NODE_RESTREAMER_SRTINGEST'
+        local node_restreamer_srtingest_new="${NODE_RESTREAMER_SRTINGEST}"
+
+        sed -e "s|$node_restreamer_tsingest_pattern|$node_restreamer_tsingest_new|" \
+            -e "s|$node_restreamer_ipcam_pattern|$node_restreamer_ipcam_new|" \
+            -e "s|$node_restreamer_whip_pattern|$node_restreamer_whip_new|" \
+            -e "s|$node_restreamer_srtingest_pattern|$node_restreamer_srtingest_new|" \
+            "$node_config_restreamer_json" >"$node_config_restreamer_json_mod"
+    else
+        log_i "Node Restreamer is disabled"
+        echo "[]" >"$node_config_restreamer_json_mod"
+    fi
+
+    # Create empty node config JSONs
+    echo "[]" >"$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_origin.json"
+    echo "[]" >"$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_edge.json"
+    echo "[]" >"$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_transcoder.json"
+    echo "[]" >"$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_relay.json"
+
+    # Generate node config JSONs
+    generate_node_config_json "$NODE_ROUNT_TRIP_AUTH_TARGET_NODES" "$node_config_rta_json_mod"
+    generate_node_config_json "$NODE_WEBHOOK_TARGET_NODES" "$node_config_webhook_json_mod"
+    generate_node_config_json "$NODE_SOCIAL_PUSHER_TARGET_NODES" "$node_config_social_pusher_json_mod"
+    generate_node_config_json "$NODE_RESTREAMER_TARGET_NODES" "$node_config_restreamer_json_mod"
+
+    # Read the node config JSONs
+    origin_list=$(cat "$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_origin.json")
+    edge_list=$(cat "$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_edge.json")
+    transcoder_list=$(cat "$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_transcoder.json")
+    relay_list=$(cat "$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_relay.json")
+    
+    # Inject the node config JSON into the nodegroup JSON depending on the node group type
+    case $NODE_GROUP_TYPE in
+    o)  jq --argjson list1 "$origin_list" '.roles.origin.propertyOverrides = $list1' "$nodegroup_config_json_mod" > "$PATH_TO_JSON_TEMPLATES/property_overrides/temp.json" ;;
+    oe) jq --argjson list1 "$origin_list" --argjson list2 "$edge_list" '.roles.origin.propertyOverrides = $list1 | .roles.edge.propertyOverrides = $list2' "$nodegroup_config_json_mod" > "$PATH_TO_JSON_TEMPLATES/property_overrides/temp.json" ;;
+    oer) jq --argjson list1 "$origin_list" --argjson list2 "$edge_list" --argjson list3 "$relay_list" '.roles.origin.propertyOverrides = $list1 | .roles.edge.propertyOverrides = $list2 | .roles.relay.propertyOverrides = $list3' "$nodegroup_config_json_mod" > "$PATH_TO_JSON_TEMPLATES/property_overrides/temp.json" ;;
+    oet) jq --argjson list1 "$origin_list" --argjson list2 "$edge_list" --argjson list3 "$transcoder_list" '.roles.origin.propertyOverrides = $list1 | .roles.edge.propertyOverrides = $list2 | .roles.transcoder.propertyOverrides = $list3' "$nodegroup_config_json_mod" > "$PATH_TO_JSON_TEMPLATES/property_overrides/temp.json" ;;
+    oetr) jq --argjson list1 "$origin_list" --argjson list2 "$edge_list" --argjson list3 "$transcoder_list" --argjson list4 "$relay_list" '.roles.origin.propertyOverrides = $list1 | .roles.edge.propertyOverrides = $list2 | .roles.transcoder.propertyOverrides = $list3 | .roles.relay.propertyOverrides = $list4' "$nodegroup_config_json_mod" > "$PATH_TO_JSON_TEMPLATES/property_overrides/temp.json" ;;
+    esac
+
+    # Move the modified nodegroup JSON to the original file
+    mv "$PATH_TO_JSON_TEMPLATES/property_overrides/temp.json" "$nodegroup_config_json_mod"
 
     log_d "JSON template: $nodegroup_config_json_mod"
     cat "$nodegroup_config_json_mod"
+
+    # Delete temporary files
+    rm -f "$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_origin.json"
+    rm -f "$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_edge.json"
+    rm -f "$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_transcoder.json"
+    rm -f "$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_relay.json"
 }
 
+generate_node_config_json() {
+    target_nodes="$1"
+    node_config_json="$2"
+
+    IFS=',' read -r -a target_nodes_nodes_array <<< "$target_nodes"
+
+    for i in "${target_nodes_nodes_array[@]}"
+    do
+        # log_i "TARGET_NODE=$i"
+        jq -s '.[0] + .[1]' "$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_$i.json" "$node_config_json" > "$PATH_TO_JSON_TEMPLATES/property_overrides/temp.json"
+        mv "$PATH_TO_JSON_TEMPLATES/property_overrides/temp.json" "$PATH_TO_JSON_TEMPLATES/property_overrides/node_config_$i.json"
+    done
+    rm "$node_config_json"
+}
+
+# Check if the minimum number of nodes is set
 if [ -z "$ORIGINS_MIN" ]; then
     ORIGINS_MIN=0
 fi
@@ -146,6 +318,7 @@ if [ -z "$TRANSCODERS_MIN" ]; then
     TRANSCODERS_MIN=0
 fi
 
+# Check the node group type. Supported types: o, oe, oer, oet, oetr
 if [ "$ORIGINS_MIN" -gt 0 ] && [ "$EDGES_MIN" -gt 0 ] && [ "$RELAYS_MIN" -gt 0 ] && [ "$TRANSCODERS_MIN" -gt 0 ]; then
     NODE_GROUP_TYPE="oetr"
 elif [ "$ORIGINS_MIN" -gt 0 ] && [ "$EDGES_MIN" -gt 0 ] && [ "$RELAYS_MIN" -gt 0 ]; then
@@ -196,9 +369,9 @@ oetr)
 esac
 
 check_stream_manager() {
-    log_i "Checking Stream Manager status..."
-
     SM_STATUS_URL="$SM_URL/as/v1/admin/healthz"
+
+    log_i "Checking Stream Manager status. URL: $SM_STATUS_URL"
 
     for i in {1..20}; do
         curl --insecure -s -m 5 -o /dev/null -w "%{http_code}" "$SM_STATUS_URL" >/dev/null
@@ -221,10 +394,6 @@ check_stream_manager() {
         sleep 30
     done
 }
-
-# base64 --version
-
-# echo -n 'username:password' | base64
 
 create_jwT_token() {
     log_i "Creating JWT token..."
@@ -320,7 +489,11 @@ check_node_group() {
 }
 
 prepare_json_templates
+prepare_node_config_json
 check_stream_manager
 create_jwT_token
 create_new_node_group
 check_node_group
+
+# Delete temporary file
+rm -f "$nodegroup_config_json_mod"

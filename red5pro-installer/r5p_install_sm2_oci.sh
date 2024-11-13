@@ -1,26 +1,16 @@
 #!/bin/bash
 ############################################################################################################
-# Install Stream Manager 2.0 in Docker containers (docker-compose)
+# Script Name: r5p_install_sm2_oci.sh
+# Description: This script install Stream Manager 2.0 instance with Docker containers (docker-compose)
+# AUTHOR: Oles Prykhodko
+# COMPANY: Infrared5, Inc.
+# Date: 2024-11-07
 ############################################################################################################
 
-# OCI_PRIVATE_KEY_PATH=""
-# SSH_PUBLIC_KEY_PATH=""
-# R5AS_AUTH_SECRET=""
-# R5AS_AUTH_USER=""
-# R5AS_AUTH_PASS=""
-# KAFKA_HOST=""
-# TF_VAR_oci_tenancy_ocid=""
-# TF_VAR_oci_user_ocid=""
-# TF_VAR_oci_compartment_id=""
-# TF_VAR_oci_fingerprint=""
-# TF_VAR_r5p_license_key=""
+# Variables
+# SM_STANDALONE=""
 # SM_SSL=""
 # SM_SSL_DOMAIN=""
-# SM_SSL_EMAIL=""
-# SM_SSL_CERT_PATH=""
-# SM_SSL_KEY_PATH=""
-# SM_PUBLIC_IP=""
-
 
 SM_HOME="/usr/local/stream-manager"
 CURRENT_DIRECTORY=$(pwd)
@@ -46,42 +36,39 @@ log() {
     echo -n "[$(date '+%Y-%m-%d %H:%M:%S')]"
 }
 
-install_pkg(){
-    for i in {1..5};
-    do
-        
-        local install_issuse=0;
-        apt-get -y update --fix-missing &> /dev/null
-        
-        for index in ${!PACKAGES[*]}
-        do
+install_pkg() {
+    for i in {1..20}; do
+
+        local install_issuse=0
+        apt-get -y update --fix-missing &>/dev/null
+
+        for index in ${!PACKAGES[*]}; do
             log_i "Install utility ${PACKAGES[$index]}"
-            apt-get install -y ${PACKAGES[$index]} &> /dev/null
+            apt-get install -y ${PACKAGES[$index]} &>/dev/null
         done
-        
-        for index in ${!PACKAGES[*]}
-        do
-            PKG_OK=$(dpkg-query -W --showformat='${Status}\n' ${PACKAGES[$index]}|grep "install ok installed")
+
+        for index in ${!PACKAGES[*]}; do
+            PKG_OK=$(dpkg-query -W --showformat='${Status}\n' ${PACKAGES[$index]} | grep "install ok installed")
             if [ -z "$PKG_OK" ]; then
-                log_i "${PACKAGES[$index]} utility didn't install, didn't find MIRROR !!! "
-                install_issuse=$(($install_issuse+1));
+                log_i "${PACKAGES[$index]} utility didn't install. Will try again"
+                install_issuse=$(($install_issuse + 1))
             else
                 log_i "${PACKAGES[$index]} utility installed"
             fi
         done
-        
+
         if [ $install_issuse -eq 0 ]; then
             break
         fi
-        if [ $i -ge 5 ]; then
+        if [ $i -ge 20 ]; then
             log_e "Something wrong with packages installation!!! Exit."
             exit 1
         fi
-        sleep 20
+        sleep 30
     done
 }
 
-install_docker(){
+install_docker() {
     log_i "Install Docker"
 
     # Add Docker's official GPG key:
@@ -91,9 +78,9 @@ install_docker(){
 
     # Add the repository to Apt sources:
     echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-    tee /etc/apt/sources.list.d/docker.list > /dev/null
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" |
+        tee /etc/apt/sources.list.d/docker.list >/dev/null
 
     # Install Docker
     PACKAGES=(docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin)
@@ -103,7 +90,7 @@ install_docker(){
     usermod -aG docker ubuntu
 }
 
-config_sm(){
+config_sm() {
     log_i "Config Stream Manager"
 
     mkdir -p "$SM_HOME"
@@ -125,7 +112,7 @@ config_sm(){
         # Copy docker-compose.yml
         if [ -f "$CURRENT_DIRECTORY/autoscaling-with-ssl/docker-compose.yml" ]; then
             cp -r "$CURRENT_DIRECTORY/autoscaling-with-ssl/docker-compose.yml" "$SM_HOME/"
-        else 
+        else
             log_e "File $CURRENT_DIRECTORY/autoscaling-with-ssl/docker-compose.yml not found"
             ls -la "$CURRENT_DIRECTORY/autoscaling-with-ssl/"
             exit 1
@@ -139,41 +126,32 @@ config_sm(){
         # Copy docker-compose.yml
         if [ -f "$CURRENT_DIRECTORY/autoscaling-with-ssl/docker-compose.yml" ]; then
             cp -r "$CURRENT_DIRECTORY/autoscaling-with-ssl/docker-compose.yml" "$SM_HOME/"
-        else 
+        else
             log_e "File $CURRENT_DIRECTORY/autoscaling-with-ssl/docker-compose.yml not found"
             ls -la "$CURRENT_DIRECTORY/autoscaling-with-ssl/"
             exit 1
         fi
-
-        # Copy traefik.yaml
-        # if [ -f "$CURRENT_DIRECTORY/autoscaling-with-ssl/traefik.yaml" ]; then
-        #     cp -r "$CURRENT_DIRECTORY/autoscaling-with-ssl/traefik.yaml" "$SM_HOME/certs/traefik.yaml"
-        # else 
-        #     log_e "File $CURRENT_DIRECTORY/autoscaling-with-ssl/traefik.yaml not found"
-        #     ls -la "$CURRENT_DIRECTORY/autoscaling-with-ssl/"
-        #     exit 1
-        # fi
-    else 
+    else
         log_i "Stream Manager 2.0 without SSL"
 
         # Copy docker-compose.yml
         if [ -f "$CURRENT_DIRECTORY/autoscaling-without-ssl/docker-compose.yml" ]; then
             cp -r "$CURRENT_DIRECTORY/autoscaling-without-ssl/docker-compose.yml" "$SM_HOME/"
-        else 
+        else
             log_e "File $CURRENT_DIRECTORY/autoscaling-without-ssl/docker-compose.yml not found"
             ls -la "$CURRENT_DIRECTORY/autoscaling-without-ssl/"
             exit 1
         fi
     fi
 
-    log_i "Debug info"
-    cat "$SM_HOME/.env"
+    # log_i "Debug info"
+    # cat "$SM_HOME/.env"
 }
 
-pull_docker_images(){
+pull_docker_images() {
     log_i "Pull Docker images"
-    cd "$SM_HOME"
-    if docker compose pull; then
+    cd "$SM_HOME" || exit 1
+    if docker compose pull >/dev/null 2>&1; then
         log_i "Docker images pulled"
     else
         log_e "Docker images not pulled"
@@ -181,7 +159,7 @@ pull_docker_images(){
     fi
 }
 
-start_sm(){
+start_sm() {
     log_i "Start SM2.0 service"
     systemctl daemon-reload
     systemctl enable sm.service
@@ -189,17 +167,40 @@ start_sm(){
     if [ "$SM_STANDALONE" == "true" ]; then
         log_i "Stream Manager 2.0 standalone mode - start service"
         systemctl start sm.service
-
         sleep 5
 
         # Check if the service is running
-        if systemctl is-active --quiet sm.service
-        then
+        if systemctl is-active --quiet sm.service; then
             log_i "Stream Manager 2.0 service is running"
         else
             log_e "Stream Manager 2.0 service is not running"
             exit 1
         fi
+
+        if [ "$SM_SSL" == "letsencrypt" ]; then
+
+            if [ -z "$SM_SSL_DOMAIN" ]; then
+                log_e "Variable SM_SSL_DOMAIN is empty."
+                exit 1
+            fi
+
+            if [ ! -f "$CURRENT_DIRECTORY/r5p_ssl_check_sm2.sh" ]; then
+                log_e "File $CURRENT_DIRECTORY/r5p_ssl_check_sm2.sh not found"
+                ls -la "$CURRENT_DIRECTORY/"
+                exit 1
+            fi
+
+            # Modify DNS servers in systemd-resolved to use Google DNS servers because of long propagation in OCI DNS servers
+            log_i "Modify DNS servers in systemd-resolved"
+            echo "DNS=8.8.8.8 8.8.4.4" >>/etc/systemd/resolved.conf
+            echo "FallbackDNS=2001:4860:4860::8888 2001:4860:4860::8844" >>/etc/systemd/resolved.conf
+            systemctl restart systemd-resolved
+
+            log_i "Start SSL check script"
+            export SM_SSL_DOMAIN="$SM_SSL_DOMAIN"
+            nohup sudo -E "$CURRENT_DIRECTORY/r5p_ssl_check_sm2.sh" >>"$CURRENT_DIRECTORY/r5p_ssl_check_sm2.log" &
+        fi
+
     fi
 }
 
@@ -208,16 +209,16 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-log_i "Check if apt is locked"
-
-while lsof /var/lib/apt/lists/lock ; do 
-    log_i "apt is locked, wait 20 sec"
-    sleep 20
-done
+if command -v flock &>/dev/null; then
+    log_i "Check if apt is locked"
+    while ! flock -n /var/lib/apt/lists/lock true; do
+        echo "apt is locked, wait 5 sec"
+        sleep 5
+    done
+fi
 
 install_pkg
 install_docker
 config_sm
 pull_docker_images
 start_sm
-
