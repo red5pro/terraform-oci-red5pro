@@ -1,23 +1,50 @@
+locals {
+  standalone                    = var.type == "standalone" ? true : false
+  cluster                       = var.type == "cluster" ? true : false
+  autoscale                     = var.type == "autoscale" ? true : false
+  cluster_or_autoscale          = local.cluster || local.autoscale ? true : false
+  vcn_id                        = oci_core_vcn.red5pro_vcn.id
+  vcn_name                      = oci_core_vcn.red5pro_vcn.display_name
+  vcn_cidr_block                = oci_core_vcn.red5pro_vcn.cidr_block
+  subnet_id                     = oci_core_subnet.red5pro_vcn_subnet_public.id
+  subnet_name                   = oci_core_subnet.red5pro_vcn_subnet_public.display_name
+  stream_manager_ip             = local.autoscale ? var.load_balancer_reserved_ip_use_existing ? data.oci_core_public_ip.red5pro_reserved_ip[0].ip_address : oci_core_public_ip.red5pro_reserved_ip[0].ip_address : local.cluster ? oci_core_instance.red5pro_sm[0].public_ip : "null"
+  ssh_private_key_path          = var.ssh_key_use_existing ? var.ssh_key_existing_private_key_path : local_file.red5pro_ssh_key_pem[0].filename
+  ssh_public_key_path           = var.ssh_key_use_existing ? var.ssh_key_existing_public_key_path : local_file.red5pro_ssh_key_pub[0].filename
+  ssh_private_key               = var.ssh_key_use_existing ? file(var.ssh_key_existing_private_key_path) : tls_private_key.red5pro_ssh_key[0].private_key_pem
+  ssh_public_key                = var.ssh_key_use_existing ? file(var.ssh_key_existing_public_key_path) : tls_private_key.red5pro_ssh_key[0].public_key_openssh
+  load_balancer_reserved_ip_id  = local.autoscale ? var.load_balancer_reserved_ip_use_existing ? data.oci_core_public_ip.red5pro_reserved_ip[0].id : oci_core_public_ip.red5pro_reserved_ip[0].id : null
+  kafka_standalone_instance     = local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
+  kafka_ip                      = local.cluster_or_autoscale ? local.kafka_standalone_instance ? oci_core_instance.red5pro_kafka[0].private_ip : oci_core_instance.red5pro_sm[0].private_ip : "null"
+  kafka_on_sm_replicas          = local.kafka_standalone_instance ? 0 : 1
+  kafka_ssl_keystore_key        = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", trimspace(tls_private_key.kafka_server_key[0].private_key_pem_pkcs8)))) : "null"
+  kafka_ssl_truststore_cert     = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", tls_self_signed_cert.ca_cert[0].cert_pem))) : "null"
+  kafka_ssl_keystore_cert_chain = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", tls_locally_signed_cert.kafka_server_cert[0].cert_pem))) : "null"
+  stream_manager_ssl            = local.autoscale ? "none" : var.https_ssl_certificate
+  stream_manager_standalone     = local.autoscale ? false : true
+  stream_manager_url            = local.stream_manager_ssl != "none" ? "https://${local.stream_manager_ip}" : "http://${local.stream_manager_ip}"
+}
+
 ################################################################################
-# SSH_KEY
+# SSH KEY PAIR
 ################################################################################
 
 # SSH key pair generation
 resource "tls_private_key" "red5pro_ssh_key" {
-  count     = var.ssh_key_create ? 1 : 0
+  count     = var.ssh_key_use_existing ? 0 : 1
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
 # Save SSH key pair files to local folder
 resource "local_file" "red5pro_ssh_key_pem" {
-  count           = var.ssh_key_create ? 1 : 0
+  count           = var.ssh_key_use_existing ? 0 : 1
   filename        = "./ssh-key-${var.name}.pem"
   content         = tls_private_key.red5pro_ssh_key[0].private_key_pem
   file_permission = "0400"
 }
 resource "local_file" "red5pro_ssh_key_pub" {
-  count    = var.ssh_key_create ? 1 : 0
+  count    = var.ssh_key_use_existing ? 0 : 1
   filename = "./ssh-key-${var.name}.pub"
   content  = tls_private_key.red5pro_ssh_key[0].public_key_openssh
 }
@@ -27,7 +54,7 @@ resource "local_file" "red5pro_ssh_key_pub" {
 ################################################################################
 
 # Get latest Canonical Ubuntu image
-data "oci_core_images" "red5pro_image" {
+data "oci_core_images" "ubuntu_image" {
   compartment_id   = var.oracle_compartment_id
   operating_system = "Canonical Ubuntu"
   filter {
@@ -43,30 +70,37 @@ data "oci_identity_availability_domains" "ads" {
 }
 
 ################################################################################
-# Red5 Pro Single Server (OCI Instance)
+# Red5 Pro Standalone Server (OCI Instance)
 ################################################################################
 
-resource "oci_core_instance" "red5pro_single" {
-  count               = local.single ? 1 : 0
+resource "random_password" "ssl_password_red5pro_standalone" {
+  count   = local.standalone && var.https_ssl_certificate != "none" ? 1 : 0
+  length  = 16
+  special = false
+}
+
+resource "oci_core_instance" "red5pro_standalone" {
+  count               = local.standalone ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   compartment_id      = var.oracle_compartment_id
-  shape               = var.single_instance_type
-  display_name        = "${var.name}-single-server"
+  shape               = var.standalone_red5pro_instance_type
+  display_name        = "${var.name}-standalone-server"
 
   shape_config {
-    ocpus         = var.single_instance_ocpu
-    memory_in_gbs = var.single_instance_memory
+    ocpus         = var.standalone_red5pro_instance_ocpu
+    memory_in_gbs = var.standalone_red5pro_instance_memory
   }
 
   source_details {
-    source_id   = data.oci_core_images.red5pro_image.images[0].id
-    source_type = "image"
+    source_id               = data.oci_core_images.ubuntu_image.images[0].id
+    source_type             = "image"
+    boot_volume_size_in_gbs = var.standalone_red5pro_instance_volume_size
   }
 
   create_vnic_details {
     assign_public_ip = true
     subnet_id        = local.subnet_id
-    nsg_ids          = [var.network_security_group_create ? oci_core_network_security_group.red5pro_single_network_security_group[0].id : data.oci_core_network_security_group.red5pro_existing_network_security_group[0].network_security_group_id]
+    nsg_ids          = [oci_core_network_security_group.red5pro_standalone_network_security_group[0].id]
   }
 
   metadata = {
@@ -106,26 +140,30 @@ resource "oci_core_instance" "red5pro_single" {
       "export LICENSE_KEY='${var.red5pro_license_key}'",
       "export NODE_API_ENABLE='${var.red5pro_api_enable}'",
       "export NODE_API_KEY='${var.red5pro_api_key}'",
-      "export NODE_INSPECTOR_ENABLE='${var.red5pro_inspector_enable}'",
-      "export NODE_RESTREAMER_ENABLE='${var.red5pro_restreamer_enable}'",
-      "export NODE_SOCIALPUSHER_ENABLE='${var.red5pro_socialpusher_enable}'",
-      "export NODE_SUPPRESSOR_ENABLE='${var.red5pro_suppressor_enable}'",
-      "export NODE_HLS_ENABLE='${var.red5pro_hls_enable}'",
-      "export NODE_ROUND_TRIP_AUTH_ENABLE='${var.red5pro_round_trip_auth_enable}'",
-      "export NODE_ROUND_TRIP_AUTH_HOST='${var.red5pro_round_trip_auth_host}'",
-      "export NODE_ROUND_TRIP_AUTH_PORT='${var.red5pro_round_trip_auth_port}'",
-      "export NODE_ROUND_TRIP_AUTH_PROTOCOL='${var.red5pro_round_trip_auth_protocol}'",
-      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_VALIDATE='${var.red5pro_round_trip_auth_endpoint_validate}'",
-      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_INVALIDATE='${var.red5pro_round_trip_auth_endpoint_invalidate}'",
-      "export SSL_ENABLE='${var.https_letsencrypt_enable}'",
-      "export SSL_DOMAIN='${var.https_letsencrypt_certificate_domain_name}'",
-      "export SSL_MAIL='${var.https_letsencrypt_certificate_email}'",
-      "export SSL_PASSWORD='${var.https_letsencrypt_certificate_password}'",
+      "export NODE_INSPECTOR_ENABLE='${var.standalone_red5pro_inspector_enable}'",
+      "export NODE_RESTREAMER_ENABLE='${var.standalone_red5pro_restreamer_enable}'",
+      "export NODE_SOCIALPUSHER_ENABLE='${var.standalone_red5pro_socialpusher_enable}'",
+      "export NODE_SUPPRESSOR_ENABLE='${var.standalone_red5pro_suppressor_enable}'",
+      "export NODE_HLS_ENABLE='${var.standalone_red5pro_hls_enable}'",
+      "export NODE_ROUND_TRIP_AUTH_ENABLE='${var.standalone_red5pro_round_trip_auth_enable}'",
+      "export NODE_ROUND_TRIP_AUTH_HOST='${var.standalone_red5pro_round_trip_auth_host}'",
+      "export NODE_ROUND_TRIP_AUTH_PORT='${var.standalone_red5pro_round_trip_auth_port}'",
+      "export NODE_ROUND_TRIP_AUTH_PROTOCOL='${var.standalone_red5pro_round_trip_auth_protocol}'",
+      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_VALIDATE='${var.standalone_red5pro_round_trip_auth_endpoint_validate}'",
+      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_INVALIDATE='${var.standalone_red5pro_round_trip_auth_endpoint_invalidate}'",
       "cd /home/ubuntu/red5pro-installer/",
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_server_basic.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_config_node_apps_plugins.sh",
       "sudo systemctl daemon-reload && sudo systemctl start red5pro",
+      "sudo mkdir -p /usr/local/red5pro/certs",
+      "echo '${try(file(var.https_ssl_certificate_cert_path), "")}' | sudo tee -a /usr/local/red5pro/certs/fullchain.pem",
+      "echo '${try(file(var.https_ssl_certificate_key_path), "")}' | sudo tee -a /usr/local/red5pro/certs/privkey.pem",
+      "export SSL='${var.https_ssl_certificate}'",
+      "export SSL_DOMAIN='${var.https_ssl_certificate_domain_name}'",
+      "export SSL_MAIL='${var.https_ssl_certificate_email}'",
+      "export SSL_PASSWORD='${try(nonsensitive(random_password.ssl_password_red5pro_standalone[0].result), "")}'",
+      "export SSL_CERT_PATH=/usr/local/red5pro/certs",
       "nohup sudo -E /home/ubuntu/red5pro-installer/r5p_ssl_check_install.sh >> /home/ubuntu/red5pro-installer/r5p_ssl_check_install.log &",
       "sleep 2"
     ]
@@ -139,133 +177,217 @@ resource "oci_core_instance" "red5pro_single" {
 }
 
 ################################################################################
-# OCI Instance Terraform Service
+# Kafka keys and certificates
 ################################################################################
 
-resource "oci_core_instance" "red5pro_terraform_service" {
-  count               = local.terraform_service_instance_create ? 1 : 0
+# Generate random admin usernames for Kafka cluster
+resource "random_string" "kafka_admin_username" {
+  count   = local.cluster_or_autoscale ? 1 : 0
+  length  = 8
+  special = false
+  upper   = false
+  lower   = true
+  numeric = false
+}
+
+# Generate random client usernames for Kafka cluster
+resource "random_string" "kafka_client_username" {
+  count   = local.cluster_or_autoscale ? 1 : 0
+  length  = 8
+  special = false
+  upper   = false
+  lower   = true
+  numeric = false
+}
+
+# Generate random IDs for Kafka cluster
+resource "random_id" "kafka_cluster_id" {
+  count       = local.cluster_or_autoscale ? 1 : 0
+  byte_length = 16
+}
+
+# Generate random passwords for Kafka cluster
+resource "random_id" "kafka_admin_password" {
+  count       = local.cluster_or_autoscale ? 1 : 0
+  byte_length = 16
+}
+
+# Generate random passwords for Kafka cluster
+resource "random_id" "kafka_client_password" {
+  count       = local.cluster_or_autoscale ? 1 : 0
+  byte_length = 16
+}
+
+# Create private key for CA
+resource "tls_private_key" "ca_private_key" {
+  count     = local.cluster_or_autoscale ? 1 : 0
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Create private key for kafka server certificate 
+resource "tls_private_key" "kafka_server_key" {
+  count     = local.cluster_or_autoscale ? 1 : 0
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Create self-signed certificate for CA
+resource "tls_self_signed_cert" "ca_cert" {
+  count           = local.cluster_or_autoscale ? 1 : 0
+  private_key_pem = tls_private_key.ca_private_key[0].private_key_pem
+
+  is_ca_certificate = true
+
+  subject {
+    country             = "US"
+    common_name         = "Infrared5, Inc."
+    organization        = "Red5"
+    organizational_unit = "Red5 Root Certification Auhtority"
+  }
+
+  validity_period_hours = 87600 # 10 years
+
+  allowed_uses = [
+    "digital_signature",
+    "key_encipherment",
+    "cert_signing",
+    "crl_signing",
+  ]
+}
+
+# Create CSR for server certificate 
+resource "tls_cert_request" "kafka_server_csr" {
+  count           = local.cluster_or_autoscale ? 1 : 0
+  private_key_pem = tls_private_key.kafka_server_key[0].private_key_pem
+  ip_addresses    = [local.kafka_ip]
+  dns_names       = ["kafka0"]
+
+  subject {
+    country             = "US"
+    common_name         = "Kafka server"
+    organization        = "Infrared5, Inc."
+    organizational_unit = "Development"
+  }
+
+  depends_on = [oci_core_instance.red5pro_sm, oci_core_instance.red5pro_kafka]
+}
+
+# Sign kafka server Certificate by Private CA 
+resource "tls_locally_signed_cert" "kafka_server_cert" {
+  count = local.cluster_or_autoscale ? 1 : 0
+  # CSR by the development servers
+  cert_request_pem = tls_cert_request.kafka_server_csr[0].cert_request_pem
+  # CA Private key 
+  ca_private_key_pem = tls_private_key.ca_private_key[0].private_key_pem
+  # CA certificate
+  ca_cert_pem = tls_self_signed_cert.ca_cert[0].cert_pem
+
+  validity_period_hours = 1 * 365 * 24
+
+  allowed_uses = [
+    "digital_signature",
+    "key_encipherment",
+    "server_auth",
+    "client_auth",
+  ]
+}
+
+################################################################################
+# Kafka server - (OCI Instance)
+################################################################################
+resource "oci_core_instance" "red5pro_kafka" {
+  count               = local.kafka_standalone_instance ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   compartment_id      = var.oracle_compartment_id
-  shape               = var.terraform_service_instance_type
-  display_name        = "${var.name}-terraform-service"
+  shape               = var.kafka_standalone_instance_type
+  display_name        = "${var.name}-kafka"
 
   shape_config {
-    ocpus         = var.terraform_service_instance_ocpu
-    memory_in_gbs = var.terraform_service_instance_memory
+    ocpus         = var.kafka_standalone_instance_ocpu
+    memory_in_gbs = var.kafka_standalone_instance_memory
   }
 
   source_details {
-    source_id   = data.oci_core_images.red5pro_image.images[0].id
-    source_type = "image"
+    source_id               = data.oci_core_images.ubuntu_image.images[0].id
+    source_type             = "image"
+    boot_volume_size_in_gbs = var.kafka_standalone_instance_volume_size
   }
 
   create_vnic_details {
     assign_public_ip = true
     subnet_id        = local.subnet_id
-    nsg_ids          = [oci_core_network_security_group.red5pro_terraform_service_network_security_group[0].id]
+    nsg_ids          = [oci_core_network_security_group.red5pro_kafka_network_security_group[0].id]
   }
 
   metadata = {
     ssh_authorized_keys = local.ssh_public_key
   }
+
   preserve_boot_volume = false
+}
+
+resource "null_resource" "red5pro_kafka" {
+  count = local.kafka_standalone_instance ? 1 : 0
 
   provisioner "file" {
     source      = "${abspath(path.module)}/red5pro-installer"
     destination = "/home/ubuntu"
 
     connection {
-      host        = self.public_ip
+      host        = oci_core_instance.red5pro_kafka[0].public_ip
       type        = "ssh"
       user        = "ubuntu"
       private_key = local.ssh_private_key
     }
   }
-
-  provisioner "file" {
-    source      = var.path_to_terraform_service_build
-    destination = "/home/ubuntu/red5pro-installer/${basename(var.path_to_terraform_service_build)}"
-
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-
-  provisioner "file" {
-    source      = var.oracle_private_key_path
-    destination = "/home/ubuntu/${basename(var.oracle_private_key_path)}"
-
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-
-  provisioner "file" {
-    source      = local.ssh_public_key_path
-    destination = "/home/ubuntu/${basename(local.ssh_public_key_path)}"
-
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-
 
   provisioner "remote-exec" {
     inline = [
       "sudo iptables -F",
       "sudo netfilter-persistent save",
       "sudo cloud-init status --wait",
-      "export TENANCY_OCID='${var.oracle_tenancy_ocid}'",
-      "export USER_OCID='${var.oracle_user_ocid}'",
-      "export COMPARTMENT_ID='${var.oracle_compartment_id}'",
-      "export FINGERPRINT='${var.oracle_fingerprint}'",
-      "export PRIVATE_KEY_PATH='/home/ubuntu/${basename(var.oracle_private_key_path)}'",
-      "export PUBLIC_KEY_PATH='/home/ubuntu/${basename(local.ssh_public_key_path)}'",
-      "export REGION='${var.oracle_region}'",
-      "export SUBNET_NAME='${local.subnet_name}'",
-      "export NETWORK_SECURITY_GROUP='${oci_core_network_security_group.red5pro_node_network_security_group[0].display_name}'",
-      "export TF_SVC_ENABLE=true",
-      "export DB_HOST='${local.mysql_host}'",
-      "export DB_PORT='${var.mysql_port}'",
-      "export DB_USER='${var.mysql_user_name}'",
-      "export DB_PASSWORD='${var.mysql_password}'",
-      "export TERRA_HOST='${self.private_ip}'",
-      "export TERRA_API_KEY='${var.terraform_service_api_key}'",
-      "export TERRA_PARALLELISM='${var.terraform_service_parallelism}'",
+      "echo 'ssl.keystore.key=${local.kafka_ssl_keystore_key}' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
+      "echo 'ssl.truststore.certificates=${local.kafka_ssl_truststore_cert}' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
+      "echo 'ssl.keystore.certificate.chain=${local.kafka_ssl_keystore_cert_chain}' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
+      "echo 'listener.name.broker.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${nonsensitive(random_string.kafka_admin_username[0].result)}\" password=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_admin_username[0].result)}=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_client_username[0].result)}=\"${nonsensitive(random_id.kafka_client_password[0].id)}\";' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
+      "echo 'listener.name.controller.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${nonsensitive(random_string.kafka_admin_username[0].result)}\" password=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_admin_username[0].result)}=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_client_username[0].result)}=\"${nonsensitive(random_id.kafka_client_password[0].id)}\";' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
+      "echo 'advertised.listeners=BROKER://${local.kafka_ip}:9092' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
+      "export KAFKA_ARCHIVE_URL='${var.kafka_standalone_instance_arhive_url}'",
+      "export KAFKA_CLUSTER_ID='${random_id.kafka_cluster_id[0].b64_std}'",
       "cd /home/ubuntu/red5pro-installer/",
-      "sudo chmod +x /home/ubuntu/red5pro-installer/*",
-      "sudo chmod 400 /home/ubuntu/${basename(var.oracle_private_key_path)}",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_install_terraform_svc.sh",
-      "sleep 2"
+      "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
+      "sudo -E /home/ubuntu/red5pro-installer/r5p_kafka_install.sh",
     ]
+
     connection {
-      host        = self.public_ip
+      host        = oci_core_instance.red5pro_kafka[0].public_ip
       type        = "ssh"
       user        = "ubuntu"
       private_key = local.ssh_private_key
     }
   }
+
+  depends_on = [tls_cert_request.kafka_server_csr]
 }
 
 ################################################################################
-# Red5 Pro Stream Manager - (OCI Instance)
+# Red5 Pro Stream Manager 2.0 - (OCI Instance)
 ################################################################################
 
+# Generate random password for Red5 Pro Stream Manager 2.0 authentication
+resource "random_password" "r5as_auth_secret" {
+  count   = local.cluster_or_autoscale ? 1 : 0
+  length  = 32
+  special = false
+}
+
 resource "oci_core_instance" "red5pro_sm" {
-  count               = local.cluster_or_autoscaling ? 1 : 0
+  count               = local.cluster_or_autoscale ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   compartment_id      = var.oracle_compartment_id
   shape               = var.stream_manager_instance_type
-  display_name        = "${var.name}-stream-manager"
+  display_name        = local.autoscale ? "${var.name}-sm2-image" : "${var.name}-sm2"
 
   shape_config {
     ocpus         = var.stream_manager_instance_ocpu
@@ -273,8 +395,9 @@ resource "oci_core_instance" "red5pro_sm" {
   }
 
   source_details {
-    source_id   = data.oci_core_images.red5pro_image.images[0].id
-    source_type = "image"
+    source_id               = data.oci_core_images.ubuntu_image.images[0].id
+    source_type             = "image"
+    boot_volume_size_in_gbs = var.stream_manager_instance_volume_size
   }
 
   create_vnic_details {
@@ -285,75 +408,50 @@ resource "oci_core_instance" "red5pro_sm" {
 
   metadata = {
     ssh_authorized_keys = local.ssh_public_key
+    user_data = base64gzip(<<-EOF
+          #!/bin/bash
+          mkdir -p /usr/local/stream-manager/keys
+          mkdir -p /usr/local/stream-manager/certs
+          echo "${try(file(var.https_ssl_certificate_cert_path), "")}" > /usr/local/stream-manager/certs/cert.pem
+          echo "${try(file(var.https_ssl_certificate_key_path), "")}" > /usr/local/stream-manager/certs/privkey.pem
+          echo -n "${local.ssh_public_key}" > /usr/local/stream-manager/keys/red5pro_ssh_public_key.pub
+          echo "${try(file(var.oracle_private_key_path), "")}" > /usr/local/stream-manager/keys/oracle_private_api_key.pem
+          chmod 400 /usr/local/stream-manager/keys/privkey.pem
+          chmod 400 /usr/local/stream-manager/keys/oracle_private_api_key.pem
+          ############################ .env file #########################################################
+          cat >> /usr/local/stream-manager/.env <<- EOM
+          KAFKA_CLUSTER_ID=${random_id.kafka_cluster_id[0].b64_std}
+          KAFKA_ADMIN_USERNAME=${random_string.kafka_admin_username[0].result}
+          KAFKA_ADMIN_PASSWORD=${random_id.kafka_admin_password[0].id}
+          KAFKA_CLIENT_USERNAME=${random_string.kafka_client_username[0].result}
+          KAFKA_CLIENT_PASSWORD=${random_id.kafka_client_password[0].id}
+          R5AS_AUTH_SECRET=${random_password.r5as_auth_secret[0].result}
+          R5AS_AUTH_USER=${var.stream_manager_auth_user}
+          R5AS_AUTH_PASS=${var.stream_manager_auth_password}
+          TF_VAR_oci_tenancy_ocid=${var.oracle_tenancy_ocid}
+          TF_VAR_oci_user_ocid=${var.oracle_user_ocid}
+          TF_VAR_oci_compartment_id=${var.oracle_compartment_id}
+          TF_VAR_oci_fingerprint=${var.oracle_fingerprint}
+          TF_VAR_r5p_license_key=${var.red5pro_license_key}
+          TRAEFIK_TLS_CHALLENGE=${local.stream_manager_ssl == "letsencrypt" ? "true" : "false"}
+          TRAEFIK_HOST=${var.https_ssl_certificate_domain_name}
+          TRAEFIK_SSL_EMAIL=${var.https_ssl_certificate_email}
+          TRAEFIK_CMD=${local.stream_manager_ssl == "imported" ? "--providers.file.filename=/scripts/traefik.yaml" : ""}
+        EOF
+    )
   }
   preserve_boot_volume = false
+}
+
+resource "null_resource" "red5pro_sm" {
+  count = local.cluster_or_autoscale ? 1 : 0
 
   provisioner "file" {
     source      = "${abspath(path.module)}/red5pro-installer"
     destination = "/home/ubuntu"
 
     connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-
-  provisioner "file" {
-    source      = var.path_to_red5pro_build
-    destination = "/home/ubuntu/red5pro-installer/${basename(var.path_to_red5pro_build)}"
-
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-
-  provisioner "file" {
-    source      = var.path_to_terraform_cloud_controller
-    destination = "/home/ubuntu/red5pro-installer/${basename(var.path_to_terraform_cloud_controller)}"
-
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-
-  provisioner "file" {
-    source      = var.path_to_terraform_service_build
-    destination = "/home/ubuntu/red5pro-installer/${basename(var.path_to_terraform_service_build)}"
-
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-
-  provisioner "file" {
-    source      = var.oracle_private_key_path
-    destination = "/home/ubuntu/${basename(var.oracle_private_key_path)}"
-
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-
-  provisioner "file" {
-    source      = local.ssh_public_key_path
-    destination = "/home/ubuntu/${basename(local.ssh_public_key_path)}"
-
-    connection {
-      host        = self.public_ip
+      host        = oci_core_instance.red5pro_sm[0].public_ip
       type        = "ssh"
       user        = "ubuntu"
       private_key = local.ssh_private_key
@@ -362,66 +460,42 @@ resource "oci_core_instance" "red5pro_sm" {
 
   provisioner "remote-exec" {
     inline = [
-      "sudo cloud-init status --wait",
       "sudo iptables -F",
       "sudo netfilter-persistent save",
-      "export TENANCY_OCID='${var.oracle_tenancy_ocid}'",
-      "export USER_OCID='${var.oracle_user_ocid}'",
-      "export COMPARTMENT_ID='${var.oracle_compartment_id}'",
-      "export FINGERPRINT='${var.oracle_fingerprint}'",
-      "export PRIVATE_KEY_PATH='/home/ubuntu/${basename(var.oracle_private_key_path)}'",
-      "export PUBLIC_KEY_PATH='/home/ubuntu/${basename(local.ssh_public_key_path)}'",
-      "export REGION='${var.oracle_region}'",
-      "export SUBNET_NAME='${local.subnet_name}'",
-      "export NETWORK_SECURITY_GROUP='${oci_core_network_security_group.red5pro_node_network_security_group[0].display_name}'",
-      "export LICENSE_KEY='${var.red5pro_license_key}'",
-      "export SM_API_KEY='${var.stream_manager_api_key}'",
-      "export NODE_API_KEY='${var.red5pro_api_key}'",
-      "export NODE_CLUSTER_KEY='${var.red5pro_cluster_key}'",
-      "export NODE_PREFIX_NAME='${var.name}-node'",
-      "export DB_LOCAL_ENABLE='${local.mysql_local_enable}'",
-      "export TF_SVC_ENABLE='${local.cluster && var.terraform_service_instance_create == false ? true : false}'",
-      "export DB_HOST='${local.mysql_host}'",
-      "export DB_PORT='${var.mysql_port}'",
-      "export DB_USER='${var.mysql_user_name}'",
-      "export DB_PASSWORD='${var.mysql_password}'",
-      "export SSL_ENABLE='${var.https_letsencrypt_enable}'",
-      "export SSL_DOMAIN='${var.https_letsencrypt_certificate_domain_name}'",
-      "export SSL_MAIL='${var.https_letsencrypt_certificate_email}'",
-      "export SSL_PASSWORD='${var.https_letsencrypt_certificate_password}'",
-      "export TERRA_HOST='${local.terra_host}'",
-      "export TERRA_API_KEY='${var.terraform_service_api_key}'",
-      "export TERRA_PARALLELISM='${var.terraform_service_parallelism}'",
+      "sudo cloud-init status --wait",
+      "echo 'KAFKA_SSL_KEYSTORE_KEY=${local.kafka_ssl_keystore_key}' | sudo tee -a /usr/local/stream-manager/.env",
+      "echo 'KAFKA_SSL_TRUSTSTORE_CERTIFICATES=${local.kafka_ssl_truststore_cert}' | sudo tee -a /usr/local/stream-manager/.env",
+      "echo 'KAFKA_SSL_KEYSTORE_CERTIFICATE_CHAIN=${local.kafka_ssl_keystore_cert_chain}' | sudo tee -a /usr/local/stream-manager/.env",
+      "echo 'KAFKA_REPLICAS=${local.kafka_on_sm_replicas}' | sudo tee -a /usr/local/stream-manager/.env",
+      "echo 'KAFKA_IP=${local.kafka_ip}' | sudo tee -a /usr/local/stream-manager/.env",
+      "echo 'TRAEFIK_IP=${oci_core_instance.red5pro_sm[0].public_ip}' | sudo tee -a /usr/local/stream-manager/.env",
+      "export SM_SSL='${local.stream_manager_ssl}'",
+      "export SM_STANDALONE='${local.stream_manager_standalone}'",
+      "export SM_SSL_DOMAIN='${var.https_ssl_certificate_domain_name}'",
       "cd /home/ubuntu/red5pro-installer/",
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_install_server_basic.sh",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_install_mysql_local.sh",
-      "sudo chmod 400 /home/ubuntu/${basename(var.oracle_private_key_path)}",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_install_terraform_svc.sh",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_config_stream_manager.sh",
-      "sudo systemctl daemon-reload && sudo systemctl start red5pro",
-      "nohup sudo -E /home/ubuntu/red5pro-installer/r5p_ssl_check_install.sh >> /home/ubuntu/red5pro-installer/r5p_ssl_check_install.log &",
-      "sleep 2"
+      "sudo -E /home/ubuntu/red5pro-installer/r5p_install_sm2_oci.sh",
     ]
     connection {
-      host        = self.public_ip
+      host        = oci_core_instance.red5pro_sm[0].public_ip
       type        = "ssh"
       user        = "ubuntu"
       private_key = local.ssh_private_key
     }
   }
+  depends_on = [tls_cert_request.kafka_server_csr, null_resource.red5pro_kafka]
 }
 
 ################################################################################
 # Red5 Pro Stream Manager Autoscaling (OCI Load Balancer + Autoscaling)
 ################################################################################
 data "oci_core_public_ip" "red5pro_reserved_ip" {
-    count      = local.autoscaling && var.load_balancer_reserved_ip_create == false ? 1 : 0
-    ip_address = var.load_balancer_reserved_ip
+  count      = local.autoscale && var.load_balancer_reserved_ip_use_existing ? 1 : 0
+  ip_address = var.load_balancer_reserved_ip_existing
 }
 
 resource "oci_core_public_ip" "red5pro_reserved_ip" {
-  count          = local.autoscaling && var.load_balancer_reserved_ip_create ? 1 : 0
+  count          = local.autoscale && var.load_balancer_reserved_ip_use_existing == false ? 1 : 0
   compartment_id = var.oracle_compartment_id
   lifetime       = "RESERVED"
 
@@ -431,8 +505,8 @@ resource "oci_core_public_ip" "red5pro_reserved_ip" {
 }
 
 resource "oci_load_balancer_load_balancer" "red5pro_lb" {
-  count                      = local.autoscaling ? 1 : 0
-  display_name               = "${var.name}-lb"
+  count                      = local.autoscale ? 1 : 0
+  display_name               = "${var.name}-sm2-lb"
   compartment_id             = var.oracle_compartment_id
   subnet_ids                 = [local.subnet_id]
   network_security_group_ids = [oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id]
@@ -447,25 +521,25 @@ resource "oci_load_balancer_load_balancer" "red5pro_lb" {
 }
 
 resource "oci_load_balancer_backend_set" "red5pro_lb_backend_set" {
-  count            = local.autoscaling ? 1 : 0
+  count            = local.autoscale ? 1 : 0
   name             = "${var.name}-lb-set"
   load_balancer_id = oci_load_balancer_load_balancer.red5pro_lb[0].id
   policy           = "ROUND_ROBIN"
 
   health_checker {
-    port                = "5080"
-    protocol            = "HTTP"
-    response_body_regex = ".*"
-    url_path            = "/"
+    port        = "80"
+    protocol    = "HTTP"
+    return_code = 200
+    url_path    = "/as/v1/admin/healthz"
   }
 }
 
-resource "oci_load_balancer_listener" "red5pro_lb_listener_5080" {
-  count                    = local.autoscaling ? 1 : 0
+resource "oci_load_balancer_listener" "red5pro_lb_listener_http" {
+  count                    = local.autoscale ? 1 : 0
   load_balancer_id         = oci_load_balancer_load_balancer.red5pro_lb[0].id
   name                     = "http"
   default_backend_set_name = oci_load_balancer_backend_set.red5pro_lb_backend_set[0].name
-  port                     = 5080
+  port                     = 80
   protocol                 = "HTTP"
 
   connection_configuration {
@@ -473,8 +547,8 @@ resource "oci_load_balancer_listener" "red5pro_lb_listener_5080" {
   }
 }
 
-resource "oci_load_balancer_listener" "red5pro_lb_listener_443" {
-  count                    = local.autoscaling && var.lb_https_certificate_create ? 1 : 0
+resource "oci_load_balancer_listener" "red5pro_lb_listener_https" {
+  count                    = local.autoscale && var.https_ssl_certificate == "imported" ? 1 : 0
   load_balancer_id         = oci_load_balancer_load_balancer.red5pro_lb[0].id
   name                     = "https"
   default_backend_set_name = oci_load_balancer_backend_set.red5pro_lb_backend_set[0].name
@@ -482,7 +556,7 @@ resource "oci_load_balancer_listener" "red5pro_lb_listener_443" {
   protocol                 = "HTTP"
 
   ssl_configuration {
-    certificate_name        = var.lb_https_certificate_name
+    certificate_name        = oci_load_balancer_certificate.red5pro_lb_ssl_cert[0].certificate_name
     verify_peer_certificate = false
     cipher_suite_name       = var.lb_https_certificate_cipher_suite_name
     protocols               = ["TLSv1.1", "TLSv1.2"]
@@ -490,33 +564,31 @@ resource "oci_load_balancer_listener" "red5pro_lb_listener_443" {
   }
 }
 
-# OCI SSL certificate
-
+# OCI LB SSL certificate
 resource "oci_load_balancer_certificate" "red5pro_lb_ssl_cert" {
-  count              = local.autoscaling && var.lb_https_certificate_create ? 1 : 0
-  load_balancer_id   = oci_load_balancer_load_balancer.red5pro_lb[0].id
-  certificate_name   = var.lb_https_certificate_name
-  ca_certificate     = var.lb_https_certificate_fullchain != "" ? file(var.lb_https_certificate_fullchain) : null
-  private_key        = file(var.lb_https_certificate_private_key)
-  public_certificate = file(var.lb_https_certificate_public_cert)
+  count            = local.autoscale && var.https_ssl_certificate == "imported" ? 1 : 0
+  load_balancer_id = oci_load_balancer_load_balancer.red5pro_lb[0].id
+  certificate_name = var.https_ssl_certificate_domain_name
+  # ca_certificate     = var.lb_https_certificate_fullchain != "" ? file(var.lb_https_certificate_fullchain) : null
+  private_key        = file(var.https_ssl_certificate_key_path)
+  public_certificate = file(var.https_ssl_certificate_cert_path)
 
   lifecycle {
     create_before_destroy = true
   }
 }
 
-# SM AUTOSCALING
-
+# OCI SM AUTOSCALING
 resource "oci_core_image" "red5pro_sm_image" {
-  count          = local.autoscaling ? 1 : 0
+  count          = local.autoscale ? 1 : 0
   compartment_id = var.oracle_compartment_id
   instance_id    = oci_core_instance.red5pro_sm[0].id
   display_name   = "${var.name}-stream-manager"
-  depends_on     = [oci_core_instance.red5pro_sm]
+  depends_on     = [null_resource.red5pro_sm]
 }
 
 resource "oci_core_instance_configuration" "red5pro_instance_configuration" {
-  count          = local.autoscaling ? 1 : 0
+  count          = local.autoscale ? 1 : 0
   compartment_id = var.oracle_compartment_id
   display_name   = "${var.name}-sm-instance-cnf"
 
@@ -553,12 +625,14 @@ resource "oci_core_instance_configuration" "red5pro_instance_configuration" {
 }
 
 resource "oci_core_instance_pool" "red5pro_instance_pool" {
-  count                     = local.autoscaling ? 1 : 0
-  compartment_id            = var.oracle_compartment_id
-  instance_configuration_id = oci_core_instance_configuration.red5pro_instance_configuration[0].id
-  size                      = 1
-  state                     = "RUNNING"
-  display_name              = "${var.name}-red5pro-sm"
+  count                           = local.autoscale ? 1 : 0
+  compartment_id                  = var.oracle_compartment_id
+  instance_configuration_id       = oci_core_instance_configuration.red5pro_instance_configuration[0].id
+  size                            = 1
+  state                           = "RUNNING"
+  display_name                    = "${var.name}-sm2-pool"
+  instance_display_name_formatter = "${var.name}-sm2-$${launchCount}"
+  #instance_hostname_formatter     = "${var.name}-sm2-$${launchCount}"
 
   placement_configurations {
     availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
@@ -568,13 +642,13 @@ resource "oci_core_instance_pool" "red5pro_instance_pool" {
   load_balancers {
     backend_set_name = oci_load_balancer_backend_set.red5pro_lb_backend_set[0].name
     load_balancer_id = oci_load_balancer_load_balancer.red5pro_lb[0].id
-    port             = 5080
+    port             = 80
     vnic_selection   = "primaryvnic"
   }
 }
 
 resource "oci_autoscaling_auto_scaling_configuration" "red5pro_autoscaling_configuration" {
-  count                = local.autoscaling ? 1 : 0
+  count                = local.autoscale ? 1 : 0
   compartment_id       = var.oracle_compartment_id
   cool_down_in_seconds = "300"
   display_name         = "${var.name}-autoscale-cnf"
@@ -634,25 +708,26 @@ resource "oci_autoscaling_auto_scaling_configuration" "red5pro_autoscaling_confi
 }
 
 ################################################################################
-# Red5 Pro Autoscaling Nodes - Origin/Edge/Transcoders/Relay (OCI Instance)
+# Red5 Pro Autoscaling Node - Origin/Edge/Transcoders/Relay (OCI Instance)
 ################################################################################
 
-# Origin Node instance for OCI Custom Image
-resource "oci_core_instance" "red5pro_node_origin" {
-  count               = local.cluster_or_autoscaling && var.origin_image_create ? 1 : 0
+# Node instance for OCI Custom Image
+resource "oci_core_instance" "red5pro_node" {
+  count               = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   compartment_id      = var.oracle_compartment_id
-  shape               = var.origin_image_instance_type
-  display_name        = "${var.name}-node-origin-image"
+  shape               = var.node_image_instance_type
+  display_name        = "${var.name}-node-image"
 
   shape_config {
-    ocpus         = var.origin_image_instance_ocpu
-    memory_in_gbs = var.origin_image_instance_memory
+    ocpus         = var.node_image_instance_ocpu
+    memory_in_gbs = var.node_image_instance_memory
   }
 
   source_details {
-    source_id   = data.oci_core_images.red5pro_image.images[0].id
-    source_type = "image"
+    source_id               = data.oci_core_images.ubuntu_image.images[0].id
+    source_type             = "image"
+    boot_volume_size_in_gbs = var.node_image_instance_volume_size
   }
 
   create_vnic_details {
@@ -696,301 +771,12 @@ resource "oci_core_instance" "red5pro_node_origin" {
       "sudo iptables -F",
       "sudo netfilter-persistent save",
       "export LICENSE_KEY='${var.red5pro_license_key}'",
-      "export SM_IP='${local.stream_manager_ip}'",
-      "export NODE_CLUSTER_KEY='${var.red5pro_cluster_key}'",
       "export NODE_API_ENABLE='${var.red5pro_api_enable}'",
       "export NODE_API_KEY='${var.red5pro_api_key}'",
-      "export NODE_INSPECTOR_ENABLE='${var.origin_image_red5pro_inspector_enable}'",
-      "export NODE_RESTREAMER_ENABLE='${var.origin_image_red5pro_restreamer_enable}'",
-      "export NODE_SOCIALPUSHER_ENABLE='${var.origin_image_red5pro_socialpusher_enable}'",
-      "export NODE_SUPPRESSOR_ENABLE='${var.origin_image_red5pro_suppressor_enable}'",
-      "export NODE_HLS_ENABLE='${var.origin_image_red5pro_hls_enable}'",
-      "export NODE_ROUND_TRIP_AUTH_ENABLE='${var.origin_image_red5pro_round_trip_auth_enable}'",
-      "export NODE_ROUND_TRIP_AUTH_HOST='${var.origin_image_red5pro_round_trip_auth_host}'",
-      "export NODE_ROUND_TRIP_AUTH_PORT='${var.origin_image_red5pro_round_trip_auth_port}'",
-      "export NODE_ROUND_TRIP_AUTH_PROTOCOL='${var.origin_image_red5pro_round_trip_auth_protocol}'",
-      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_VALIDATE='${var.origin_image_red5pro_round_trip_auth_endpoint_validate}'",
-      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_INVALIDATE='${var.origin_image_red5pro_round_trip_auth_endpoint_invalidate}'",
       "cd /home/ubuntu/red5pro-installer/",
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_server_basic.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_config_node.sh",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_config_node_apps_plugins.sh",
-      "sudo systemctl daemon-reload && sudo systemctl start red5pro",
-      "sleep 2"
-    ]
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-}
-
-# Edge Node instance for OCI Custom Image
-resource "oci_core_instance" "red5pro_node_edge" {
-  count               = local.cluster_or_autoscaling && var.edge_image_create ? 1 : 0
-  availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
-  compartment_id      = var.oracle_compartment_id
-  shape               = var.edge_image_instance_type
-  display_name        = "${var.name}-node-edge-image"
-
-  shape_config {
-    ocpus         = var.edge_image_instance_ocpu
-    memory_in_gbs = var.edge_image_instance_memory
-  }
-
-  source_details {
-    source_id   = data.oci_core_images.red5pro_image.images[0].id
-    source_type = "image"
-  }
-
-  create_vnic_details {
-    assign_public_ip = true
-    subnet_id        = local.subnet_id
-    nsg_ids          = [oci_core_network_security_group.red5pro_node_network_security_group[0].id]
-  }
-
-  metadata = {
-    ssh_authorized_keys = local.ssh_public_key
-  }
-  preserve_boot_volume = false
-
-  provisioner "file" {
-    source      = "${abspath(path.module)}/red5pro-installer"
-    destination = "/home/ubuntu"
-
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-
-  provisioner "file" {
-    source      = var.path_to_red5pro_build
-    destination = "/home/ubuntu/red5pro-installer/${basename(var.path_to_red5pro_build)}"
-
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo cloud-init status --wait",
-      "sudo iptables -F",
-      "sudo netfilter-persistent save",
-      "export LICENSE_KEY='${var.red5pro_license_key}'",
-      "export SM_IP='${local.stream_manager_ip}'",
-      "export NODE_CLUSTER_KEY='${var.red5pro_cluster_key}'",
-      "export NODE_API_ENABLE='${var.red5pro_api_enable}'",
-      "export NODE_API_KEY='${var.red5pro_api_key}'",
-      "export NODE_INSPECTOR_ENABLE='${var.edge_image_red5pro_inspector_enable}'",
-      "export NODE_RESTREAMER_ENABLE='${var.edge_image_red5pro_restreamer_enable}'",
-      "export NODE_SOCIALPUSHER_ENABLE='${var.edge_image_red5pro_socialpusher_enable}'",
-      "export NODE_SUPPRESSOR_ENABLE='${var.edge_image_red5pro_suppressor_enable}'",
-      "export NODE_HLS_ENABLE='${var.edge_image_red5pro_hls_enable}'",
-      "export NODE_ROUND_TRIP_AUTH_ENABLE='${var.edge_image_red5pro_round_trip_auth_enable}'",
-      "export NODE_ROUND_TRIP_AUTH_HOST='${var.edge_image_red5pro_round_trip_auth_host}'",
-      "export NODE_ROUND_TRIP_AUTH_PORT='${var.edge_image_red5pro_round_trip_auth_port}'",
-      "export NODE_ROUND_TRIP_AUTH_PROTOCOL='${var.edge_image_red5pro_round_trip_auth_protocol}'",
-      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_VALIDATE='${var.edge_image_red5pro_round_trip_auth_endpoint_validate}'",
-      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_INVALIDATE='${var.edge_image_red5pro_round_trip_auth_endpoint_invalidate}'",
-      "cd /home/ubuntu/red5pro-installer/",
-      "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_install_server_basic.sh",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_config_node.sh",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_config_node_apps_plugins.sh",
-      "sudo systemctl daemon-reload && sudo systemctl start red5pro",
-      "sleep 2"
-    ]
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-}
-
-# Transcoder Node instance for OCI Custom Image
-resource "oci_core_instance" "red5pro_node_transcoder" {
-  count               = local.cluster_or_autoscaling && var.transcoder_image_create ? 1 : 0
-  availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
-  compartment_id      = var.oracle_compartment_id
-  shape               = var.transcoder_image_instance_type
-  display_name        = "${var.name}-node-transcoder-image"
-
-  shape_config {
-    ocpus         = var.transcoder_image_instance_ocpu
-    memory_in_gbs = var.transcoder_image_instance_memory
-  }
-
-  source_details {
-    source_id   = data.oci_core_images.red5pro_image.images[0].id
-    source_type = "image"
-  }
-
-  create_vnic_details {
-    assign_public_ip = true
-    subnet_id        = local.subnet_id
-    nsg_ids          = [oci_core_network_security_group.red5pro_node_network_security_group[0].id]
-  }
-
-  metadata = {
-    ssh_authorized_keys = local.ssh_public_key
-  }
-  preserve_boot_volume = false
-
-  provisioner "file" {
-    source      = "${abspath(path.module)}/red5pro-installer"
-    destination = "/home/ubuntu"
-
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-
-  provisioner "file" {
-    source      = var.path_to_red5pro_build
-    destination = "/home/ubuntu/red5pro-installer/${basename(var.path_to_red5pro_build)}"
-
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo cloud-init status --wait",
-      "sudo iptables -F",
-      "sudo netfilter-persistent save",
-      "export LICENSE_KEY='${var.red5pro_license_key}'",
-      "export SM_IP='${local.stream_manager_ip}'",
-      "export NODE_CLUSTER_KEY='${var.red5pro_cluster_key}'",
-      "export NODE_API_ENABLE='${var.red5pro_api_enable}'",
-      "export NODE_API_KEY='${var.red5pro_api_key}'",
-      "export NODE_INSPECTOR_ENABLE='${var.transcoder_image_red5pro_inspector_enable}'",
-      "export NODE_RESTREAMER_ENABLE='${var.transcoder_image_red5pro_restreamer_enable}'",
-      "export NODE_SOCIALPUSHER_ENABLE='${var.transcoder_image_red5pro_socialpusher_enable}'",
-      "export NODE_SUPPRESSOR_ENABLE='${var.transcoder_image_red5pro_suppressor_enable}'",
-      "export NODE_HLS_ENABLE='${var.transcoder_image_red5pro_hls_enable}'",
-      "export NODE_ROUND_TRIP_AUTH_ENABLE='${var.transcoder_image_red5pro_round_trip_auth_enable}'",
-      "export NODE_ROUND_TRIP_AUTH_HOST='${var.transcoder_image_red5pro_round_trip_auth_host}'",
-      "export NODE_ROUND_TRIP_AUTH_PORT='${var.transcoder_image_red5pro_round_trip_auth_port}'",
-      "export NODE_ROUND_TRIP_AUTH_PROTOCOL='${var.transcoder_image_red5pro_round_trip_auth_protocol}'",
-      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_VALIDATE='${var.transcoder_image_red5pro_round_trip_auth_endpoint_validate}'",
-      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_INVALIDATE='${var.transcoder_image_red5pro_round_trip_auth_endpoint_invalidate}'",
-      "cd /home/ubuntu/red5pro-installer/",
-      "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_install_server_basic.sh",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_config_node.sh",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_config_node_apps_plugins.sh",
-      "sudo systemctl daemon-reload && sudo systemctl start red5pro",
-      "sleep 2"
-    ]
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-}
-
-# Relay Node instance for OCI Custom Image
-resource "oci_core_instance" "red5pro_node_relay" {
-  count               = local.cluster_or_autoscaling && var.relay_image_create ? 1 : 0
-  availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
-  compartment_id      = var.oracle_compartment_id
-  shape               = var.relay_image_instance_type
-  display_name        = "${var.name}-node-relay-image"
-
-  shape_config {
-    ocpus         = var.relay_image_instance_ocpu
-    memory_in_gbs = var.relay_image_instance_memory
-  }
-
-  source_details {
-    source_id   = data.oci_core_images.red5pro_image.images[0].id
-    source_type = "image"
-  }
-
-  create_vnic_details {
-    assign_public_ip = true
-    subnet_id        = local.subnet_id
-    nsg_ids          = [oci_core_network_security_group.red5pro_node_network_security_group[0].id]
-  }
-
-  metadata = {
-    ssh_authorized_keys = local.ssh_public_key
-  }
-  preserve_boot_volume = false
-
-  provisioner "file" {
-    source      = "${abspath(path.module)}/red5pro-installer"
-    destination = "/home/ubuntu"
-
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-
-  provisioner "file" {
-    source      = var.path_to_red5pro_build
-    destination = "/home/ubuntu/red5pro-installer/${basename(var.path_to_red5pro_build)}"
-
-    connection {
-      host        = self.public_ip
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = local.ssh_private_key
-    }
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo cloud-init status --wait",
-      "sudo iptables -F",
-      "sudo netfilter-persistent save",
-      "export LICENSE_KEY='${var.red5pro_license_key}'",
-      "export SM_IP='${local.stream_manager_ip}'",
-      "export NODE_CLUSTER_KEY='${var.red5pro_cluster_key}'",
-      "export NODE_API_ENABLE='${var.red5pro_api_enable}'",
-      "export NODE_API_KEY='${var.red5pro_api_key}'",
-      "export NODE_INSPECTOR_ENABLE='${var.relay_image_red5pro_inspector_enable}'",
-      "export NODE_RESTREAMER_ENABLE='${var.relay_image_red5pro_restreamer_enable}'",
-      "export NODE_SOCIALPUSHER_ENABLE='${var.relay_image_red5pro_socialpusher_enable}'",
-      "export NODE_SUPPRESSOR_ENABLE='${var.relay_image_red5pro_suppressor_enable}'",
-      "export NODE_HLS_ENABLE='${var.relay_image_red5pro_hls_enable}'",
-      "export NODE_ROUND_TRIP_AUTH_ENABLE='${var.relay_image_red5pro_round_trip_auth_enable}'",
-      "export NODE_ROUND_TRIP_AUTH_HOST='${var.relay_image_red5pro_round_trip_auth_host}'",
-      "export NODE_ROUND_TRIP_AUTH_PORT='${var.relay_image_red5pro_round_trip_auth_port}'",
-      "export NODE_ROUND_TRIP_AUTH_PROTOCOL='${var.relay_image_red5pro_round_trip_auth_protocol}'",
-      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_VALIDATE='${var.relay_image_red5pro_round_trip_auth_endpoint_validate}'",
-      "export NODE_ROUND_TRIP_AUTH_ENDPOINT_INVALIDATE='${var.relay_image_red5pro_round_trip_auth_endpoint_invalidate}'",
-      "cd /home/ubuntu/red5pro-installer/",
-      "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_install_server_basic.sh",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_config_node.sh",
-      "sudo -E /home/ubuntu/red5pro-installer/r5p_config_node_apps_plugins.sh",
-      "sudo systemctl daemon-reload && sudo systemctl start red5pro",
-      "sleep 2"
     ]
     connection {
       host        = self.public_ip
@@ -1005,49 +791,13 @@ resource "oci_core_instance" "red5pro_node_relay" {
 # Red5 Pro Autoscaling Nodes create images - Origin/Edge/Transcoders/Relay (OCI Custom Images)
 ####################################################################################################
 
-# Origin node - Create image (OCI Custom Images)
-resource "oci_core_image" "red5pro_node_origin_image" {
-  count          = local.cluster_or_autoscaling && var.origin_image_create ? 1 : 0
+# Node - Create image (OCI Custom Images)
+resource "oci_core_image" "red5pro_node_image" {
+  count          = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
   compartment_id = var.oracle_compartment_id
-  instance_id    = oci_core_instance.red5pro_node_origin[0].id
-  display_name   = "${var.name}-node-origin-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
-  depends_on     = [oci_core_instance.red5pro_node_origin]
-  lifecycle {
-    ignore_changes = [display_name]
-  }
-}
-
-# Edger node - Create image (OCI Custom Images)
-resource "oci_core_image" "red5pro_node_edge_image" {
-  count          = local.cluster_or_autoscaling && var.edge_image_create ? 1 : 0
-  compartment_id = var.oracle_compartment_id
-  instance_id    = oci_core_instance.red5pro_node_edge[0].id
-  display_name   = "${var.name}-node-edge-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
-  depends_on     = [oci_core_instance.red5pro_node_edge]
-  lifecycle {
-    ignore_changes = [display_name]
-  }
-}
-
-# Transcoder node - Create image (OCI Custom Images)
-resource "oci_core_image" "red5pro_node_transcoder_image" {
-  count          = local.cluster_or_autoscaling && var.transcoder_image_create ? 1 : 0
-  compartment_id = var.oracle_compartment_id
-  instance_id    = oci_core_instance.red5pro_node_transcoder[0].id
-  display_name   = "${var.name}-node-transcoder-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
-  depends_on     = [oci_core_instance.red5pro_node_transcoder]
-  lifecycle {
-    ignore_changes = [display_name]
-  }
-}
-
-# Relay node - Create image (OCI Custom Images)
-resource "oci_core_image" "red5pro_node_relay_image" {
-  count          = local.cluster_or_autoscaling && var.relay_image_create ? 1 : 0
-  compartment_id = var.oracle_compartment_id
-  instance_id    = oci_core_instance.red5pro_node_relay[0].id
-  display_name   = "${var.name}-node-relay-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
-  depends_on     = [oci_core_instance.red5pro_node_relay]
+  instance_id    = oci_core_instance.red5pro_node[0].id
+  display_name   = "${var.name}-node-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
+  depends_on     = [oci_core_instance.red5pro_node]
   lifecycle {
     ignore_changes = [display_name]
   }
@@ -1058,150 +808,131 @@ resource "oci_core_image" "red5pro_node_relay_image" {
 ################################################################################
 # Stream Manager autoscaling - Stop Stream Manager instance using OCI CLI
 resource "null_resource" "stop_stream_manager" {
-  count = local.autoscaling ? 1 : 0
+  count = local.autoscale ? 1 : 0
   provisioner "local-exec" {
     command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_sm[0].id}"
     environment = {
-      OCI_CLI_USER = "${var.oracle_user_ocid}"
-      OCI_CLI_FINGERPRINT = "${var.oracle_fingerprint}"
-      OCI_CLI_TENANCY = "${var.oracle_tenancy_ocid}"
-      OCI_CLI_REGION = "${var.oracle_region}"
-      OCI_CLI_KEY_FILE = "${var.oracle_private_key_path}"
+      OCI_CLI_USER                              = "${var.oracle_user_ocid}"
+      OCI_CLI_FINGERPRINT                       = "${var.oracle_fingerprint}"
+      OCI_CLI_TENANCY                           = "${var.oracle_tenancy_ocid}"
+      OCI_CLI_REGION                            = "${var.oracle_region}"
+      OCI_CLI_KEY_FILE                          = "${var.oracle_private_key_path}"
+      OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING = "True"
     }
   }
   depends_on = [oci_core_image.red5pro_sm_image[0]]
 }
 
-# Stop Origin Node instance using OCI CLI
-resource "null_resource" "stop_node_origin" {
-  count = local.cluster_or_autoscaling && var.origin_image_create ? 1 : 0
+# Stop Node instance using OCI CLI
+resource "null_resource" "stop_node" {
+  count = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
   provisioner "local-exec" {
-    command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_origin[0].id}"
+    command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node[0].id}"
     environment = {
-      OCI_CLI_USER = "${var.oracle_user_ocid}"
-      OCI_CLI_FINGERPRINT = "${var.oracle_fingerprint}"
-      OCI_CLI_TENANCY = "${var.oracle_tenancy_ocid}"
-      OCI_CLI_REGION = "${var.oracle_region}"
-      OCI_CLI_KEY_FILE = "${var.oracle_private_key_path}"
+      OCI_CLI_USER                              = "${var.oracle_user_ocid}"
+      OCI_CLI_FINGERPRINT                       = "${var.oracle_fingerprint}"
+      OCI_CLI_TENANCY                           = "${var.oracle_tenancy_ocid}"
+      OCI_CLI_REGION                            = "${var.oracle_region}"
+      OCI_CLI_KEY_FILE                          = "${var.oracle_private_key_path}"
+      OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING = "True"
     }
   }
-  depends_on = [oci_core_image.red5pro_node_origin_image[0]]
-}
-# Stop Edge Node instance using OCI CLI
-resource "null_resource" "stop_node_edge" {
-  count = local.cluster_or_autoscaling && var.edge_image_create ? 1 : 0
-  provisioner "local-exec" {
-    command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_edge[0].id}"
-    environment = {
-      OCI_CLI_USER = "${var.oracle_user_ocid}"
-      OCI_CLI_FINGERPRINT = "${var.oracle_fingerprint}"
-      OCI_CLI_TENANCY = "${var.oracle_tenancy_ocid}"
-      OCI_CLI_REGION = "${var.oracle_region}"
-      OCI_CLI_KEY_FILE = "${var.oracle_private_key_path}"
-    }
-  }
-  depends_on = [oci_core_image.red5pro_node_edge_image[0]]
-}
-# Stop Transcoder Node instance using OCI CLI
-resource "null_resource" "stop_node_transcoder" {
-  count = local.cluster_or_autoscaling && var.transcoder_image_create ? 1 : 0
-  provisioner "local-exec" {
-    command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_transcoder[0].id}"
-    environment = {
-      OCI_CLI_USER = "${var.oracle_user_ocid}"
-      OCI_CLI_FINGERPRINT = "${var.oracle_fingerprint}"
-      OCI_CLI_TENANCY = "${var.oracle_tenancy_ocid}"
-      OCI_CLI_REGION = "${var.oracle_region}"
-      OCI_CLI_KEY_FILE = "${var.oracle_private_key_path}"
-    }
-  }
-  depends_on = [oci_core_image.red5pro_node_transcoder_image[0]]
-}
-# Stop Relay Node instance using OCI CLI
-resource "null_resource" "stop_node_relay" {
-  count = local.cluster_or_autoscaling && var.relay_image_create ? 1 : 0
-  provisioner "local-exec" {
-    command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node_relay[0].id}"
-    environment = {
-      OCI_CLI_USER = "${var.oracle_user_ocid}"
-      OCI_CLI_FINGERPRINT = "${var.oracle_fingerprint}"
-      OCI_CLI_TENANCY = "${var.oracle_tenancy_ocid}"
-      OCI_CLI_REGION = "${var.oracle_region}"
-      OCI_CLI_KEY_FILE = "${var.oracle_private_key_path}"
-    }
-  }
-  depends_on = [oci_core_image.red5pro_node_relay_image[0]]
+  depends_on = [oci_core_image.red5pro_node_image[0]]
 }
 
 ################################################################################
 # Create/Delete node group (Stream Manager API)
 ################################################################################
 resource "time_sleep" "wait_for_delete_nodegroup" {
-  count            = local.cluster_or_autoscaling && var.node_group_create ? 1 : 0
+  count = local.cluster_or_autoscale && var.node_group_create ? 1 : 0
   depends_on = [
+    null_resource.red5pro_sm[0],
+    null_resource.red5pro_kafka[0],
     oci_core_instance.red5pro_sm[0],
+    oci_core_instance.red5pro_kafka[0],
     oci_load_balancer_load_balancer.red5pro_lb[0],
-    oci_core_instance.red5pro_terraform_service[0],
     oci_core_instance_pool.red5pro_instance_pool[0],
-    oci_core_network_security_group.red5pro_terraform_service_network_security_group[0],
-    oci_core_network_security_group_security_rule.red5pro_terraform_service_nsg_rule_egress[0],
-    oci_core_network_security_group_security_rule.red5pro_terraform_service_nsg_security_rule_ingress_tcp[0],
-    oci_core_network_security_group_security_rule.red5pro_terraform_service_nsg_security_rule_ingress_tcp[1],
-    oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_rule_egress[0],
-    oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_security_rule_ingress_tcp[0],
-    oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_security_rule_ingress_tcp[1],
-    oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_security_rule_ingress_tcp[2],
-    oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_security_rule_ingress_tcp[3],
-    oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_security_rule_ingress_tcp[4],
-    oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_security_rule_ingress_tcp[5],
-    oci_core_route_table_attachment.red5pro_route_table_attachment[0],
+    oci_core_network_security_group.red5pro_stream_manager_network_security_group[0],
+    oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_security_rule_ingress[0],
+    oci_core_network_security_group.red5pro_kafka_network_security_group[0],
+    oci_core_network_security_group_security_rule.red5pro_kafka_nsg_security_rule_ingress[0],
+    oci_core_network_security_group_security_rule.red5pro_kafka_nsg_security_rule_ingress[1],
+    oci_core_route_table_attachment.red5pro_route_table_attachment,
+    oci_core_vcn.red5pro_vcn,
+    oci_core_network_security_group.red5pro_node_network_security_group[0],
   ]
   destroy_duration = "90s"
 }
 
 resource "null_resource" "node_group" {
-  count = local.cluster_or_autoscaling && var.node_group_create ? 1 : 0
+  count = local.cluster_or_autoscale && var.node_group_create ? 1 : 0
   triggers = {
-    trigger_name = "node-group-trigger"
-    SM_IP        = "${local.stream_manager_ip}"
-    SM_API_KEY   = "${var.stream_manager_api_key}"
+    trigger_name   = "node-group-trigger"
+    SM_URL         = "${local.stream_manager_url}"
+    R5AS_AUTH_USER = "${var.stream_manager_auth_user}"
+    R5AS_AUTH_PASS = "${var.stream_manager_auth_password}"
   }
   provisioner "local-exec" {
     when    = create
     command = "bash ${abspath(path.module)}/red5pro-installer/r5p_create_node_group.sh"
     environment = {
-      NAME                     = "${var.name}"
-      SM_IP                    = "${local.stream_manager_ip}"
-      SM_API_KEY               = "${var.stream_manager_api_key}"
-      NODE_GROUP_REGION        = "${var.oracle_region}"
-      NODE_GROUP_NAME          = "${var.node_group_name}"
-      ORIGINS_MIN              = "${var.node_group_origins_min}"
-      EDGES_MIN                = "${var.node_group_edges_min}"
-      TRANSCODERS_MIN          = "${var.node_group_transcoders_min}"
-      RELAYS_MIN               = "${var.node_group_relays_min}"
-      ORIGINS_MAX              = "${var.node_group_origins_max}"
-      EDGES_MAX                = "${var.node_group_edges_max}"
-      TRANSCODERS_MAX          = "${var.node_group_transcoders_max}"
-      RELAYS_MAX               = "${var.node_group_relays_max}"
-      ORIGIN_INSTANCE_TYPE     = "${var.node_group_origins_instance_type}"
-      EDGE_INSTANCE_TYPE       = "${var.node_group_edges_instance_type}"
-      TRANSCODER_INSTANCE_TYPE = "${var.node_group_transcoders_instance_type}"
-      RELAY_INSTANCE_TYPE      = "${var.node_group_relays_instance_type}"
-      ORIGIN_CAPACITY          = "${var.node_group_origins_capacity}"
-      EDGE_CAPACITY            = "${var.node_group_edges_capacity}"
-      TRANSCODER_CAPACITY      = "${var.node_group_transcoders_capacity}"
-      RELAY_CAPACITY           = "${var.node_group_relays_capacity}"
-      ORIGIN_IMAGE_NAME        = "${try(oci_core_image.red5pro_node_origin_image[0].display_name, null)}"
-      EDGE_IMAGE_NAME          = "${try(oci_core_image.red5pro_node_edge_image[0].display_name, null)}"
-      TRANSCODER_IMAGE_NAME    = "${try(oci_core_image.red5pro_node_transcoder_image[0].display_name, null)}"
-      RELAY_IMAGE_NAME         = "${try(oci_core_image.red5pro_node_relay_image[0].display_name, null)}"
+      SM_URL                                   = "${local.stream_manager_url}"
+      R5AS_AUTH_USER                           = "${var.stream_manager_auth_user}"
+      R5AS_AUTH_PASS                           = "${var.stream_manager_auth_password}"
+      NODE_GROUP_REGION                        = "${var.oracle_region}"
+      NODE_ENVIRONMENT                         = "${var.name}"
+      NODE_SUBNET_NAME                         = "${local.subnet_name}"
+      NODE_SECURITY_GROUP_NAME                 = "${oci_core_network_security_group.red5pro_node_network_security_group[0].display_name}"
+      NODE_IMAGE_NAME                          = "${oci_core_image.red5pro_node_image[0].display_name}"
+      ORIGINS_MIN                              = "${var.node_group_origins_min}"
+      ORIGINS_MAX                              = "${var.node_group_origins_max}"
+      ORIGIN_INSTANCE_TYPE                     = "${var.node_group_origins_instance_type}"
+      ORIGIN_VOLUME_SIZE                       = "${var.node_group_origins_volume_size}"
+      EDGES_MIN                                = "${var.node_group_edges_min}"
+      EDGES_MAX                                = "${var.node_group_edges_max}"
+      EDGE_INSTANCE_TYPE                       = "${var.node_group_edges_instance_type}"
+      EDGE_VOLUME_SIZE                         = "${var.node_group_edges_volume_size}"
+      TRANSCODERS_MIN                          = "${var.node_group_transcoders_min}"
+      TRANSCODERS_MAX                          = "${var.node_group_transcoders_max}"
+      TRANSCODER_INSTANCE_TYPE                 = "${var.node_group_transcoders_instance_type}"
+      TRANSCODER_VOLUME_SIZE                   = "${var.node_group_transcoders_volume_size}"
+      RELAYS_MIN                               = "${var.node_group_relays_min}"
+      RELAYS_MAX                               = "${var.node_group_relays_max}"
+      RELAY_INSTANCE_TYPE                      = "${var.node_group_relays_instance_type}"
+      RELAY_VOLUME_SIZE                        = "${var.node_group_relays_volume_size}"
+      PATH_TO_JSON_TEMPLATES                   = "${abspath(path.module)}/red5pro-installer/nodegroup-json-templates"
+      NODE_ROUND_TRIP_AUTH_ENABLE              = "${var.node_config_round_trip_auth.enable}"
+      NODE_ROUNT_TRIP_AUTH_TARGET_NODES        = "${join(",", var.node_config_round_trip_auth.target_nodes)}"
+      NODE_ROUND_TRIP_AUTH_HOST                = "${var.node_config_round_trip_auth.auth_host}"
+      NODE_ROUND_TRIP_AUTH_PORT                = "${var.node_config_round_trip_auth.auth_port}"
+      NODE_ROUND_TRIP_AUTH_PROTOCOL            = "${var.node_config_round_trip_auth.auth_protocol}"
+      NODE_ROUND_TRIP_AUTH_ENDPOINT_VALIDATE   = "${var.node_config_round_trip_auth.auth_endpoint_validate}"
+      NODE_ROUND_TRIP_AUTH_ENDPOINT_INVALIDATE = "${var.node_config_round_trip_auth.auth_endpoint_invalidate}"
+      NODE_WEBHOOK_ENABLE                      = "${var.node_config_webhooks.enable}"
+      NODE_WEBHOOK_TARGET_NODES                = "${join(",", var.node_config_webhooks.target_nodes)}"
+      NODE_WEBHOOK_ENDPOINT                    = "${var.node_config_webhooks.webhook_endpoint}"
+      NODE_SOCIAL_PUSHER_ENABLE                = "${var.node_config_social_pusher.enable}"
+      NODE_SOCIAL_PUSHER_TARGET_NODES          = "${join(",", var.node_config_social_pusher.target_nodes)}"
+      NODE_RESTREAMER_ENABLE                   = "${var.node_config_restreamer.enable}"
+      NODE_RESTREAMER_TARGET_NODES             = "${join(",", var.node_config_restreamer.target_nodes)}"
+      NODE_RESTREAMER_TSINGEST                 = "${var.node_config_restreamer.restreamer_tsingest}"
+      NODE_RESTREAMER_IPCAM                    = "${var.node_config_restreamer.restreamer_ipcam}"
+      NODE_RESTREAMER_WHIP                     = "${var.node_config_restreamer.restreamer_whip}"
+      NODE_RESTREAMER_SRTINGEST                = "${var.node_config_restreamer.restreamer_srtingest}"
     }
   }
 
   provisioner "local-exec" {
     when    = destroy
-    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_node_group.sh '${self.triggers.SM_IP}' '${self.triggers.SM_API_KEY}'"
+    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_node_group.sh '${self.triggers.SM_URL}' '${self.triggers.R5AS_AUTH_USER}' '${self.triggers.R5AS_AUTH_PASS}'"
   }
 
-  depends_on = [ time_sleep.wait_for_delete_nodegroup[0] ]
+  depends_on = [time_sleep.wait_for_delete_nodegroup[0]]
+
+  lifecycle {
+    precondition {
+      condition     = var.node_image_create == true
+      error_message = "ERROR! Node group creation requires the creation of a Node image for the node group. Please set the 'node_image_create' variable to 'true' and re-run the Terraform apply."
+    }
+  }
 }

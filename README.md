@@ -1,167 +1,203 @@
-# Oracle Cloud Infrastructure(OCI) Terraform module for Red5 Pro
+# Terraform Module for Deploying Red5 Pro Oracle Cloud Infrastructure (OCI) - Stream Manager 2.0
 
 [Red5 Pro](https://www.red5.net/) is a real-time video streaming server plaform known for its low-latency streaming capabilities, making it ideal for interactive applications like online gaming, streaming events and video conferencing etc.
 
-This a reusable Terraform installer module for [Red5 Pro](https://www.red5.net/docs/installation/auto-oci/overview/) that provisions infrastucture over [Oracle Cloud Infrastructure(OCI)](https://www.oracle.com/cloud/).
-
-## This module has 3 variants of Red5 Pro deployments
-
-* **single** - Single instance with installed and configured Red5 Pro server
-* **cluster** - Stream Manager cluster (MySQL DB + Stream Manager instance + Autoscaling Node group with Origin, Edge, Transcoder, Relay instances)
-* **autoscaling** - Autoscaling Stream Managers (MySQL Oracle Cloud MySQL DB System  + Load Balancer + Autoscaling Stream Managers + Autoscaling Node group with Origin, Edge, Transcoder, Relay instances)
+This is a reusable Terraform module that provisions infrastructure on [Oracle Cloud Infrastructure (OCI)](https://www.oracle.com/cloud/).
 
 ## Preparation
 
-* Install **terraform** https://developer.hashicorp.com/terraform/downloads
-  * Open your web browser and visit the [Terraform download page](https://developer.hashicorp.com/terraform/downloads), ensuring you get version 1.0.0 or higher. 
-  * Download the suitable version for your operating system, 
-  * Extract the compressed file, and then copy the Terraform binary to a location within your system's path
-    * Configure path on Linux/macOS 
-      * Open a terminal and type the following:
+### Install Terraform
 
-        ```$ sudo mv /path/to/terraform /usr/local/bin```
-    * Configure path on Windows OS
-      * Click 'Start', search for 'Control Panel', and open it.
-      * Navigate to System > Advanced System Settings > Environment Variables.
-      * Under System variables, find 'PATH' and click 'Edit'.
-      * Click 'New' and paste the directory location where you extracted the terraform.exe file.
-      * Confirm changes by clicking 'OK' and close all open windows.
-      * Open a new terminal and verify that Terraform has been successfully installed.
+- Visit the [Terraform download page](https://developer.hashicorp.com/terraform/downloads) and ensure you get version 1.7.5 or higher.
+- Download the suitable version for your operating system.
+- Extract the compressed file and copy the Terraform binary to a location within your system's PATH.
+- Configure PATH for **Linux/macOS**:
+  - Open a terminal and type the following command:
 
-* Install **Authenticating Oracle Cloud Infrastructure(OCI) CLI** https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
-* Install **jq** Linux or Mac OS only - `apt install jq` or `brew install jq` (It is used in bash scripts to create/delete Stream Manager node group using API) https://jqlang.github.io/jq/download/
-* Download Red5 Pro server build: (Example: red5pro-server-0.0.0.b0-release.zip) https://account.red5.net/downloads
-* Download Red5 Pro Autoscale controller for Terraform: (Example: terraform-cloud-controller-0.0.0.jar) https://account.red5.net/downloads
-* Download Red5 Pro Terraform Service : (Example: terraform-service-0.0.0.zip) https://account.red5.net/downloads
-* Get Red5 Pro License key: (Example: 1111-2222-3333-4444) https://account.red5.net
-* Prepare [Oracle Cloud Infrastructure(OCI)](https://www.oracle.com/cloud/) Account and create a User for Terraform module. User must have permission to create and manage the following services:
-    * Identity and Access Management Rights
-        * Virtual Cloud Networks
-        * Compute Instances
-        * Instance Configurations
-        * Autoscaling Configurations
-        * Load balancers
-        * MySQL DB Systems 
-        * OCI Certificates
-    * Generate API keys for Oracle Cloud Infrastructure(OCI) user(Required for Oracle Cloud CLI support)
-        * Follow the documentation for generating keys on OCI Documentation - https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#two
-    * Upload your API keys to Oracle Cloud Infrastructure(OCI)
-        * Follow the documentation for uploading your keys on OCI Documentation - https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#two
-        * After uploading the keys to Oracle Cloud, get API key's fingerprint displayed (for example, `12:34:56:78:90:11:cd:ef:12:34:56:78:90:ba:cd:ef`)
-    * Create an OCI compartment for creating resources in Oracle Cloud Infrastructure(OCI) Account 
-        * Follow the documentation for creating a compartment - https://docs.oracle.com/en-us/iaas/Content/Identity/Tasks/managingcompartments.htm#two
-    * Get the necessary OCIDs from Oracle Cloud Infrastructure(OCI) Account
-        * Compartment OCID 
-        * Tenancy OCID
-        * User OCID
-    * Authenticating Oracle Cloud Infrastructure(OCI) CLI
-        * Token-based Authentication for the Authenticating Oracle Cloud Infrastructure(OCI) CLI - https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/clitoken.htm
-        * Custom Authenticating Oracle Cloud Infrastructure(OCI) CLI Configuration(Override the Default Configuration) - https://www.ateam-oracle.com/post/oracle-cloud-infrastructure-cli-scripting-how-to-quickly-override-the-default-configuration
-* Copy Red5 Pro server build, Autoscale controller for Terraform and Terraform Service to the root folder of your project
+    ```sh
+    sudo mv /path/to/terraform /usr/local/bin
+    ```
 
-Example:
+- Configure PATH for **Windows**:
+  - Click 'Start', search for 'Control Panel', and open it.
+  - Navigate to `System > Advanced System Settings > Environment Variables`.
+  - Under System variables, find 'PATH' and click 'Edit'.
+  - Click 'New' and paste the directory location where you extracted the terraform.exe file.
+  - Confirm changes by clicking 'OK' and close all open windows.
+  - Open a new terminal and verify that Terraform has been successfully installed.
 
-```bash
-cp ~/Downloads/red5pro-server-0.0.0.b0-release.zip ./
-cp ~/Downloads/terraform-cloud-controller-0.0.0.jar ./
-cp ~/Downloads/terraform-service-0.0.0.zip ./
-```
+  ```sh
+  terraform --version
+  ```
 
-## Red5 Pro Single server deployment (single) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/master/examples/single)
+### Install jq
+
+- Install **jq** (Linux or Mac OS only) [Download](https://jqlang.github.io/jq/download/)
+  - Linux: `apt install jq`
+  - MacOS: `brew install jq`
+  > It is used in bash scripts to create/delete Stream Manager node group using API
+
+### Red5 Pro artifacts
+
+- Download Red5 Pro server build in your [Red5 Pro Account](https://account.red5.net/downloads). Example: `red5pro-server-0.0.0.b0-release.zip`
+- Get Red5 Pro License key in your [Red5 Pro Account](https://account.red5.net/downloads). Example: `1111-2222-3333-4444`
+
+### Install Oracle Cloud Infrastructure (OCI) CLI
+
+- [Installing the CLI](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm)
+
+### Prepare OCI account
+
+- Create a User for Terraform module. User must have permission to create and manage the following services:
+  - Identity and Access Management Rights
+    - Virtual Cloud Networks
+    - Compute Instances
+    - Instance Configurations
+    - Autoscaling Configurations
+    - Load balancers
+    - OCI Certificates
+  - Generate API key for OCI user. [OCI Documentation](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#two)
+  - Create an OCI compartment for Red5 Pro resources or use existing. [OCI Documentation](https://docs.oracle.com/en-us/iaas/Content/Identity/Tasks/managingcompartments.htm#two)
+  - Obtain the necessary credentials and information:
+    - Tenancy OCID
+    - Compartment OCID
+    - User OCID
+    - API key Fingerprint
+    - API private key file
+
+## This module supports three variants of Red5 Pro deployments
+
+- **standalone** - Standalone Red5 Pro server
+- **cluster** - Stream Manager 2.0 cluster with autoscaling nodes
+- **autoscale** - Autoscaling Stream Managers 2.0 with autoscaling nodes
+
+### Standalone Red5 Pro server (standalone) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/master/examples/standalone)
 
 In the following example, Terraform module will automates the infrastructure provisioning of the [Red5 Pro standalone server](https://www.red5.net/docs/installation/).
 
-* **VCN** - For single server deployment this Terrform module can either create a new or use your existing VCN. If you wish to create a new VCN, set `vcn_create` to `true`, and the script will ignore the other VCN configurations. To use your existing VCN, set `vcn_create` to `false` and include your existing vcn_id, name, dns label, subnet id, and subnet name.
-* **Network Security Group** - For single server deployment this Terrform module can either create a new or use your existing Network Security Group in Oracle Cloud Infrastructure(OCI).
-* **Instance Type** - Select the instance type based on the usecase from [Oracle Cloud Infrastructure(OCI) Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm)
-* **SSL Certificates** - User can install Let's encrypt SSL certificates or use Red5Pro server without SSL certificate (HTTP only).
+#### Terraform Deployed Resources (standalone)
+
+- VCN
+- Public subnet
+- Internet getaway
+- Route table
+- Security list
+- Security group for Standalone Red5 Pro server
+- SSH key pair (use existing or create a new one)
+- Standalone Red5 Pro server instance
+- SSL certificate for Standalone Red5 Pro server instance. Options:
+  - `none` - Red5 Pro server without HTTPS and SSL certificate. Only HTTP on port `5080`
+  - `letsencrypt` - Red5 Pro server with HTTPS and SSL certificate obtained by Let's Encrypt. HTTP on port `5080`, HTTPS on port `443`
+  - `imported` - Red5 Pro server with HTTPS and imported SSL certificate. HTTP on port `5080`, HTTPS on port `443`
+
+#### Example main.tf (standalone)
 
 ```hcl
-module "red5pro_single" {
+provider "oci" {
+  region           = "us-ashburn-1"
+  tenancy_ocid     = "ocid1.tenancy.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  user_ocid        = "ocid1.user.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  fingerprint      = "00:11:22:33:44:55:66:77:aa:bb:cc:dd:ee:ff:gg:hh"
+  private_key_path = "./example_oracle_private_key.pem"
+}
+
+module "red5pro" {
   source                = "red5pro/red5pro/oci"
-  type                  = "single"                                # Deployment type: single, cluster, autoscaling
-  name                  = "red5pro-single"                        # Name to be used on all the resources as identifier
-  ubuntu_version        = "22.04"                                 # Ubuntu version to be used for machine, it can either be 20.04 or 22.04
+  type                  = "standalone"                            # Deployment type: standalone, cluster, autoscale
+  name                  = "red5pro-standalone"                    # Name to be used on all the resources as identifier
   path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
 
   # Oracle Cloud Account Details
   oracle_compartment_id = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
 
   # SSH key configuration
-  ssh_key_create       = true
-  ssh_private_key_path = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pri_key.pem" # Path to existing SSH private key
-  ssh_public_key_path  = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pub_key.pem" # Path to existing SSH Public key
+  ssh_key_use_existing              = false                                              # true - use existing SSH key, false - create new SSH key
+  ssh_key_existing_private_key_path = "/PATH/TO/SSH/PRIVATE/KEY/example_private_key.pem" # Path to existing SSH private key
+  ssh_key_existing_public_key_path  = "/PATH/TO/SSH/PUBLIC/KEY/example_pub_key.pem"      # Path to existing SSH Public key
 
-  # VCN Configuration
-  vcn_create           = true                                                                                # true - create new VCN, false - use existing VCN
-  vcn_id_existing      = "ocid1.vcn.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"    # VCN OCID for existing VCN Network
-  subnet_id_existing   = "ocid1.subnet.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Subnet OCID for existing VCN Subnet
+  # Red5 Pro general configuration
+  red5pro_license_key = "1111-2222-3333-4444" # Red5 Pro license key (https://account.red5.net/login)
+  red5pro_api_enable  = true                  # true - enable Red5 Pro server API, false - disable Red5 Pro server API (https://www.red5.net/docs/development/api/overview/)
+  red5pro_api_key     = "example_key"         # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
 
-  # Network Security Group configuration
-  network_security_group_create      = true         # true - create new Network Security Group, false - use existing Network Security Group
-  network_security_group_id_existing = "ocid1.networksecuritygroup.oc1.iad.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Network Security Group ID for existing security group
+  # Standalone Red5 Pro server OCI instance configuration
+  standalone_red5pro_instance_type   = "VM.Standard.E4.Flex" # Instance type for Red5 Pro server
+  standalone_red5pro_instance_ocpu   = 2                     # Instance CPU for Red5 Pro server
+  standalone_red5pro_instance_memory = 4                     # Instance Memory for Red5 Pro server
 
-  # Single Red5 Pro server HTTPS/SSL certificate configuration
-  https_letsencrypt_enable                  = true                  # true - create new Let's Encrypt HTTPS/SSL certificate, false - use Red5 Pro server without HTTPS/SSL certificate
-  https_letsencrypt_certificate_domain_name = "red5pro.example.com" # Domain name for Let's Encrypt SSL certificate
-  https_letsencrypt_certificate_email       = "email@example.com"   # Email for Let's Encrypt SSL certificate
-  https_letsencrypt_certificate_password    = "examplepass"         # Password for Let's Encrypt SSL certificate
+  # Standalone Red5 Pro server configuration
+  standalone_red5pro_inspector_enable                    = false                         # true - enable Red5 Pro server inspector, false - disable Red5 Pro server inspector (https://www.red5.net/docs/troubleshooting/inspector/overview/)
+  standalone_red5pro_restreamer_enable                   = false                         # true - enable Red5 Pro server restreamer, false - disable Red5 Pro server restreamer (https://www.red5.net/docs/special/restreamer/overview/)
+  standalone_red5pro_socialpusher_enable                 = false                         # true - enable Red5 Pro server socialpusher, false - disable Red5 Pro server socialpusher (https://www.red5.net/docs/special/social-media-plugin/overview/)
+  standalone_red5pro_suppressor_enable                   = false                         # true - enable Red5 Pro server suppressor, false - disable Red5 Pro server suppressor
+  standalone_red5pro_hls_enable                          = false                         # true - enable Red5 Pro server HLS, false - disable Red5 Pro server HLS (https://www.red5.net/docs/protocols/hls-plugin/hls-vod/)
+  standalone_red5pro_round_trip_auth_enable              = false                         # true - enable Red5 Pro server round trip authentication, false - disable Red5 Pro server round trip authentication (https://www.red5.net/docs/special/round-trip-auth/overview/)
+  standalone_red5pro_round_trip_auth_host                = "round-trip-auth.example.com" # Round trip authentication server host
+  standalone_red5pro_round_trip_auth_port                = 3000                          # Round trip authentication server port
+  standalone_red5pro_round_trip_auth_protocol            = "http"                        # Round trip authentication server protocol
+  standalone_red5pro_round_trip_auth_endpoint_validate   = "/validateCredentials"        # Round trip authentication server endpoint for validate
+  standalone_red5pro_round_trip_auth_endpoint_invalidate = "/invalidateCredentials"      # Round trip authentication server endpoint for invalidate
 
-  # Single Red5 Pro server OCI instance configuration
-  single_instance_type   = "VM.Standard.E4.Flex" # Instance type for Red5 Pro server
-  single_instance_ocpu   = 2                   # Instance CPU for Red5 Pro server
-  single_instance_memory = 4                   # Instance Memory for Red5 Pro server
+  # Standalone Red5 Pro server HTTPS (SSL) certificate configuration
+  https_ssl_certificate = "none" # none - do not use HTTPS/SSL certificate, letsencrypt - create new Let's Encrypt HTTPS/SSL certificate, imported - use existing HTTPS/SSL certificate
 
-  # Red5Pro server configuration
-  red5pro_license_key                         = "1111-2222-3333-4444"         # Red5 Pro license key (https://account.red5.net/login)
-  red5pro_api_enable                          = true                          # true - enable Red5 Pro server API, false - disable Red5 Pro server API (https://www.red5.net/docs/development/api/overview/)
-  red5pro_api_key                             = "examplekey"                  # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
-  red5pro_inspector_enable                    = false                         # true - enable Red5 Pro server inspector, false - disable Red5 Pro server inspector (https://www.red5.net/docs/troubleshooting/inspector/overview/)
-  red5pro_restreamer_enable                   = false                         # true - enable Red5 Pro server restreamer, false - disable Red5 Pro server restreamer (https://www.red5.net/docs/special/restreamer/overview/)
-  red5pro_socialpusher_enable                 = false                         # true - enable Red5 Pro server socialpusher, false - disable Red5 Pro server socialpusher (https://www.red5.net/docs/special/social-media-plugin/overview/)
-  red5pro_suppressor_enable                   = false                         # true - enable Red5 Pro server suppressor, false - disable Red5 Pro server suppressor
-  red5pro_hls_enable                          = false                         # true - enable Red5 Pro server HLS, false - disable Red5 Pro server HLS (https://www.red5.net/docs/protocols/hls-plugin/hls-vod/)
-  red5pro_round_trip_auth_enable              = false                         # true - enable Red5 Pro server round trip authentication, false - disable Red5 Pro server round trip authentication (https://www.red5.net/docs/special/round-trip-auth/overview/)
-  red5pro_round_trip_auth_host                = "round-trip-auth.example.com" # Round trip authentication server host
-  red5pro_round_trip_auth_port                = 3000                          # Round trip authentication server port
-  red5pro_round_trip_auth_protocol            = "http"                        # Round trip authentication server protocol
-  red5pro_round_trip_auth_endpoint_validate   = "/validateCredentials"        # Round trip authentication server endpoint for validate
-  red5pro_round_trip_auth_endpoint_invalidate = "/invalidateCredentials"      # Round trip authentication server endpoint for invalidate
+  # Example of Let's Encrypt HTTPS/SSL certificate configuration - please uncomment and provide your domain name and email
+  # https_ssl_certificate = "letsencrypt"
+  # https_ssl_certificate_domain_name = "red5pro.example.com"
+  # https_ssl_certificate_email = "email@example.com"
+
+  # Example of imported HTTPS/SSL certificate configuration - please uncomment and provide your domain name, certificate and key paths
+  # https_ssl_certificate             = "imported"
+  # https_ssl_certificate_domain_name = "red5pro.example.com"
+  # https_ssl_certificate_cert_path   = "/PATH/TO/SSL/CERT/fullchain.pem"
+  # https_ssl_certificate_key_path    = "/PATH/TO/SSL/KEY/privkey.pem"
 }
 
 output "module_output" {
-  value = module.red5pro_single
+  value = module.red5pro
 }
 ```
 
----
+### Stream Manager 2.0 cluster with autoscaling nodes (cluster) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/master/examples/cluster)
 
-## Red5 Pro Stream Manager cluster deployment (cluster) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/master/examples/cluster)
+In the following example, Terraform module will automates the infrastructure provisioning of the Stream Manager 2.0 cluster with Red5 Pro (SM2.0) Autoscaling node group (origins, edges, transcoders, relays)
 
-In the following example, Terraform module will automates the infrastructure provisioning of the [Stream Manager cluster on the Oracle Cloud Infrastructure(OCI)](https://www.red5.net/docs/installation/auto-oci/overview/).
+#### Terraform Deployed Resources (cluster)
 
-* **VCN** - For cluster deployment this Terrform module create VCN, subnets, route table, internet geteway and security list automatically
-* **Network Security Group** - For cluster deployment this Terrform module create Security groups for Stream Manager, nodes and MySQL DB automatically
-* **Instance Type** - Select the instance type based on the usecase from [Oracle Cloud Infrastructure(OCI) Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm)
-* **MySQL Database** - Users have flexibility to create a MySQL databse server in Oracle Cloud MySQL DB System or install it locally on the Stream Manager
-* **Terraform Server** - Uesrs can choose to create a dedicated Oracle Cloud Infrastructure(OCI) instance for Terraform Server or install it locally on the Stream Manager
-* **Stream Manager** - Oracle Cloud Infrastructure(OCI) instance will be created automatically for Stream Manager
-* **SSL Certificates** - User can install Let's encrypt SSL certificates or use Red5 Pro Stream Manager without SSL certificate (HTTP only)
-* **Origin Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Orgin Node type for Stream Manager node group
-* **Edge Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Edge Node type for Stream Manager node group (optional)
-* **Transcoder Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Transcoder Node type for Stream Manager node group (optional)
-* **Relay Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Relay Node type for Stream Manager node group (optional)
-* **Autoscaling Node Group** - This is required for creating autoscaling node group using [Stream Manager APIs](https://www.red5.net/docs/special/concepts/nodegroup/) automatically as part of Terraform module, If users are not selecting this option then they must create a new node group using [Stream Manager APIs](https://www.red5.net/docs/special/concepts/nodegroup/) Manually.
+- VCN
+- Public subnet
+- Internet getaway
+- Route table
+- Security list
+- Security group for Stream Manager 2.0
+- Security group for Kafka
+- Security group for Red5 Pro (SM2.0) Autoscaling nodes
+- SSH key pair (use existing or create a new one)
+- Standalone Kafka instance (optional).
+- Stream Manager 2.0 instance. Optionally include a Kafka server on the same instance.
+- SSL certificate for Stream Manager 2.0 instance. Options:
+  - `none` - Stream Manager 2.0 without HTTPS and SSL certificate. Only HTTP on port `80`
+  - `letsencrypt` - Stream Manager 2.0 with HTTPS and SSL certificate obtained by Let's Encrypt. HTTP on port `80`, HTTPS on port `443`
+  - `imported` - Stream Manager 2.0 with HTTPS and imported SSL certificate. HTTP on port `80`, HTTPS on port `443`
+- Red5 Pro (SM2.0) node instance image (origins, edges, transcoders, relays)
+- Red5 Pro (SM2.0) Autoscaling node group (origins, edges, transcoders, relays)
+
+#### Example main.tf (cluster)
 
 ```hcl
-module "red5pro_cluster" {
-  source                                = "red5pro/red5pro/oci"
-  type                                  = "cluster"                                # Deployment type: single, cluster, autoscaling
-  name                                  = "red5pro-cluster"                        # Name to be used on all the resources as identifier
-  ubuntu_version                        = "22.04"                                  # Ubuntu version to be used for machine, it can either be 20.04 or 22.04
-  path_to_red5pro_build                 = "./red5pro-server-0.0.0.b0-release.zip"  # Absolute path or relative path to Red5 Pro server ZIP file
-  path_to_terraform_cloud_controller    = "./terraform-cloud-controller-0.0.0.jar" # Absolute path or relative path to Terraform Cloud Controller JAR file
-  path_to_terraform_service_build       = "./terraform-service-0.0.0.zip"
+provider "oci" {
+  region           = "us-ashburn-1"
+  tenancy_ocid     = "ocid1.tenancy.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  user_ocid        = "ocid1.user.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  fingerprint      = "00:11:22:33:44:55:66:77:aa:bb:cc:dd:ee:ff:gg:hh"
+  private_key_path = "./example_oracle_private_key.pem"
+}
+
+module "red5pro" {
+  source                = "red5pro/red5pro/oci"
+  type                  = "cluster"                               # Deployment type: standalone, cluster, autoscale
+  name                  = "red5pro-cluster"                       # Name to be used on all the resources as identifier
+  path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
 
   # Oracle Cloud Account Details
   oracle_compartment_id   = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
@@ -172,121 +208,149 @@ module "red5pro_cluster" {
   oracle_region           = "us-ashburn-1"                                                                        # Current region code name of Oracle Cloud Account, https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm
 
   # SSH key configuration
-  ssh_key_create       = true
-  ssh_private_key_path = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pri_key.pem" # Path to existing SSH private key
-  ssh_public_key_path  = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pub_key.pem" # Path to existing SSH Public key
-
-  # MySQL DB configuration
-  mysql_db_system_create = false                        # true - create new MySQL DB System instance, false - install local MySQL server on the Stream Manager OCI instance
-  mysql_shape_name       = "MySQL.VM.Standard.E3.1.8GB" # Instance type for Oracle Cloud MySQL DB system instance
-  mysql_user_name        = "exampleuser"                # MySQL username
-  mysql_password         = "Examplepass1!"                # MySQL password (The password for the administrative user. The password must be between 8 and 32 characters long, and must contain at least 1 numeric character, 1 lowercase character, 1 uppercase character, and 1 special (nonalphanumeric) character.)
-  mysql_port             = 3306                         # MySQL port
-
-  # Terraform Service configuration
-  terraform_service_instance_create = true
-  terraform_service_instance_type   = "VM.Standard.E4.Flex"
-  terraform_service_instance_ocpu   = 2
-  terraform_service_instance_memory = 8
-  terraform_service_api_key         = "examplekey"
-  terraform_service_parallelism     = 10
-
-  # Stream Manager HTTPS/SSL certificate configuration
-  https_letsencrypt_enable                  = true                  # true - create new Let's Encrypt HTTPS/SSL certificate, false - use Red5 Pro server without HTTPS/SSL certificate
-  https_letsencrypt_certificate_domain_name = "red5pro.example.com" # Domain name for Let's Encrypt SSL certificate
-  https_letsencrypt_certificate_email       = "email@example.com"   # Email for Let's Encrypt SSL certificate
-  https_letsencrypt_certificate_password    = "examplepass"         # Password for Let's Encrypt SSL certificate
-
-  # Stream Manager configuration
-  stream_manager_instance_type   = "VM.Standard.E4.Flex" # OCI Instance type for Stream Manager
-  stream_manager_instance_ocpu   = 2                     # OCI Instance OCPU Count for Stream Manager(1 OCPU = 2 vCPU)
-  stream_manager_instance_memory = 8                     # OCI Instance Memory size in GB for Stream Manager
-  stream_manager_api_key         = "examplekey"          # API key for Stream Manager
+  ssh_key_use_existing              = false                                              # true - use existing SSH key, false - create new SSH key
+  ssh_key_existing_private_key_path = "/PATH/TO/SSH/PRIVATE/KEY/example_private_key.pem" # Path to existing SSH private key
+  ssh_key_existing_public_key_path  = "/PATH/TO/SSH/PUBLIC/KEY/example_pub_key.pem"      # Path to existing SSH Public key
 
   # Red5 Pro general configuration
   red5pro_license_key = "1111-2222-3333-4444" # Red5 Pro license key (https://account.red5.net/login)
-  red5pro_cluster_key = "examplekey"          # Red5 Pro cluster key
   red5pro_api_enable  = true                  # true - enable Red5 Pro server API, false - disable Red5 Pro server API (https://www.red5.net/docs/development/api/overview/)
-  red5pro_api_key     = "examplekey"          # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
+  red5pro_api_key     = "example_key"         # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
 
-  # Red5 Pro autoscaling Origin node image configuration
-  origin_image_create                                      = true                          # Default: true for Autoscaling and Cluster, true - create new Origin node image, false - not create new Origin node image
-  origin_image_instance_type                               = "VM.Standard.E4.Flex"         # Instance type for Origin node image
-  origin_image_instance_ocpu                               = 1                             # OCI Instance OCPU Count for Origin node image(1 OCPU = 2 vCPU)
-  origin_image_instance_memory                             = 4                             # OCI Instance Memory size in GB for Origin node image
-  origin_image_red5pro_inspector_enable                    = false                         # true - enable Red5 Pro server inspector, false - disable Red5 Pro server inspector (https://www.red5.net/docs/troubleshooting/inspector/overview/)
-  origin_image_red5pro_restreamer_enable                   = false                         # true - enable Red5 Pro server restreamer, false - disable Red5 Pro server restreamer (https://www.red5.net/docs/special/restreamer/overview/)
-  origin_image_red5pro_socialpusher_enable                 = false                         # true - enable Red5 Pro server socialpusher, false - disable Red5 Pro server socialpusher (https://www.red5.net/docs/special/social-media-plugin/overview/)
-  origin_image_red5pro_suppressor_enable                   = false                         # true - enable Red5 Pro server suppressor, false - disable Red5 Pro server suppressor
-  origin_image_red5pro_hls_enable                          = false                         # true - enable Red5 Pro server HLS, false - disable Red5 Pro server HLS (https://www.red5.net/docs/protocols/hls-plugin/hls-vod/)
-  origin_image_red5pro_round_trip_auth_enable              = false                         # true - enable Red5 Pro server round trip authentication, false - disable Red5 Pro server round trip authentication (https://www.red5.net/docs/special/round-trip-auth/overview/)
-  origin_image_red5pro_round_trip_auth_host                = "round-trip-auth.example.com" # Round trip authentication server host
-  origin_image_red5pro_round_trip_auth_port                = 3000                          # Round trip authentication server port
-  origin_image_red5pro_round_trip_auth_protocol            = "http"                        # Round trip authentication server protocol
-  origin_image_red5pro_round_trip_auth_endpoint_validate   = "/validateCredentials"        # Round trip authentication server endpoint for validate
-  origin_image_red5pro_round_trip_auth_endpoint_invalidate = "/invalidateCredentials"      # Round trip authentication server endpoint for invalidate
+  # Stream Manager 2.0 instance configuration
+  stream_manager_instance_type        = "VM.Standard.E4.Flex" # OCI Instance type for Stream Manager
+  stream_manager_instance_ocpu        = 4                     # OCI Instance OCPU Count for Stream Manager(1 OCPU = 2 vCPU)
+  stream_manager_instance_memory      = 16                    # OCI Instance Memory size in GB for Stream Manager
+  stream_manager_instance_volume_size = 50                    # Volume size in GB for Stream Manager
+  stream_manager_auth_user            = "example_user"        # Stream Manager 2.0 authentication user name
+  stream_manager_auth_password        = "example_password"    # Stream Manager 2.0 authentication password
+
+  # Kafka standalone instance configuration - (Optional)
+  kafka_standalone_instance_create      = true                  # true - create new Kafka standalone instance, false - not create new Kafka standalone instance and use Kafka on the Stream Manager 2.0 instance
+  kafka_standalone_instance_type        = "VM.Standard.E4.Flex" # OCI Instance type for Kafka standalone instance
+  kafka_standalone_instance_ocpu        = 1                     # OCI Instance OCPU Count for Kafka standalone instance(1 OCPU = 2 vCPU)
+  kafka_standalone_instance_memory      = 16                    # OCI Instance Memory size in GB for Kafka standalone instance
+  kafka_standalone_instance_volume_size = 50                    # Volume size in GB for Kafka standalone instance
+
+  # Stream Manager 2.0 server HTTPS (SSL) certificate configuration
+  https_ssl_certificate = "none" # none - do not use HTTPS/SSL certificate, letsencrypt - create new Let's Encrypt HTTPS/SSL certificate, imported - use existing HTTPS/SSL certificate
+
+  # Example of Let's Encrypt HTTPS/SSL certificate configuration - please uncomment and provide your domain name and email
+  # https_ssl_certificate = "letsencrypt"
+  # https_ssl_certificate_domain_name = "red5pro.example.com"
+  # https_ssl_certificate_email = "email@example.com"
+
+  # Example of imported HTTPS/SSL certificate configuration - please uncomment and provide your domain name, certificate and key paths
+  # https_ssl_certificate             = "imported"
+  # https_ssl_certificate_domain_name = "red5pro.example.com"
+  # https_ssl_certificate_cert_path   = "/PATH/TO/SSL/CERT/fullchain.pem"
+  # https_ssl_certificate_key_path    = "/PATH/TO/SSL/KEY/privkey.pem"
+
+  # Red5 Pro autoscaling Node image configuration
+  node_image_create          = true                  # Default: true for Autoscaling and Cluster, true - create new Red5 Pro Node image, false - do not create new Red5 Pro Node image
+  node_image_instance_type   = "VM.Standard.E4.Flex" # Instance type for Red5 Pro Node image
+  node_image_instance_ocpu   = 1                     # OCI Instance OCPU Count for Red5 Pro Node image (1 OCPU = 2 vCPU)
+  node_image_instance_memory = 4                     # OCI Instance Memory size in GB for Red5 Pro Node image
+
+  # Extra configuration for Red5 Pro autoscaling nodes
+  # Webhooks configuration - (Optional) https://www.red5.net/docs/special/webhooks/overview/
+  node_config_webhooks = {
+    enable           = false,
+    target_nodes     = ["origin", "edge", "transcoder"],
+    webhook_endpoint = "https://test.webhook.app/api/v1/broadcast/webhook"
+  }
+  # Round trip authentication configuration - (Optional) https://www.red5.net/docs/special/authplugin/simple-auth/
+  node_config_round_trip_auth = {
+    enable                   = false,
+    target_nodes             = ["origin", "edge", "transcoder"],
+    auth_host                = "round-trip-auth.example.com",
+    auth_port                = 443,
+    auth_protocol            = "https://",
+    auth_endpoint_validate   = "/validateCredentials",
+    auth_endpoint_invalidate = "/invalidateCredentials"
+  }
+  # Restreamer configuration - (Optional) https://www.red5.net/docs/special/restreamer/overview/
+  node_config_restreamer = {
+    enable               = false,
+    target_nodes         = ["origin", "transcoder"],
+    restreamer_tsingest  = true,
+    restreamer_ipcam     = true,
+    restreamer_whip      = true,
+    restreamer_srtingest = true
+  }
+  # Social Pusher configuration - (Optional) https://www.red5.net/docs/development/social-media-plugin/rest-api/
+  node_config_social_pusher = {
+    enable       = false,
+    target_nodes = ["origin", "edge", "transcoder"],
+  }
 
   # Red5 Pro autoscaling Node group - (Optional)
   node_group_create                    = true                      # Linux or Mac OS only. true - create new Node group, false - not create new Node group
-  node_group_name                      = "terraform-node-group"    # Node group name
-  # Origin node configuration
   node_group_origins_min               = 1                         # Number of minimum Origins
   node_group_origins_max               = 20                        # Number of maximum Origins
   node_group_origins_instance_type     = "VM.Standard.E4.Flex-1-4" # Origins OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_origins_capacity          = 30                        # Connections capacity for Origins
-  # Edge node configuration
+  node_group_origins_volume_size       = 50                        # Volume size in GB for Origins
   node_group_edges_min                 = 1                         # Number of minimum Edges
   node_group_edges_max                 = 40                        # Number of maximum Edges
   node_group_edges_instance_type       = "VM.Standard.E4.Flex-1-4" # Edges OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_edges_capacity            = 300                       # Connections capacity for Edges
-  # Transcoder node configuration
+  node_group_edges_volume_size         = 50                        # Volume size in GB for Edges
   node_group_transcoders_min           = 0                         # Number of minimum Transcoders
   node_group_transcoders_max           = 20                        # Number of maximum Transcoders
   node_group_transcoders_instance_type = "VM.Standard.E4.Flex-1-4" # Transcoders OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_transcoders_capacity      = 30                        # Connections capacity for Transcoders
-  # Relay node configuration
+  node_group_transcoders_volume_size   = 50                        # Volume size in GB for Transcoders
   node_group_relays_min                = 0                         # Number of minimum Relays
   node_group_relays_max                = 20                        # Number of maximum Relays
   node_group_relays_instance_type      = "VM.Standard.E4.Flex-1-4" # Relays OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_relays_capacity           = 30                        # Connections capacity for Relays
+  node_group_relays_volume_size        = 50                        # Volume size in GB for Relays
 }
 
 output "module_output" {
-  value = module.red5pro_cluster
+  value = module.red5pro
 }
 ```
 
----
+### Autoscaling Stream Managers 2.0 with autoscaling nodes (autoscale) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/master/examples/autoscale)
 
-## Red5 Pro Stream Manager cluster with Oracle Cloud autoscaling Stream Managers (autoscaling) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/master/examples/autoscaling)
+In the following example, Terraform module will automates the infrastructure provisioning of the Autoscale Stream Managers 2.0 with Red5 Pro (SM2.0) Autoscaling node group (origins, edges, transcoders, relays)
 
-In the following example, Terraform module will automates the infrastructure provisioning of the [Stream Manager cluster with autoscaling and loadbalancer on the Oracle Cloud Infrastructure(OCI)](https://www.red5.net/docs/installation/auto-oci/overview/).
+#### Terraform Deployed Resources (autoscale)
 
-* **VCN** - For cluster deployment this Terrform module create VCN, subnets, route table, internet geteway and security list automatically
-* **Network Security Group** - For cluster deployment this Terrform module create Security groups for Stream Manager, nodes and MySQL DB automatically
-* **Instance Type** - Select the instance type based on the usecase from [Oracle Cloud Infrastructure(OCI) Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm)
-* **MySQL Database** - Users need to create a MySQL databse server in Oracle Cloud MySQL DB System
-* **Terraform Server** - Uesrs can choose to create a dedicated Oracle Cloud Infrastructure(OCI) instance for Terraform Server
-* **Stream Manager OCI Custom Image** - Oracle Cloud Infrastructure(OCI) custom image will be created automatically for Stream Manager
-* **Load Balancer** - Oracle Cloud Infrastructure(OCI) load balancer for Stream Managers will be created automatically
-* **Autoscaling Configuration** - Oracle Cloud Infrastructure(OCI) autoscaling configuration for Stream Managers will be created automatically
-* **Instance Configuration** - Oracle Cloud Infrastructure(OCI) instance configuration for Stream Managers will be created automatically
-* **SSL Certificates** - Create SSL certificate using CA certificate authority files and upload certificates to OCI Certificates OR use exsting OCI Certificates
-* **Origin Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Orgin Node type for Stream Manager node group
-* **Edge Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Edge Node type for Stream Manager node group (optional)
-* **Transcoder Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Transcoder Node type for Stream Manager node group (optional)
-* **Relay Node Image** - To create Oracle Cloud Infrastructure(OCI) custom image for Relay Node type for Stream Manager node group (optional)
-* **Autoscaling Node Group** - This is required for creating autoscaling node group using [Stream Manager APIs](https://www.red5.net/docs/special/concepts/nodegroup/) automatically as part of Terraform module, If users are not selecting this option then they must create a new node group using [Stream Manager APIs](https://www.red5.net/docs/special/concepts/nodegroup/) Manually.
+- VCN
+- Public subnet
+- Internet getaway
+- Route table
+- Security list
+- Security group for Stream Manager 2.0
+- Security group for Kafka
+- Security group for Red5 Pro (SM2.0) Autoscaling nodes
+- SSH key pair (use existing or create a new one)
+- Standalone Kafka instance
+- Stream Manager 2.0 instance image
+- Instance poll for Stream Manager 2.0 instances
+- Autoscaling configuration for Stream Manager 2.0 instances
+- Application Load Balancer for Stream Manager 2.0 instances.
+- SSL certificate for Application Load Balancer. Options:
+  - `none` - Load Balancer without HTTPS and SSL certificate. Only HTTP on port `80`
+  - `imported` - Load Balancer with HTTPS and imported SSL certificate. HTTP on port `80`, HTTPS on port `443`
+- Red5 Pro (SM2.0) node instance image (origins, edges, transcoders, relays)
+- Red5 Pro (SM2.0) Autoscaling node group (origins, edges, transcoders, relays)
+
+#### Example main.tf (autoscale)
 
 ```hcl
-module "red5pro_autoscaling" {
-  source                                = "red5pro/red5pro/oci"
-  type                                  = "autoscaling"                            # Deployment type: single, cluster, autoscaling
-  name                                  = "red5pro-autoscaling"                    # Name to be used on all the resources as identifier
-  ubuntu_version                        = "22.04"                                  # Ubuntu version to be used for machine, it can either be 20.04 or 22.04
-  path_to_red5pro_build                 = "./red5pro-server-0.0.0.b0-release.zip"  # Absolute path or relative path to Red5 Pro server ZIP file
-  path_to_terraform_cloud_controller    = "./terraform-cloud-controller-0.0.0.jar" # Absolute path or relative path to Terraform Cloud Controller JAR file
-  path_to_terraform_service_build       = "./terraform-service-0.0.0.zip"
+provider "oci" {
+  region           = "us-ashburn-1"
+  tenancy_ocid     = "ocid1.tenancy.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  user_ocid        = "ocid1.user.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  fingerprint      = "00:11:22:33:44:55:66:77:aa:bb:cc:dd:ee:ff:gg:hh"
+  private_key_path = "./example_oracle_private_key.pem"
+}
+
+module "red5pro" {
+  source                = "red5pro/red5pro/oci"
+  type                  = "autoscale"                             # Deployment type: standalone, cluster, autoscale
+  name                  = "red5pro-auto"                          # Name to be used on all the resources as identifier
+  path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
 
   # Oracle Cloud Account Details
   oracle_compartment_id   = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
@@ -297,94 +361,106 @@ module "red5pro_autoscaling" {
   oracle_region           = "us-ashburn-1"                                                                        # Current region code name of Oracle Cloud Account, https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm
 
   # SSH key configuration
-  ssh_key_create       = true
-  ssh_private_key_path = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pri_key.pem" # Path to existing SSH private key
-  ssh_public_key_path  = "/PATH/TO/EXISTING/SSH/PRIVATE/KEY/example_pub_key.pem" # Path to existing SSH Public key
-
-  # MySQL DB configuration
-  mysql_shape_name       = "MySQL.VM.Standard.E3.1.8GB" # Instance type for Oracle Cloud MySQL DB system instance
-  mysql_user_name        = "exampleuser"                # MySQL username
-  mysql_password         = "Examplepass1!"                # MySQL password (The password for the administrative user. The password must be between 8 and 32 characters long, and must contain at least 1 numeric character, 1 lowercase character, 1 uppercase character, and 1 special (nonalphanumeric) character.)
-  mysql_port             = 3306                         # MySQL port
-
-  # Terraform Service configuration
-  terraform_service_instance_type   = "VM.Standard.E4.Flex"
-  terraform_service_instance_ocpu   = 2
-  terraform_service_instance_memory = 8
-  terraform_service_api_key         = "examplekey"
-  terraform_service_parallelism     = 10
-
-  # Load Balancer HTTPS/SSL certificate configuration
-  https_oci_certificates_use_existing     = false                                     # If you want to use SSL certificate set it to true
-  https_oci_certificates_certificate_name = "red5pro.example.com"                     # Domain name for your SSL certificate
-  cert_private_key                        = "/PATH/TO/EXISTING/SSL/CERTS/privkey.pem" # Path to existing SSL certificate private key
-  cert_public_cert                        = "/PATH/TO/EXISTING/SSL/CERTS/cert.pem"    # Path to existing SSL certificate public key
-
-
-  # Stream Manager configuration
-  stream_manager_instance_type                  = "VM.Standard.E4.Flex" # OCI Instance type for Stream Manager
-  stream_manager_instance_ocpu                  = 2                     # OCI Instance OCPU Count for Stream Manager(1 OCPU               = 2 vCPU)
-  stream_manager_instance_memory                = 8                     # OCI Instance Memory size in GB for Stream Manager
-  stream_manager_api_key                        = "examplekey"          # API key for Stream Manager
-  stream_manager_autoscaling_desired_capacity   = 1                     # Desired capacity for Stream Manager autoscaling group
-  stream_manager_autoscaling_minimum_capacity   = 1                     # Min capacity for Stream Manager autoscaling group
-  stream_manager_autoscaling_maximum_capacity   = 2                     # Max capacity for Stream Manager autoscaling group
-
-  load_balancer_reserved_ip_create = true           # true - create new reserved IP for Load Balancer, false - use existing reserved IP for Load Balancer
-  load_balancer_reserved_ip        = "1.2.3.4"      # Reserved IP for Load Balancer
+  ssh_key_use_existing              = false                                              # true - use existing SSH key, false - create new SSH key
+  ssh_key_existing_private_key_path = "/PATH/TO/SSH/PRIVATE/KEY/example_private_key.pem" # Path to existing SSH private key
+  ssh_key_existing_public_key_path  = "/PATH/TO/SSH/PUBLIC/KEY/example_pub_key.pem"      # Path to existing SSH Public key
 
   # Red5 Pro general configuration
   red5pro_license_key = "1111-2222-3333-4444" # Red5 Pro license key (https://account.red5.net/login)
-  red5pro_cluster_key = "examplekey"          # Red5 Pro cluster key
   red5pro_api_enable  = true                  # true - enable Red5 Pro server API, false - disable Red5 Pro server API (https://www.red5.net/docs/development/api/overview/)
-  red5pro_api_key     = "examplekey"          # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
+  red5pro_api_key     = "example_key"         # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
 
-  # Red5 Pro autoscaling Origin node image configuration
-  origin_image_create                                      = true                          # Default: true for Autoscaling and Cluster, true - create new Origin node image, false - not create new Origin node image
-  origin_image_instance_type                               = "VM.Standard.E4.Flex"         # Instance type for Origin node image
-  origin_image_instance_ocpu                               = 1                             # OCI Instance OCPU Count for Origin node image(1 OCPU = 2 vCPU)
-  origin_image_instance_memory                             = 4                             # OCI Instance Memory size in GB for Origin node image
-  origin_image_red5pro_inspector_enable                    = false                         # true - enable Red5 Pro server inspector, false - disable Red5 Pro server inspector (https://www.red5.net/docs/troubleshooting/inspector/overview/)
-  origin_image_red5pro_restreamer_enable                   = false                         # true - enable Red5 Pro server restreamer, false - disable Red5 Pro server restreamer (https://www.red5.net/docs/special/restreamer/overview/)
-  origin_image_red5pro_socialpusher_enable                 = false                         # true - enable Red5 Pro server socialpusher, false - disable Red5 Pro server socialpusher (https://www.red5.net/docs/special/social-media-plugin/overview/)
-  origin_image_red5pro_suppressor_enable                   = false                         # true - enable Red5 Pro server suppressor, false - disable Red5 Pro server suppressor
-  origin_image_red5pro_hls_enable                          = false                         # true - enable Red5 Pro server HLS, false - disable Red5 Pro server HLS (https://www.red5.net/docs/protocols/hls-plugin/hls-vod/)
-  origin_image_red5pro_round_trip_auth_enable              = false                         # true - enable Red5 Pro server round trip authentication, false - disable Red5 Pro server round trip authentication (https://www.red5.net/docs/special/round-trip-auth/overview/)
-  origin_image_red5pro_round_trip_auth_host                = "round-trip-auth.example.com" # Round trip authentication server host
-  origin_image_red5pro_round_trip_auth_port                = 3000                          # Round trip authentication server port
-  origin_image_red5pro_round_trip_auth_protocol            = "http"                        # Round trip authentication server protocol
-  origin_image_red5pro_round_trip_auth_endpoint_validate   = "/validateCredentials"        # Round trip authentication server endpoint for validate
-  origin_image_red5pro_round_trip_auth_endpoint_invalidate = "/invalidateCredentials"      # Round trip authentication server endpoint for invalidate
+  # Stream Manager 2.0 instance configuration
+  stream_manager_instance_type                = "VM.Standard.E4.Flex" # OCI Instance type for Stream Manager
+  stream_manager_instance_ocpu                = 4                     # OCI Instance OCPU Count for Stream Manager(1 OCPU = 2 vCPU)
+  stream_manager_instance_memory              = 16                    # OCI Instance Memory size in GB for Stream Manager
+  stream_manager_instance_volume_size         = 50                    # Volume size in GB for Stream Manager
+  stream_manager_auth_user                    = "example_user"        # Stream Manager 2.0 authentication user name
+  stream_manager_auth_password                = "example_password"    # Stream Manager 2.0 authentication password
+  stream_manager_autoscaling_desired_capacity = 1                     # Desired capacity for Stream Manager autoscaling group
+  stream_manager_autoscaling_minimum_capacity = 1                     # Min capacity for Stream Manager autoscaling group
+  stream_manager_autoscaling_maximum_capacity = 2                     # Max capacity for Stream Manager autoscaling group
+
+  # Kafka standalone instance configuration
+  kafka_standalone_instance_type        = "VM.Standard.E4.Flex" # OCI Instance type for Kafka standalone instance
+  kafka_standalone_instance_ocpu        = 1                     # OCI Instance OCPU Count for Kafka standalone instance(1 OCPU = 2 vCPU)
+  kafka_standalone_instance_memory      = 16                    # OCI Instance Memory size in GB for Kafka standalone instance
+  kafka_standalone_instance_volume_size = 50                    # Volume size in GB for Kafka standalone instance
+
+  load_balancer_reserved_ip_use_existing = false     # true - use existing reserved IP for Load Balancer, false - create new reserved IP for Load Balancer, 
+  load_balancer_reserved_ip_existing     = "1.2.3.4" # Reserved IP for Load Balancer
+
+  # Stream Manager 2.0 Load Balancer HTTPS (SSL) certificate configuration
+  https_ssl_certificate = "none" # none - do not use HTTPS/SSL certificate, imported - import existing HTTPS/SSL certificate
+
+  # Example of imported HTTPS/SSL certificate configuration - please uncomment and provide your domain name, certificate and key paths
+  # https_ssl_certificate             = "imported"
+  # https_ssl_certificate_domain_name = "red5pro.example.com"
+  # https_ssl_certificate_cert_path   = "/PATH/TO/SSL/CERT/fullchain.pem"
+  # https_ssl_certificate_key_path    = "/PATH/TO/SSL/KEY/privkey.pem"
+
+  # Red5 Pro autoscaling Node image configuration
+  node_image_create          = true                  # Default: true for Autoscaling and Cluster, true - create new Red5 Pro Node image, false - do not create new Red5 Pro Node image
+  node_image_instance_type   = "VM.Standard.E4.Flex" # Instance type for Red5 Pro Node image
+  node_image_instance_ocpu   = 1                     # OCI Instance OCPU Count for Red5 Pro Node image (1 OCPU = 2 vCPU)
+  node_image_instance_memory = 4                     # OCI Instance Memory size in GB for Red5 Pro Node image
+
+  # Extra configuration for Red5 Pro autoscaling nodes
+  # Webhooks configuration - (Optional) https://www.red5.net/docs/special/webhooks/overview/
+  node_config_webhooks = {
+    enable           = false,
+    target_nodes     = ["origin", "edge", "transcoder"],
+    webhook_endpoint = "https://test.webhook.app/api/v1/broadcast/webhook"
+  }
+  # Round trip authentication configuration - (Optional) https://www.red5.net/docs/special/authplugin/simple-auth/
+  node_config_round_trip_auth = {
+    enable                   = false,
+    target_nodes             = ["origin", "edge", "transcoder"],
+    auth_host                = "round-trip-auth.example.com",
+    auth_port                = 443,
+    auth_protocol            = "https://",
+    auth_endpoint_validate   = "/validateCredentials",
+    auth_endpoint_invalidate = "/invalidateCredentials"
+  }
+  # Restreamer configuration - (Optional) https://www.red5.net/docs/special/restreamer/overview/
+  node_config_restreamer = {
+    enable               = false,
+    target_nodes         = ["origin", "transcoder"],
+    restreamer_tsingest  = true,
+    restreamer_ipcam     = true,
+    restreamer_whip      = true,
+    restreamer_srtingest = true
+  }
+  # Social Pusher configuration - (Optional) https://www.red5.net/docs/development/social-media-plugin/rest-api/
+  node_config_social_pusher = {
+    enable       = false,
+    target_nodes = ["origin", "edge", "transcoder"],
+  }
 
   # Red5 Pro autoscaling Node group - (Optional)
   node_group_create                    = true                      # Linux or Mac OS only. true - create new Node group, false - not create new Node group
-  node_group_name                      = "terraform-node-group"    # Node group name
-  # Origin node configuration
   node_group_origins_min               = 1                         # Number of minimum Origins
   node_group_origins_max               = 20                        # Number of maximum Origins
   node_group_origins_instance_type     = "VM.Standard.E4.Flex-1-4" # Origins OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_origins_capacity          = 30                        # Connections capacity for Origins
-  # Edge node configuration
+  node_group_origins_volume_size       = 50                        # Volume size in GB for Origins
   node_group_edges_min                 = 1                         # Number of minimum Edges
   node_group_edges_max                 = 40                        # Number of maximum Edges
   node_group_edges_instance_type       = "VM.Standard.E4.Flex-1-4" # Edges OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_edges_capacity            = 300                       # Connections capacity for Edges
-  # Transcoder node configuration
+  node_group_edges_volume_size         = 50                        # Volume size in GB for Edges
   node_group_transcoders_min           = 0                         # Number of minimum Transcoders
   node_group_transcoders_max           = 20                        # Number of maximum Transcoders
   node_group_transcoders_instance_type = "VM.Standard.E4.Flex-1-4" # Transcoders OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_transcoders_capacity      = 30                        # Connections capacity for Transcoders
-  # Relay node configuration
+  node_group_transcoders_volume_size   = 50                        # Volume size in GB for Transcoders
   node_group_relays_min                = 0                         # Number of minimum Relays
   node_group_relays_max                = 20                        # Number of maximum Relays
   node_group_relays_instance_type      = "VM.Standard.E4.Flex-1-4" # Relays OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_relays_capacity           = 30                        # Connections capacity for Relays
+  node_group_relays_volume_size        = 50                        # Volume size in GB for Relays
 }
 
 output "module_output" {
-  value = module.red5pro_autoscaling
+  value = module.red5pro
 }
 ```
-**NOTES**
 
-* To activate HTTPS/SSL you need to add DNS A record for Public IP address and access the Red5 Pro servers with domain name(single/cluster/autoscaling).
+> - WebRTC broadcast does not work in WEB browsers without an HTTPS (SSL) certificate.
+> - To activate HTTPS/SSL, you need to add a DNS A record for the public IP address of your Red5 Pro server or Stream Manager 2.0.

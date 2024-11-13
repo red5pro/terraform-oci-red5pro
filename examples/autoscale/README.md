@@ -1,8 +1,9 @@
-# Stream Manager 2.0 cluster with autoscaling nodes (cluster)
 
-In the following example, Terraform module will automates the infrastructure provisioning of the Stream Manager 2.0 cluster with Red5 Pro (SM2.0) Autoscaling node group (origins, edges, transcoders, relays)
+# Autoscaling Stream Managers 2.0 with autoscaling nodes (autoscale) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/master/examples/autoscale)
 
-## Terraform Deployed Resources (cluster)
+In the following example, Terraform module will automates the infrastructure provisioning of the Autoscale Stream Managers 2.0 with Red5 Pro (SM2.0) Autoscaling node group (origins, edges, transcoders, relays)
+
+## Terraform Deployed Resources (autoscale)
 
 - VCN
 - Public subnet
@@ -13,16 +14,18 @@ In the following example, Terraform module will automates the infrastructure pro
 - Security group for Kafka
 - Security group for Red5 Pro (SM2.0) Autoscaling nodes
 - SSH key pair (use existing or create a new one)
-- Standalone Kafka instance (optional).
-- Stream Manager 2.0 instance. Optionally include a Kafka server on the same instance.
-- SSL certificate for Stream Manager 2.0 instance. Options:
-  - `none` - Stream Manager 2.0 without HTTPS and SSL certificate. Only HTTP on port `80`
-  - `letsencrypt` - Stream Manager 2.0 with HTTPS and SSL certificate obtained by Let's Encrypt. HTTP on port `80`, HTTPS on port `443`
-  - `imported` - Stream Manager 2.0 with HTTPS and imported SSL certificate. HTTP on port `80`, HTTPS on port `443`
+- Standalone Kafka instance
+- Stream Manager 2.0 instance image
+- Instance poll for Stream Manager 2.0 instances
+- Autoscaling configuration for Stream Manager 2.0 instances
+- Application Load Balancer for Stream Manager 2.0 instances.
+- SSL certificate for Application Load Balancer. Options:
+  - `none` - Load Balancer without HTTPS and SSL certificate. Only HTTP on port `80`
+  - `imported` - Load Balancer with HTTPS and imported SSL certificate. HTTP on port `80`, HTTPS on port `443`
 - Red5 Pro (SM2.0) node instance image (origins, edges, transcoders, relays)
 - Red5 Pro (SM2.0) Autoscaling node group (origins, edges, transcoders, relays)
 
-## Example main.tf (cluster)
+## Example main.tf (autoscale)
 
 ```hcl
 provider "oci" {
@@ -35,8 +38,8 @@ provider "oci" {
 
 module "red5pro" {
   source                = "../../"
-  type                  = "cluster"                               # Deployment type: standalone, cluster, autoscale
-  name                  = "red5pro-cluster"                       # Name to be used on all the resources as identifier
+  type                  = "autoscale"                             # Deployment type: standalone, cluster, autoscale
+  name                  = "red5pro-auto"                          # Name to be used on all the resources as identifier
   path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
 
   # Oracle Cloud Account Details
@@ -58,27 +61,27 @@ module "red5pro" {
   red5pro_api_key     = "example_key"         # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
 
   # Stream Manager 2.0 instance configuration
-  stream_manager_instance_type        = "VM.Standard.E4.Flex" # OCI Instance type for Stream Manager
-  stream_manager_instance_ocpu        = 4                     # OCI Instance OCPU Count for Stream Manager(1 OCPU = 2 vCPU)
-  stream_manager_instance_memory      = 16                    # OCI Instance Memory size in GB for Stream Manager
-  stream_manager_instance_volume_size = 50                    # Volume size in GB for Stream Manager
-  stream_manager_auth_user            = "example_user"        # Stream Manager 2.0 authentication user name
-  stream_manager_auth_password        = "example_password"    # Stream Manager 2.0 authentication password
+  stream_manager_instance_type                = "VM.Standard.E4.Flex" # OCI Instance type for Stream Manager
+  stream_manager_instance_ocpu                = 4                     # OCI Instance OCPU Count for Stream Manager(1 OCPU = 2 vCPU)
+  stream_manager_instance_memory              = 16                    # OCI Instance Memory size in GB for Stream Manager
+  stream_manager_instance_volume_size         = 50                    # Volume size in GB for Stream Manager
+  stream_manager_auth_user                    = "example_user"        # Stream Manager 2.0 authentication user name
+  stream_manager_auth_password                = "example_password"    # Stream Manager 2.0 authentication password
+  stream_manager_autoscaling_desired_capacity = 1                     # Desired capacity for Stream Manager autoscaling group
+  stream_manager_autoscaling_minimum_capacity = 1                     # Min capacity for Stream Manager autoscaling group
+  stream_manager_autoscaling_maximum_capacity = 2                     # Max capacity for Stream Manager autoscaling group
 
-  # Kafka standalone instance configuration - (Optional)
-  kafka_standalone_instance_create      = true                  # true - create new Kafka standalone instance, false - not create new Kafka standalone instance and use Kafka on the Stream Manager 2.0 instance
+  # Kafka standalone instance configuration
   kafka_standalone_instance_type        = "VM.Standard.E4.Flex" # OCI Instance type for Kafka standalone instance
   kafka_standalone_instance_ocpu        = 1                     # OCI Instance OCPU Count for Kafka standalone instance(1 OCPU = 2 vCPU)
   kafka_standalone_instance_memory      = 16                    # OCI Instance Memory size in GB for Kafka standalone instance
   kafka_standalone_instance_volume_size = 50                    # Volume size in GB for Kafka standalone instance
 
-  # Stream Manager 2.0 server HTTPS (SSL) certificate configuration
-  https_ssl_certificate = "none" # none - do not use HTTPS/SSL certificate, letsencrypt - create new Let's Encrypt HTTPS/SSL certificate, imported - use existing HTTPS/SSL certificate
+  load_balancer_reserved_ip_use_existing = false     # true - use existing reserved IP for Load Balancer, false - create new reserved IP for Load Balancer, 
+  load_balancer_reserved_ip_existing     = "1.2.3.4" # Reserved IP for Load Balancer
 
-  # Example of Let's Encrypt HTTPS/SSL certificate configuration - please uncomment and provide your domain name and email
-  # https_ssl_certificate = "letsencrypt"
-  # https_ssl_certificate_domain_name = "red5pro.example.com"
-  # https_ssl_certificate_email = "email@example.com"
+  # Stream Manager 2.0 Load Balancer HTTPS (SSL) certificate configuration
+  https_ssl_certificate = "none" # none - do not use HTTPS/SSL certificate, imported - import existing HTTPS/SSL certificate
 
   # Example of imported HTTPS/SSL certificate configuration - please uncomment and provide your domain name, certificate and key paths
   # https_ssl_certificate             = "imported"
