@@ -22,7 +22,6 @@ locals {
   kafka_ssl_keystore_cert_chain = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", tls_locally_signed_cert.kafka_server_cert[0].cert_pem))) : "null"
   stream_manager_ssl            = local.autoscale ? "none" : var.https_ssl_certificate
   stream_manager_standalone     = local.autoscale ? false : true
-  stream_manager_url            = local.stream_manager_ssl != "none" ? "https://${local.stream_manager_ip}" : "http://${local.stream_manager_ip}"
 }
 
 ################################################################################
@@ -868,7 +867,7 @@ resource "null_resource" "node_group" {
   count = local.cluster_or_autoscale && var.node_group_create ? 1 : 0
   triggers = {
     trigger_name   = "node-group-trigger"
-    SM_URL         = "${local.stream_manager_url}"
+    SM_IP          = "${local.stream_manager_ip}"
     R5AS_AUTH_USER = "${var.stream_manager_auth_user}"
     R5AS_AUTH_PASS = "${var.stream_manager_auth_password}"
   }
@@ -876,7 +875,7 @@ resource "null_resource" "node_group" {
     when    = create
     command = "bash ${abspath(path.module)}/red5pro-installer/r5p_create_node_group.sh"
     environment = {
-      SM_URL                                   = "${local.stream_manager_url}"
+      SM_IP                                   = "${local.stream_manager_ip}"
       R5AS_AUTH_USER                           = "${var.stream_manager_auth_user}"
       R5AS_AUTH_PASS                           = "${var.stream_manager_auth_password}"
       NODE_GROUP_REGION                        = "${var.oracle_region}"
@@ -924,7 +923,7 @@ resource "null_resource" "node_group" {
 
   provisioner "local-exec" {
     when    = destroy
-    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_node_group.sh '${self.triggers.SM_URL}' '${self.triggers.R5AS_AUTH_USER}' '${self.triggers.R5AS_AUTH_PASS}'"
+    command = "bash ${abspath(path.module)}/red5pro-installer/r5p_delete_node_group.sh '${self.triggers.SM_IP}' '${self.triggers.R5AS_AUTH_USER}' '${self.triggers.R5AS_AUTH_PASS}'"
   }
 
   depends_on = [time_sleep.wait_for_delete_nodegroup[0]]
