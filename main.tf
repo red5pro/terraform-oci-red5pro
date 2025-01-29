@@ -1,8 +1,8 @@
 locals {
-  standalone                    = var.type == "standalone" ? true : false
-  cluster                       = var.type == "cluster" ? true : false
-  autoscale                     = var.type == "autoscale" ? true : false
-  cluster_or_autoscale          = local.cluster || local.autoscale ? true : false
+  standalone                    = var.type == "none" ? false : var.type == "standalone" ? true : false
+  cluster                       = var.type == "none" ? false : var.type == "cluster" ? true : false
+  autoscale                     = var.type == "none" ? false : var.type == "autoscale" ? true : false
+  cluster_or_autoscale          = var.type == "none" ? false : local.cluster || local.autoscale ? true : false
   vcn_id                        = oci_core_vcn.red5pro_vcn.id
   vcn_name                      = oci_core_vcn.red5pro_vcn.display_name
   vcn_cidr_block                = oci_core_vcn.red5pro_vcn.cidr_block
@@ -14,14 +14,17 @@ locals {
   ssh_private_key               = var.ssh_key_use_existing ? file(var.ssh_key_existing_private_key_path) : tls_private_key.red5pro_ssh_key[0].private_key_pem
   ssh_public_key                = var.ssh_key_use_existing ? file(var.ssh_key_existing_public_key_path) : tls_private_key.red5pro_ssh_key[0].public_key_openssh
   load_balancer_reserved_ip_id  = local.autoscale ? var.load_balancer_reserved_ip_use_existing ? data.oci_core_public_ip.red5pro_reserved_ip[0].id : oci_core_public_ip.red5pro_reserved_ip[0].id : null
-  kafka_standalone_instance     = local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
-  kafka_ip                      = local.cluster_or_autoscale ? local.kafka_standalone_instance ? oci_core_instance.red5pro_kafka[0].private_ip : oci_core_instance.red5pro_sm[0].private_ip : "null"
+  kafka_standalone_instance     = var.type == "none" ? false : local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
+  kafka_ip                      = local.cluster_or_autoscale ? (var.kafka_public_ip ? (local.kafka_standalone_instance ? oci_core_instance.red5pro_kafka[0].public_ip : oci_core_instance.red5pro_sm[0].public_ip) : (local.kafka_standalone_instance ? oci_core_instance.red5pro_kafka[0].private_ip : oci_core_instance.red5pro_sm[0].private_ip)) : "null"
   kafka_on_sm_replicas          = local.kafka_standalone_instance ? 0 : 1
   kafka_ssl_keystore_key        = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", trimspace(tls_private_key.kafka_server_key[0].private_key_pem_pkcs8)))) : "null"
   kafka_ssl_truststore_cert     = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", tls_self_signed_cert.ca_cert[0].cert_pem))) : "null"
   kafka_ssl_keystore_cert_chain = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", tls_locally_signed_cert.kafka_server_cert[0].cert_pem))) : "null"
   stream_manager_ssl            = local.autoscale ? "none" : var.https_ssl_certificate
   stream_manager_standalone     = local.autoscale ? false : true
+  do_create_node_image          = local.cluster_or_autoscale && var.node_image_create || var.type == "none"
+  do_create_node_network        = local.cluster_or_autoscale || var.type == "none"
+  node_image_display_name       = "${var.name}-node-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
 }
 
 ################################################################################
@@ -712,7 +715,7 @@ resource "oci_autoscaling_auto_scaling_configuration" "red5pro_autoscaling_confi
 
 # Node instance for OCI Custom Image
 resource "oci_core_instance" "red5pro_node" {
-  count               = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
+  count               = local.do_create_node_image ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   compartment_id      = var.oracle_compartment_id
   shape               = var.node_image_instance_type
@@ -792,10 +795,10 @@ resource "oci_core_instance" "red5pro_node" {
 
 # Node - Create image (OCI Custom Images)
 resource "oci_core_image" "red5pro_node_image" {
-  count          = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
+  count          = local.do_create_node_image ? 1 : 0
   compartment_id = var.oracle_compartment_id
   instance_id    = oci_core_instance.red5pro_node[0].id
-  display_name   = "${var.name}-node-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
+  display_name   = local.node_image_display_name
   depends_on     = [oci_core_instance.red5pro_node]
   lifecycle {
     ignore_changes = [display_name]
@@ -824,7 +827,7 @@ resource "null_resource" "stop_stream_manager" {
 
 # Stop Node instance using OCI CLI
 resource "null_resource" "stop_node" {
-  count = local.cluster_or_autoscale && var.node_image_create ? 1 : 0
+  count = local.do_create_node_image ? 1 : 0
   provisioner "local-exec" {
     command = "oci compute instance action --action STOP --instance-id ${oci_core_instance.red5pro_node[0].id}"
     environment = {
@@ -875,7 +878,7 @@ resource "null_resource" "node_group" {
     when    = create
     command = "bash ${abspath(path.module)}/red5pro-installer/r5p_create_node_group.sh"
     environment = {
-      SM_IP                                   = "${local.stream_manager_ip}"
+      SM_IP                                    = "${local.stream_manager_ip}"
       R5AS_AUTH_USER                           = "${var.stream_manager_auth_user}"
       R5AS_AUTH_PASS                           = "${var.stream_manager_auth_password}"
       NODE_GROUP_REGION                        = "${var.oracle_region}"

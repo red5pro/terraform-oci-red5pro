@@ -70,6 +70,7 @@ This is a reusable Terraform module that provisions infrastructure on [Oracle Cl
 - **standalone** - Standalone Red5 Pro server
 - **cluster** - Stream Manager 2.0 cluster with autoscaling nodes
 - **autoscale** - Autoscaling Stream Managers 2.0 with autoscaling nodes
+- **none** - Create only VCN and node image (if enabled). Useful for deploying in multiple regions
 
 ### Standalone Red5 Pro server (standalone) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/master/examples/standalone)
 

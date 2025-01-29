@@ -13,7 +13,7 @@ variable "type" {
   type        = string
   default     = ""
   validation {
-    condition     = var.type == "standalone" || var.type == "cluster" || var.type == "autoscale"
+    condition     = var.type == "standalone" || var.type == "cluster" || var.type == "autoscale" || var.type == "none"
     error_message = "The type value must be a valid! Example: autoscale, cluster or autoscale"
   }
 }
@@ -188,36 +188,8 @@ variable "network_security_group_stream_manager_ingress" {
     port_min    = number
     port_max    = number
   }))
-  default = [
-    {
-      description = "Stream Manager 2.0 - SSH (TCP)"
-      protocol    = "6"
-      source      = "0.0.0.0/0"
-      port_min    = 22
-      port_max    = 22
-    },
-    {
-      description = "Stream Manager 2.0 - HTTP (TCP)"
-      protocol    = "6"
-      source      = "0.0.0.0/0"
-      port_min    = 80
-      port_max    = 80
-    },
-    {
-      description = "Stream Manager 2.0 - HTTPS (TCP)"
-      protocol    = "6"
-      source      = "0.0.0.0/0"
-      port_min    = 443
-      port_max    = 443
-    },
-    {
-      description = "Stream Manager 2.0 - Kafka (TCP)"
-      protocol    = "6"
-      source      = "10.5.0.0/16"
-      port_min    = 9092
-      port_max    = 9092
-    }
-  ]
+  # if here is empty then default will be set in vcn's locals section
+  default = []
 }
 
 variable "network_security_group_node_ingress" {
@@ -298,22 +270,8 @@ variable "network_security_group_kafka_ingress" {
     port_min    = number
     port_max    = number
   }))
-  default = [
-    {
-      description = "Kafka standalone instance - SSH (TCP)"
-      protocol    = "6"
-      source      = "0.0.0.0/0"
-      port_min    = 22
-      port_max    = 22
-    },
-    {
-      description = "Kafka standalone instance - Kafka (TCP)"
-      protocol    = "6"
-      source      = "10.5.0.0/16"
-      port_min    = 9092
-      port_max    = 9092
-    }
-  ]
+  # if here is empty then default will be set in vcn's locals section
+  default = []
 }
 
 # Red5 Pro Standalone server configuration
@@ -485,6 +443,12 @@ variable "kafka_standalone_instance_arhive_url" {
   description = "Kafka standalone instance - archive URL"
   type        = string
   default     = "https://downloads.apache.org/kafka/3.8.0/kafka_2.13-3.8.0.tgz"
+}
+
+variable "kafka_public_ip" {
+  description = "Expose Kafka on public ip true/false"
+  type        = bool
+  default     = false
 }
 
 variable "load_balancer_reserved_ip_use_existing" {

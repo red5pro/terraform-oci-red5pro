@@ -2,6 +2,56 @@
 # Virtual Cloud Networks - VCN, SUBNETS AND NETWORK SECURITY GROUPS
 ################################################################################
 
+locals {
+  network_security_group_kafka_ingress_src = var.kafka_public_ip ? "0.0.0.0/0" : "10.5.0.0/16"
+  network_security_group_kafka_ingress = length(var.network_security_group_kafka_ingress) == 0 ? [
+    {
+      description = "Kafka standalone instance - SSH (TCP)"
+      protocol    = "6"
+      source      = "0.0.0.0/0"
+      port_min    = 22
+      port_max    = 22
+    },
+    {
+      description = "Kafka standalone instance - Kafka (TCP)"
+      protocol    = "6"
+      source      = "${local.network_security_group_kafka_ingress_src}"
+      port_min    = 9092
+      port_max    = 9092
+    }
+  ] : var.network_security_group_kafka_ingress
+  network_security_group_stream_manager_ingress = length(var.network_security_group_stream_manager_ingress) == 0 ? [
+    {
+      description = "Stream Manager 2.0 - SSH (TCP)"
+      protocol    = "6"
+      source      = "0.0.0.0/0"
+      port_min    = 22
+      port_max    = 22
+    },
+    {
+      description = "Stream Manager 2.0 - HTTP (TCP)"
+      protocol    = "6"
+      source      = "0.0.0.0/0"
+      port_min    = 80
+      port_max    = 80
+    },
+    {
+      description = "Stream Manager 2.0 - HTTPS (TCP)"
+      protocol    = "6"
+      source      = "0.0.0.0/0"
+      port_min    = 443
+      port_max    = 443
+    },
+    {
+      description = "Stream Manager 2.0 - Kafka (TCP)"
+      protocol    = "6"
+      source      = "${local.network_security_group_kafka_ingress_src}"
+      port_min    = 9092
+      port_max    = 9092
+    }
+  ] : var.network_security_group_stream_manager_ingress
+}
+
 # Create a new VCN
 resource "oci_core_vcn" "red5pro_vcn" {
   cidr_blocks    = [var.vcn_cidr_block]
@@ -33,7 +83,7 @@ resource "oci_core_route_table" "red5pro_route_table" {
 }
 
 # Default VCN Network Security List
-resource "oci_core_security_list" "red5pro_security_list" { 
+resource "oci_core_security_list" "red5pro_security_list" {
   compartment_id = var.oracle_compartment_id
   display_name   = "${var.name}-security-list"
   vcn_id         = local.vcn_id
@@ -113,29 +163,29 @@ resource "oci_core_network_security_group" "red5pro_stream_manager_network_secur
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager_nsg_security_rule_ingress" {
-  count                     = local.cluster_or_autoscale ? length(var.network_security_group_stream_manager_ingress) : 0
+  count                     = local.cluster_or_autoscale ? length(local.network_security_group_stream_manager_ingress) : 0
   network_security_group_id = oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id
   direction                 = "INGRESS"
-  protocol                  = var.network_security_group_stream_manager_ingress[count.index].protocol
-  description               = var.network_security_group_stream_manager_ingress[count.index].description
-  source                    = var.network_security_group_stream_manager_ingress[count.index].source
+  protocol                  = local.network_security_group_stream_manager_ingress[count.index].protocol
+  description               = local.network_security_group_stream_manager_ingress[count.index].description
+  source                    = local.network_security_group_stream_manager_ingress[count.index].source
   source_type               = "CIDR_BLOCK"
   stateless                 = false
   dynamic "tcp_options" {
-    for_each = var.network_security_group_stream_manager_ingress[count.index].protocol == "6" ? [1] : []
+    for_each = local.network_security_group_stream_manager_ingress[count.index].protocol == "6" ? [1] : []
     content {
       destination_port_range {
-        min = var.network_security_group_stream_manager_ingress[count.index].port_min
-        max = var.network_security_group_stream_manager_ingress[count.index].port_max
+        min = local.network_security_group_stream_manager_ingress[count.index].port_min
+        max = local.network_security_group_stream_manager_ingress[count.index].port_max
       }
     }
   }
   dynamic "udp_options" {
-    for_each = var.network_security_group_stream_manager_ingress[count.index].protocol == "17" ? [1] : []
+    for_each = local.network_security_group_stream_manager_ingress[count.index].protocol == "17" ? [1] : []
     content {
       destination_port_range {
-        min = var.network_security_group_stream_manager_ingress[count.index].port_min
-        max = var.network_security_group_stream_manager_ingress[count.index].port_max
+        min = local.network_security_group_stream_manager_ingress[count.index].port_min
+        max = local.network_security_group_stream_manager_ingress[count.index].port_max
       }
     }
   }
@@ -146,14 +196,14 @@ resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager
 
 # Network Security group for SM Nodes
 resource "oci_core_network_security_group" "red5pro_node_network_security_group" {
-  count          = local.cluster_or_autoscale ? 1 : 0
+  count          = local.do_create_node_network ? 1 : 0
   compartment_id = var.oracle_compartment_id
   vcn_id         = local.vcn_id
   display_name   = "${var.name}-node-nsg"
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_node_nsg_security_rule_ingress" {
-  count                     = local.cluster_or_autoscale ? length(var.network_security_group_node_ingress) : 0
+  count                     = local.do_create_node_network ? length(var.network_security_group_node_ingress) : 0
   network_security_group_id = oci_core_network_security_group.red5pro_node_network_security_group[0].id
   direction                 = "INGRESS"
   protocol                  = var.network_security_group_node_ingress[count.index].protocol
@@ -193,29 +243,29 @@ resource "oci_core_network_security_group" "red5pro_kafka_network_security_group
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_kafka_nsg_security_rule_ingress" {
-  count                     = local.kafka_standalone_instance ? length(var.network_security_group_kafka_ingress) : 0
+  count                     = local.kafka_standalone_instance ? length(local.network_security_group_kafka_ingress) : 0
   network_security_group_id = oci_core_network_security_group.red5pro_kafka_network_security_group[0].id
   direction                 = "INGRESS"
-  protocol                  = var.network_security_group_kafka_ingress[count.index].protocol
-  description               = var.network_security_group_kafka_ingress[count.index].description
-  source                    = var.network_security_group_kafka_ingress[count.index].source
+  protocol                  = local.network_security_group_kafka_ingress[count.index].protocol
+  description               = local.network_security_group_kafka_ingress[count.index].description
+  source                    = local.network_security_group_kafka_ingress[count.index].source
   source_type               = "CIDR_BLOCK"
   stateless                 = false
   dynamic "tcp_options" {
-    for_each = var.network_security_group_kafka_ingress[count.index].protocol == "6" ? [1] : []
+    for_each = local.network_security_group_kafka_ingress[count.index].protocol == "6" ? [1] : []
     content {
       destination_port_range {
-        min = var.network_security_group_kafka_ingress[count.index].port_min
-        max = var.network_security_group_kafka_ingress[count.index].port_max
+        min = local.network_security_group_kafka_ingress[count.index].port_min
+        max = local.network_security_group_kafka_ingress[count.index].port_max
       }
     }
   }
   dynamic "udp_options" {
-    for_each = var.network_security_group_kafka_ingress[count.index].protocol == "17" ? [1] : []
+    for_each = local.network_security_group_kafka_ingress[count.index].protocol == "17" ? [1] : []
     content {
       destination_port_range {
-        min = var.network_security_group_kafka_ingress[count.index].port_min
-        max = var.network_security_group_kafka_ingress[count.index].port_max
+        min = local.network_security_group_kafka_ingress[count.index].port_min
+        max = local.network_security_group_kafka_ingress[count.index].port_max
       }
     }
   }
