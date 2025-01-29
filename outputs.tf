@@ -24,7 +24,7 @@ output "ssh_private_key_path" {
 }
 output "stream_manager_red5pro_node_network_security_group" {
   description = "SSH private key path"
-  value       = local.cluster_or_autoscale ? oci_core_network_security_group.red5pro_node_network_security_group[0].display_name : ""
+  value       = local.do_create_node_network ? oci_core_network_security_group.red5pro_node_network_security_group[0].display_name : ""
 }
 output "stream_manager_ip" {
   description = "Stream Manager 2.0 Public IP or Load Balancer Public IP"
