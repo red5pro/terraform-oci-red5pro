@@ -13,17 +13,8 @@ variable "type" {
   type        = string
   default     = ""
   validation {
-    condition     = var.type == "standalone" || var.type == "cluster" || var.type == "autoscale"
+    condition     = var.type == "cluster" || var.type == "autoscale"
     error_message = "The type value must be a valid! Example: autoscale, cluster or autoscale"
-  }
-}
-variable "path_to_red5pro_build" {
-  description = "Path to the Red5 Pro build zip file, absolute path or relative path. https://account.red5.net/downloads. Example: /home/ubuntu/terraform-oci-red5pro/red5pro-server-0.0.0.b0-release.zip"
-  type        = string
-  default     = ""
-  validation {
-    condition     = fileexists(var.path_to_red5pro_build) == true
-    error_message = "The path_to_red5pro_build value must be a valid! Example: /home/ubuntu/terraform-oci-red5pro/red5pro-server-0.0.0.b0-release.zip"
   }
 }
 # Oracle Cloud Prvider basic configuration settings
@@ -74,88 +65,18 @@ variable "ssh_key_existing_public_key_path" {
   default     = ""
 }
 
-# Red5 Pro Standalone server configuration
-variable "standalone_red5pro_instance_type" {
-  description = "Red5 Pro Standalone server instance type"
-  type        = string
-  default     = "VM.Standard.E4.Flex"
-}
-variable "standalone_red5pro_instance_ocpu" {
-  description = "Red5 Pro Standalone server instance cpu count(1 OCPU = 2vCPU)"
-  type        = number
-  default     = 1
-}
-variable "standalone_red5pro_instance_memory" {
-  description = "Red5 Pro Standalone server instance memory"
-  type        = number
-  default     = 4
-}
-variable "standalone_red5pro_instance_volume_size" {
-  description = "Red5 Pro Standalone server instance volume size in GB"
-  type        = number
-  default     = 50
-  validation {
-    condition     = var.standalone_red5pro_instance_volume_size >= 50
-    error_message = "The standalone_red5pro_instance_volume_size value must be a valid! Minimum 50"
-  }
-}
-variable "standalone_red5pro_inspector_enable" {
-  description = "Red5 Pro Standalone server Inspector enable/disable (https://www.red5.net/docs/troubleshooting/inspector/overview/)"
-  type        = bool
-  default     = false
-}
-variable "standalone_red5pro_restreamer_enable" {
-  description = "Red5 Pro Standalone server Restreamer enable/disable (https://www.red5.net/docs/special/restreamer/overview/)"
-  type        = bool
-  default     = false
-}
-variable "standalone_red5pro_socialpusher_enable" {
-  description = "Red5 Pro Standalone server SocialPusher enable/disable (https://www.red5.net/docs/special/social-media-plugin/rest-api/)"
-  type        = bool
-  default     = false
-}
-variable "standalone_red5pro_suppressor_enable" {
-  description = "Red5 Pro Standalone server Suppressor enable"
-  type        = bool
-  default     = false
-}
-variable "standalone_red5pro_hls_enable" {
-  description = "Red5 Pro Standalone server HLS enable/disable (https://www.red5.net/docs/protocols/hls-plugin/overview/)"
-  type        = bool
-  default     = false
-}
-variable "standalone_red5pro_round_trip_auth_enable" {
-  description = "Round trip authentication on the red5pro server enable/disable - Auth server should be deployed separately (https://www.red5.net/docs/special/round-trip-auth/overview/)"
-  type        = bool
-  default     = false
-}
-variable "standalone_red5pro_round_trip_auth_host" {
-  description = "Round trip authentication server host"
-  type        = string
-  default     = ""
-}
-variable "standalone_red5pro_round_trip_auth_port" {
-  description = "Round trip authentication server port"
-  type        = number
-  default     = 3000
-}
-variable "standalone_red5pro_round_trip_auth_protocol" {
-  description = "Round trip authentication server protocol"
-  type        = string
-  default     = "http"
-}
-variable "standalone_red5pro_round_trip_auth_endpoint_validate" {
-  description = "Round trip authentication server endpoint for validate"
-  type        = string
-  default     = "/validateCredentials"
-}
-variable "standalone_red5pro_round_trip_auth_endpoint_invalidate" {
-  description = "Round trip authentication server endpoint for invalidate"
-  type        = string
-  default     = "/invalidateCredentials"
-}
 
 # Red5 Pro Cluster Configuration
+variable "red5pro_stream_manager_network_security_group_id" {
+  type = string
+}
+variable "subnet_id" {
+  type = string
+}
+variable "red5pro_kafka_network_security_group_id" {
+  type = string
+}
+
 variable "stream_manager_instance_type" {
   description = "Red5 Pro Stream Manager 2.0 instance type"
   type        = string
@@ -239,7 +160,7 @@ variable "kafka_standalone_instance_volume_size" {
     error_message = "The kafka_standalone_instance_volume_size value must be a valid! Minimum 50"
   }
 }
-variable "kafka_standalone_instance_arhive_url" {
+variable "kafka_standalone_instance_archive_url" {
   description = "Kafka standalone instance - archive URL"
   type        = string
   default     = "https://downloads.apache.org/kafka/3.8.0/kafka_2.13-3.8.0.tgz"
@@ -258,16 +179,6 @@ variable "load_balancer_reserved_ip_existing" {
 }
 variable "red5pro_license_key" {
   description = "Red5 Pro license key (https://www.red5.net/docs/installation/installation/license-key/)"
-  type        = string
-  default     = ""
-}
-variable "red5pro_api_enable" {
-  description = "Red5 Pro Server API enable/disable (https://www.red5.net/docs/development/api/overview/)"
-  type        = bool
-  default     = true
-}
-variable "red5pro_api_key" {
-  description = "Red5 Pro Standalone server API key"
   type        = string
   default     = ""
 }
@@ -309,139 +220,6 @@ variable "lb_https_certificate_cipher_suite_name" {
   default     = "oci-modern-ssl-cipher-suite-v1"
 }
 
-# Red5 Pro Node image configuration
-variable "node_image_create" {
-  description = "Create new Node image true/false."
-  type        = bool
-  default     = false
-}
-variable "node_image_instance_type" {
-  description = "Node image - instance type"
-  type        = string
-  default     = "VM.Standard.E4.Flex"
-}
-variable "node_image_instance_ocpu" {
-  description = "Node image - instance cpu"
-  type        = number
-  default     = 2
-}
-variable "node_image_instance_memory" {
-  description = "Node image - instance memory"
-  type        = number
-  default     = 4
-}
-variable "node_image_instance_volume_size" {
-  description = "Volume size in GB for Node image"
-  type        = number
-  default     = 50
-  validation {
-    condition     = var.node_image_instance_volume_size >= 50
-    error_message = "The node_image_instance_volume_size value must be a valid! Minimum 50"
-  }
-}
-
-# Red5 Pro autoscaling Node group - (Optional) 
-variable "node_group_create" {
-  description = "Create new node group. Linux or Mac OS only."
-  type        = bool
-  default     = false
-}
-variable "node_group_origins_min" {
-  description = "Number of minimum Origins"
-  type        = number
-  default     = 1
-}
-variable "node_group_origins_max" {
-  description = "Number of maximum Origins"
-  type        = number
-  default     = 20
-}
-variable "node_group_origins_instance_type" {
-  description = "Instance type for Origins"
-  type        = string
-  default     = "VM.Standard.E4.Flex-1-4"
-}
-variable "node_group_origins_volume_size" {
-  description = "Volume size in GB for Origins. Minimum 50GB"
-  type        = number
-  default     = 50
-  validation {
-    condition     = var.node_group_origins_volume_size >= 50
-    error_message = "The node_group_origins_volume_size value must be a valid! Minimum 50"
-  }
-}
-variable "node_group_edges_min" {
-  description = "Number of minimum Edges"
-  type        = number
-  default     = 1
-}
-variable "node_group_edges_max" {
-  description = "Number of maximum Edges"
-  type        = number
-  default     = 40
-}
-variable "node_group_edges_instance_type" {
-  description = "Instance type for Edges"
-  type        = string
-  default     = "VM.Standard.E4.Flex-1-4"
-}
-variable "node_group_edges_volume_size" {
-  description = "Volume size in GB for Edges. Minimum 50GB"
-  type        = number
-  default     = 50
-  validation {
-    condition     = var.node_group_edges_volume_size >= 50
-    error_message = "The node_group_edges_volume_size value must be a valid! Minimum 50"
-  }
-}
-variable "node_group_transcoders_min" {
-  description = "Number of minimum Transcoders"
-  type        = number
-  default     = 1
-}
-variable "node_group_transcoders_max" {
-  description = "Number of maximum Transcoders"
-  type        = number
-  default     = 20
-}
-variable "node_group_transcoders_instance_type" {
-  description = "Instance type for Transcoders"
-  type        = string
-  default     = "VM.Standard.E4.Flex-1-4"
-}
-variable "node_group_transcoders_volume_size" {
-  description = "Volume size in GB for Transcoders. Minimum 50GB"
-  type        = number
-  default     = 50
-  validation {
-    condition     = var.node_group_transcoders_volume_size >= 50
-    error_message = "The node_group_transcoders_volume_size value must be a valid! Minimum 50"
-  }
-}
-variable "node_group_relays_min" {
-  description = "Number of minimum Relays"
-  type        = number
-  default     = 1
-}
-variable "node_group_relays_max" {
-  description = "Number of maximum Relays"
-  type        = number
-  default     = 20
-}
-variable "node_group_relays_instance_type" {
-  description = "Instance type for Relays"
-  type        = string
-  default     = "VM.Standard.E4.Flex-1-4"
-}
-variable "node_group_relays_volume_size" {
-  description = "Volume size in GB for Relays. Minimum 50GB"
-  type        = number
-  default     = 50
-  validation {
-    condition     = var.node_group_relays_volume_size >= 50
-    error_message = "The node_group_relays_volume_size value must be a valid! Minimum 50"
-  }
-}
 variable "ubuntu_version" {
   description = "Ubuntu version"
   type        = string
@@ -449,72 +227,6 @@ variable "ubuntu_version" {
   validation {
     condition     = var.ubuntu_version == "22.04"
     error_message = "Please specify the correct ubuntu version, currently only 22.04 is supported"
-  }
-}
-
-# Extra configuration for Red5 Pro autoscaling nodes
-variable "node_config_webhooks" {
-  description = "Webhooks configuration - (Optional) https://www.red5.net/docs/special/webhooks/overview/"
-  type = object({
-    enable           = bool
-    target_nodes     = list(string)
-    webhook_endpoint = string
-  })
-  default = {
-    enable           = false
-    target_nodes     = []
-    webhook_endpoint = ""
-  }
-}
-variable "node_config_round_trip_auth" {
-  description = "Round trip authentication configuration - (Optional) https://www.red5.net/docs/special/authplugin/simple-auth/"
-  type = object({
-    enable                   = bool
-    target_nodes             = list(string)
-    auth_host                = string
-    auth_port                = number
-    auth_protocol            = string
-    auth_endpoint_validate   = string
-    auth_endpoint_invalidate = string
-  })
-  default = {
-    enable                   = false
-    target_nodes             = []
-    auth_host                = ""
-    auth_port                = 443
-    auth_protocol            = "https://"
-    auth_endpoint_validate   = "/validateCredentials"
-    auth_endpoint_invalidate = "/invalidateCredentials"
-  }
-}
-variable "node_config_social_pusher" {
-  description = "Social Pusher configuration - (Optional) https://www.red5.net/docs/development/social-media-plugin/rest-api/"
-  type = object({
-    enable       = bool
-    target_nodes = list(string)
-  })
-  default = {
-    enable       = false
-    target_nodes = []
-  }
-}
-variable "node_config_restreamer" {
-  description = "Restreamer configuration - (Optional) https://www.red5.net/docs/special/restreamer/overview/"
-  type = object({
-    enable               = bool
-    target_nodes         = list(string)
-    restreamer_tsingest  = bool
-    restreamer_ipcam     = bool
-    restreamer_whip      = bool
-    restreamer_srtingest = bool
-  })
-  default = {
-    enable               = false
-    target_nodes         = []
-    restreamer_tsingest  = false
-    restreamer_ipcam     = false
-    restreamer_whip      = false
-    restreamer_srtingest = false
   }
 }
 

@@ -1,6 +1,10 @@
 ##############################################################################
 # Example: Red5 Pro Standalone Deployment 
 ##############################################################################
+locals {
+  name                  = "red5pro-standalone"                                                                  # Name to be used on all the resources as identifier
+  oracle_compartment_id = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
+}
 
 provider "oci" {
   region           = "us-ashburn-1"
@@ -10,17 +14,26 @@ provider "oci" {
   private_key_path = "./example_oracle_private_key.pem"
 }
 
+# Create VCN
+module "vcn" {
+  source                = "../../module/vcn"
+  type                  = "standalone"
+  name                  = local.name
+  oracle_compartment_id = local.oracle_compartment_id
+}
+
 module "red5pro" {
-  source                = "../../"
-  type                  = "standalone"                            # Deployment type: standalone, cluster, autoscale
-  name                  = "red5pro-standalone"                    # Name to be used on all the resources as identifier
+  source                = "../../module/red5pro-standalone"
+  name                  = local.name                              # Name to be used on all the resources as identifier
   path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
 
   # Oracle Cloud Account Details
-  oracle_compartment_id = "ocid1.compartment.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Existing Compartment OCID of Oracle Cloud Account
+  oracle_compartment_id                        = local.oracle_compartment_id # Existing Compartment OCID of Oracle Cloud Account
+  subnet_id                                    = module.vcn.subnet_id
+  red5pro_standalone_network_security_group_id = module.vcn.red5pro_standalone_network_security_group_id
 
   # SSH key configuration
-  ssh_key_use_existing              = false                                              # true - use existing SSH key, false - create new SSH key
+  ssh_key_use_existing              = true                                               # true - use existing SSH key, false - create new SSH key
   ssh_key_existing_private_key_path = "/PATH/TO/SSH/PRIVATE/KEY/example_private_key.pem" # Path to existing SSH private key
   ssh_key_existing_public_key_path  = "/PATH/TO/SSH/PUBLIC/KEY/example_pub_key.pem"      # Path to existing SSH Public key
 

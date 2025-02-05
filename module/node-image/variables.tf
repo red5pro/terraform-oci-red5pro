@@ -12,6 +12,7 @@ variable "name" {
 variable "node_image_display_name" {
   description = "Name of the image in OCI"
   type        = string
+  default     = ""
 }
 
 variable "ssh_private_key" {
@@ -81,7 +82,7 @@ variable "subnet_id" {
 }
 
 variable "red5pro_node_network_security_group_id" {
-  type        = string
+  type = string
 }
 
 # Oracle Cloud Prvider basic configuration settings

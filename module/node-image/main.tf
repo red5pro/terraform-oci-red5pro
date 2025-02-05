@@ -1,3 +1,6 @@
+locals {
+    node_image_display_name                          = var.node_image_display_name != "" ? var.node_image_display_name : "${var.name}-node-image-${formatdate("DDMMMYY-hhmm", timestamp())}"
+}
 
 ################################################################################
 # Red5 Pro Autoscaling Node - Origin/Edge/Transcoders/Relay (OCI Instance)
@@ -86,7 +89,7 @@ resource "oci_core_instance" "red5pro_node" {
 resource "oci_core_image" "red5pro_node_image" {
   compartment_id = var.oracle_compartment_id
   instance_id    = oci_core_instance.red5pro_node.id
-  display_name   = var.node_image_display_name
+  display_name   = local.node_image_display_name
   depends_on     = [oci_core_instance.red5pro_node]
   lifecycle {
     ignore_changes = [display_name]
