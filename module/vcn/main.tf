@@ -3,6 +3,15 @@
 ################################################################################
 
 locals {
+  standalone                    = var.type == "none" ? false : var.type == "standalone" ? true : false
+  cluster                       = var.type == "none" ? false : var.type == "cluster" ? true : false
+  autoscale                     = var.type == "none" ? false : var.type == "autoscale" ? true : false
+  kafka_standalone_instance     = var.type == "none" ? false : local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
+  cluster_or_autoscale          = var.type == "none" ? false : local.cluster || local.autoscale ? true : false
+  do_create_node_network        = local.cluster_or_autoscale || var.type == "none"
+
+  vcn_id                        = oci_core_vcn.red5pro_vcn.id
+
   network_security_group_kafka_ingress_src = var.kafka_public_ip ? "0.0.0.0/0" : "10.5.0.0/16"
   network_security_group_kafka_ingress = length(var.network_security_group_kafka_ingress) == 0 ? [
     {
