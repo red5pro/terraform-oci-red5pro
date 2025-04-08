@@ -432,6 +432,31 @@ variable "stream_manager_auth_password" {
   type        = string
   default     = ""
 }
+variable "stream_manager_proxy_user" {
+  description = "value to set the user name for Stream Manager 2.0 proxy"
+  type        = string
+  default     = ""
+}
+variable "stream_manager_proxy_password" {
+  description = "value to set the user password for Stream Manager 2.0 proxy"
+  type        = string
+  default     = ""
+}
+variable "stream_manager_spatial_user" {
+  description = "value to set the user name for Stream Manager 2.0 spatial"
+  type        = string
+  default     = ""
+}
+variable "stream_manager_spatial_password" {
+  description = "value to set the user password for Stream Manager 2.0 spatial"
+  type        = string
+  default     = ""
+}
+variable "stream_manager_version" {
+  description = "value to set the version for Stream Manager 2.0"
+  type        = string
+  default     = "latest"
+}
 variable "stream_manager_autoscaling_desired_capacity" {
   description = "value to set the desired capacity for Stream Manager 2.0 autoscaling"
   type        = number
@@ -587,11 +612,6 @@ variable "node_group_create" {
   type        = bool
   default     = false
 }
-variable "node_group_name" {
-  description = "Node group name"
-  type        = string
-  default     = "terraform-node-group"
-}
 variable "node_group_origins_min" {
   description = "Number of minimum Origins"
   type        = number
@@ -615,6 +635,11 @@ variable "node_group_origins_volume_size" {
     condition     = var.node_group_origins_volume_size >= 50
     error_message = "The node_group_origins_volume_size value must be a valid! Minimum 50"
   }
+}
+variable "node_group_origins_connection_limit" {
+  description = "Connection limit for Origins (maximum number of publishers to the origin server)"
+  type        = number
+  default     = 20
 }
 variable "node_group_edges_min" {
   description = "Number of minimum Edges"
@@ -640,6 +665,11 @@ variable "node_group_edges_volume_size" {
     error_message = "The node_group_edges_volume_size value must be a valid! Minimum 50"
   }
 }
+variable "node_group_edges_connection_limit" {
+  description = "Connection limit for Edges (maximum number of subscribers to the edge server)"
+  type        = number
+  default     = 200
+}
 variable "node_group_transcoders_min" {
   description = "Number of minimum Transcoders"
   type        = number
@@ -663,6 +693,11 @@ variable "node_group_transcoders_volume_size" {
     condition     = var.node_group_transcoders_volume_size >= 50
     error_message = "The node_group_transcoders_volume_size value must be a valid! Minimum 50"
   }
+}
+variable "node_group_transcoders_connection_limit" {
+  description = "Connection limit for Transcoders (maximum number of publishers to the transcoder server)"
+  type        = number
+  default     = 20
 }
 variable "node_group_relays_min" {
   description = "Number of minimum Relays"

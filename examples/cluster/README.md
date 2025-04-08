@@ -58,19 +58,24 @@ module "red5pro" {
   red5pro_api_key     = "example_key"         # Red5 Pro server API key (https://www.red5.net/docs/development/api/overview/)
 
   # Stream Manager 2.0 instance configuration
-  stream_manager_instance_type        = "VM.Standard.E4.Flex" # OCI Instance type for Stream Manager
-  stream_manager_instance_ocpu        = 4                     # OCI Instance OCPU Count for Stream Manager(1 OCPU = 2 vCPU)
-  stream_manager_instance_memory      = 16                    # OCI Instance Memory size in GB for Stream Manager
-  stream_manager_instance_volume_size = 50                    # Volume size in GB for Stream Manager
-  stream_manager_auth_user            = "example_user"        # Stream Manager 2.0 authentication user name
-  stream_manager_auth_password        = "example_password"    # Stream Manager 2.0 authentication password
+  stream_manager_instance_type        = "VM.Standard.E4.Flex"      # OCI Instance type for Stream Manager
+  stream_manager_instance_ocpu        = 4                          # OCI Instance OCPU Count for Stream Manager(1 OCPU = 2 vCPU)
+  stream_manager_instance_memory      = 16                         # OCI Instance Memory size in GB for Stream Manager
+  stream_manager_instance_volume_size = 50                         # Volume size in GB for Stream Manager (minimum 50GB)
+  stream_manager_auth_user            = "example_user"             # Stream Manager 2.0 authentication user name
+  stream_manager_auth_password        = "example_password"         # Stream Manager 2.0 authentication password
+  stream_manager_proxy_user           = "example_proxy_user"       # Stream Manager 2.0 proxy user name
+  stream_manager_proxy_password       = "example_proxy_password"   # Stream Manager 2.0 proxy password
+  stream_manager_spatial_user         = "example_spatial_user"     # Stream Manager 2.0 spatial user name
+  stream_manager_spatial_password     = "example_spatial_password" # Stream Manager 2.0 spatial password
+  stream_manager_version              = "latest"                   # Stream Manager 2.0 docker images version (latest, 14.1.0, 14.1.1, etc.) - https://hub.docker.com/r/red5pro/as-admin/tags
 
   # Kafka standalone instance configuration - (Optional)
-  kafka_standalone_instance_create      = true                  # true - create new Kafka standalone instance, false - not create new Kafka standalone instance and use Kafka on the Stream Manager 2.0 instance
+  kafka_standalone_instance_create      = false                 # true - create new Kafka standalone instance, false - not create new Kafka standalone instance and use Kafka on the Stream Manager 2.0 instance
   kafka_standalone_instance_type        = "VM.Standard.E4.Flex" # OCI Instance type for Kafka standalone instance
   kafka_standalone_instance_ocpu        = 1                     # OCI Instance OCPU Count for Kafka standalone instance(1 OCPU = 2 vCPU)
   kafka_standalone_instance_memory      = 16                    # OCI Instance Memory size in GB for Kafka standalone instance
-  kafka_standalone_instance_volume_size = 50                    # Volume size in GB for Kafka standalone instance
+  kafka_standalone_instance_volume_size = 50                    # Volume size in GB for Kafka standalone instance (minimum 50GB)
 
   # Stream Manager 2.0 server HTTPS (SSL) certificate configuration
   https_ssl_certificate = "none" # none - do not use HTTPS/SSL certificate, letsencrypt - create new Let's Encrypt HTTPS/SSL certificate, imported - use existing HTTPS/SSL certificate
@@ -124,24 +129,31 @@ module "red5pro" {
     target_nodes = ["origin", "edge", "transcoder"],
   }
 
-  # Red5 Pro autoscaling Node group - (Optional)
-  node_group_create                    = true                      # Linux or Mac OS only. true - create new Node group, false - not create new Node group
-  node_group_origins_min               = 1                         # Number of minimum Origins
-  node_group_origins_max               = 20                        # Number of maximum Origins
-  node_group_origins_instance_type     = "VM.Standard.E4.Flex-1-4" # Origins OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_origins_volume_size       = 50                        # Volume size in GB for Origins
-  node_group_edges_min                 = 1                         # Number of minimum Edges
-  node_group_edges_max                 = 40                        # Number of maximum Edges
-  node_group_edges_instance_type       = "VM.Standard.E4.Flex-1-4" # Edges OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_edges_volume_size         = 50                        # Volume size in GB for Edges
-  node_group_transcoders_min           = 0                         # Number of minimum Transcoders
-  node_group_transcoders_max           = 20                        # Number of maximum Transcoders
-  node_group_transcoders_instance_type = "VM.Standard.E4.Flex-1-4" # Transcoders OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_transcoders_volume_size   = 50                        # Volume size in GB for Transcoders
-  node_group_relays_min                = 0                         # Number of minimum Relays
-  node_group_relays_max                = 20                        # Number of maximum Relays
-  node_group_relays_instance_type      = "VM.Standard.E4.Flex-1-4" # Relays OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
-  node_group_relays_volume_size        = 50                        # Volume size in GB for Relays
+  # Red5 Pro autoscaling Node group - (Optional) https://www.red5.net/docs/red5-pro/users-guide/stream-manager-2-0/stream-manager-2-node-group-config/
+  node_group_create                       = true                     # Linux or Mac OS only. true - create new Node group, false - not create new Node group
+  
+  node_group_origins_min                  = 1                         # Number of minimum Origins
+  node_group_origins_max                  = 20                        # Number of maximum Origins
+  node_group_origins_instance_type        = "VM.Standard.E4.Flex-1-4" # Origins OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
+  node_group_origins_volume_size          = 50                        # Volume size in GB for Origins (minimum 50GB)
+  node_group_origins_connection_limit     = 20                        # Maximum number of publishers to the origin server
+  
+  node_group_edges_min                    = 1                         # Number of minimum Edges
+  node_group_edges_max                    = 40                        # Number of maximum Edges
+  node_group_edges_instance_type          = "VM.Standard.E4.Flex-1-4" # Edges OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
+  node_group_edges_volume_size            = 50                        # Volume size in GB for Edges (minimum 50GB)
+  node_group_edges_connection_limit       = 200                       # Maximum number of subscribers to the edge server
+  
+  node_group_transcoders_min              = 0                         # Number of minimum Transcoders
+  node_group_transcoders_max              = 20                        # Number of maximum Transcoders
+  node_group_transcoders_instance_type    = "VM.Standard.E4.Flex-1-4" # Transcoders OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
+  node_group_transcoders_volume_size      = 50                        # Volume size in GB for Transcoders (minimum 50GB)
+  node_group_transcoders_connection_limit = 20                        # Maximum number of publishers to the transcoder server
+  
+  node_group_relays_min                   = 0                         # Number of minimum Relays
+  node_group_relays_max                   = 20                        # Number of maximum Relays
+  node_group_relays_instance_type         = "VM.Standard.E4.Flex-1-4" # Relays OCI Instance Type(1 OCPU = 2 VCPUs) <shape>-<cpu>-<memory> eg. VM.Standard.E4.Flex-1-4
+  node_group_relays_volume_size           = 50                        # Volume size in GB for Relays (minimum 50GB)
 }
 
 output "module_output" {
