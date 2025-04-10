@@ -317,7 +317,7 @@ services:
         max-file: "3"
 
   as-testbeds:
-     image: red5pro/as-testbed:latest
+     image: red5pro/as-testbed:${AS_VERSION:-latest}
      restart: unless-stopped
      depends_on:
        as-auth:
@@ -349,7 +349,7 @@ services:
        traefik.http.middlewares.strip-prefix-2.stripprefixregex.regex: /[a-z0-9_]+
 
   as-debug-ui:
-    image: "red5pro/as-debug-ui:latest"
+    image: "red5pro/as-debug-ui:${AS_VERSION:-latest}"
     restart: unless-stopped
     labels:
       traefik.enable: true
