@@ -40,7 +40,7 @@ provider "oci" {
 
 module "red5pro" {
   source                = "../../"
-  type                  = "standalone"                            # Deployment type: standalone, cluster, autoscale
+  type                  = "standalone"                            # Deployment type: standalone, cluster, autoscale, vcn
   name                  = "red5pro-standalone"                    # Name to be used on all the resources as identifier
   path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
 

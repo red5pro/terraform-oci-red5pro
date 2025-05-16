@@ -49,7 +49,7 @@ provider "oci" {
 
 module "red5pro" {
   source                = "../../"
-  type                  = "cluster"                   # Deployment type: standalone, cluster, autoscale, vcn
+  type                  = "cluster"                   # Deployment type: standalone, cluster, autoscale, vcn, vcn
   name                  = local.name                  # Name to be used on all the resources as identifier
   path_to_red5pro_build = local.path_to_red5pro_build # Absolute path or relative path to Red5 Pro server ZIP file
 
@@ -123,7 +123,7 @@ output "module_output" {
 
 module "red5pro_eu-frankfurt-1" {
   source                = "./terraform-oci-red5pro"
-  type                  = "vcn"                       # Deployment type: standalone, cluster, autoscale, vcn
+  type                  = "vcn"                       # Deployment type: standalone, cluster, autoscale, vcn, vcn
   name                  = local.name                  # Name to be used on all the resources as identifier
   path_to_red5pro_build = local.path_to_red5pro_build # Absolute path or relative path to Red5 Pro server ZIP file
 
