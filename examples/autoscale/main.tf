@@ -2,6 +2,16 @@
 # Example: Red5 Pro Stream Manager 2.0 Autoscale Deployment (Load Balancer with multiple Stream Manager 2.0 instances)
 ######################################################################################################################
 
+terraform {
+  required_version = ">= 1.7.5"
+  required_providers {
+    oci = {
+      source  = "oracle/oci"
+      version = ">= 6.16"
+    }
+  }
+}
+
 provider "oci" {
   region           = "us-ashburn-1"
   tenancy_ocid     = "ocid1.tenancy.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

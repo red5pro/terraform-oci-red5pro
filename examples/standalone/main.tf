@@ -2,6 +2,16 @@
 # Example: Red5 Pro Standalone Deployment 
 ##############################################################################
 
+terraform {
+  required_version = ">= 1.7.5"
+  required_providers {
+    oci = {
+      source  = "oracle/oci"
+      version = ">= 6.16"
+    }
+  }
+}
+
 provider "oci" {
   region           = "us-ashburn-1"
   tenancy_ocid     = "ocid1.tenancy.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

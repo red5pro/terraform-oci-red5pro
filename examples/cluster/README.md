@@ -25,6 +25,16 @@ In the following example, Terraform module will automates the infrastructure pro
 ## Example main.tf (cluster)
 
 ```hcl
+terraform {
+  required_version = ">= 1.7.5"
+  required_providers {
+    oci = {
+      source  = "oracle/oci"
+      version = ">= 6.16"
+    }
+  }
+}
+
 provider "oci" {
   region           = "us-ashburn-1"
   tenancy_ocid     = "ocid1.tenancy.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
