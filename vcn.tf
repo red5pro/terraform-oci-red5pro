@@ -146,14 +146,14 @@ resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager
 
 # Network Security group for SM Nodes
 resource "oci_core_network_security_group" "red5pro_node_network_security_group" {
-  count          = local.cluster_or_autoscale ? 1 : 0
+  count          = local.cluster_or_autoscale || local.vcn ? 1 : 0
   compartment_id = var.oracle_compartment_id
   vcn_id         = local.vcn_id
   display_name   = "${var.name}-node-nsg"
 }
 
 resource "oci_core_network_security_group_security_rule" "red5pro_node_nsg_security_rule_ingress" {
-  count                     = local.cluster_or_autoscale ? length(var.network_security_group_node_ingress) : 0
+  count                     = local.cluster_or_autoscale || local.vcn ? length(var.network_security_group_node_ingress) : 0
   network_security_group_id = oci_core_network_security_group.red5pro_node_network_security_group[0].id
   direction                 = "INGRESS"
   protocol                  = var.network_security_group_node_ingress[count.index].protocol

@@ -13,8 +13,8 @@ variable "type" {
   type        = string
   default     = ""
   validation {
-    condition     = var.type == "standalone" || var.type == "cluster" || var.type == "autoscale"
-    error_message = "The type value must be a valid! Example: autoscale, cluster or autoscale"
+    condition     = var.type == "standalone" || var.type == "cluster" || var.type == "autoscale" || var.type == "vcn"
+    error_message = "The type value must be a valid! Example: autoscale, cluster, autoscale or vcn"
   }
 }
 variable "path_to_red5pro_build" {
@@ -213,7 +213,7 @@ variable "network_security_group_stream_manager_ingress" {
     {
       description = "Stream Manager 2.0 - Kafka (TCP)"
       protocol    = "6"
-      source      = "10.5.0.0/16"
+      source      = "0.0.0.0/0"
       port_min    = 9092
       port_max    = 9092
     }
@@ -309,7 +309,7 @@ variable "network_security_group_kafka_ingress" {
     {
       description = "Kafka standalone instance - Kafka (TCP)"
       protocol    = "6"
-      source      = "10.5.0.0/16"
+      source      = "0.0.0.0/0"
       port_min    = 9092
       port_max    = 9092
     }
@@ -511,6 +511,11 @@ variable "kafka_standalone_instance_arhive_url" {
   type        = string
   default     = "https://downloads.apache.org/kafka/3.8.0/kafka_2.13-3.8.0.tgz"
 }
+variable "kafka_public_ip" {
+  description = "Expose Kafka on public ip true/false"
+  type        = bool
+  default     = false
+}
 
 variable "load_balancer_reserved_ip_use_existing" {
   description = "Use existing Reserved IP for Load Balancer. true = use existing, false = create new"
@@ -604,6 +609,11 @@ variable "node_image_instance_volume_size" {
     condition     = var.node_image_instance_volume_size >= 50
     error_message = "The node_image_instance_volume_size value must be a valid! Minimum 50"
   }
+}
+variable "node_image_stop_instance" {
+  description = "Stop instance after image creation true/false"
+  type        = bool
+  default     = true
 }
 
 # Red5 Pro autoscaling Node group - (Optional) 

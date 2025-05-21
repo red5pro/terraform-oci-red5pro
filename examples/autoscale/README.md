@@ -28,6 +28,16 @@ In the following example, Terraform module will automates the infrastructure pro
 ## Example main.tf (autoscale)
 
 ```hcl
+terraform {
+  required_version = ">= 1.7.5"
+  required_providers {
+    oci = {
+      source  = "oracle/oci"
+      version = ">= 6.16"
+    }
+  }
+}
+
 provider "oci" {
   region           = "us-ashburn-1"
   tenancy_ocid     = "ocid1.tenancy.oc1..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -38,7 +48,7 @@ provider "oci" {
 
 module "red5pro" {
   source                = "../../"
-  type                  = "autoscale"                             # Deployment type: standalone, cluster, autoscale
+  type                  = "autoscale"                             # Deployment type: standalone, cluster, autoscale, vcn
   name                  = "red5pro-auto"                          # Name to be used on all the resources as identifier
   path_to_red5pro_build = "./red5pro-server-0.0.0.b0-release.zip" # Absolute path or relative path to Red5 Pro server ZIP file
 

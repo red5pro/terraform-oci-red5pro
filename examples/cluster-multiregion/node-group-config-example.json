@@ -1,0 +1,64 @@
+{
+    "name": "example",
+    "description": "This is an OCI nodegroup configuration for Multiregion",
+    "cloudProperties": "environment=test;subnet=<SUBNET_NAME>;security_group=<SECURITY_GROUP_NAME_FOR_NODES>;volume_size=50",
+    "cloudPlatform": "OCI",
+    "isScalingPaused": false,
+    "images": {
+        "base_image": {
+            "name": "base_image",
+            "image": "<NODE_IMAGE_NAME>",
+            "cloudProperties": "instance_type=VM.Standard.E4.Flex-1-4"
+        }
+    },
+    "roles": {
+        "allinone": {
+            "name": "allinone",
+            "imageName": "base_image",
+            "capabilities": ["PUBLISH", "SUBSCRIBE"]
+        }
+    },
+    "groups": {
+        "ashburn": {
+            "subGroupName": "ashburn",
+            "nodeGroupName": "example",
+            "groupType": "main",
+            "rulesByRole": {
+                "allinone": {
+                    "nodeGroupName": "example",
+                    "subGroupName": "ashburn",
+                    "nodeRoleName": "allinone",
+                    "min": 1,
+                    "max": 5,
+                    "increment": 1,
+					"outExpression": "min(connections.client) > 18",
+					"inExpression": "avg(connections.client) < 1",
+					"capacityRankingExpression": "connections.client",
+					"capacityLimitExpression": "30"
+                }
+            },
+            "cloudProperties": "region=us-ashburn-1"
+        },
+        "frankfurt": {
+            "subGroupName": "frankfurt",
+            "nodeGroupName": "example",
+            "groupType": "main",
+            "rulesByRole": {
+                "allinone": {
+                    "nodeGroupName": "example",
+                    "subGroupName": "frankfurt",
+                    "nodeRoleName": "allinone",
+                    "min": 1,
+                    "max": 5,
+                    "increment": 1,
+					"outExpression": "min(connections.client) > 18",
+					"inExpression": "avg(connections.client) < 1",
+					"capacityRankingExpression": "connections.client",
+					"capacityLimitExpression": "30"
+                }
+            },
+            "cloudProperties": "region=eu-frankfurt-1"
+        }
+    },
+    "internalVersionCount": 0
+}
