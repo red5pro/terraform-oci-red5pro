@@ -95,22 +95,33 @@ install_kafka() {
 
         kafka_config_file="/usr/local/kafka/config/kraft/server.properties"
         sed 's/log.dirs=.*/log.dirs=\/var\/log\/kafka\/kafka-logs/' -i "$kafka_config_file"
-                
-        # log.retention.hours
-        # reduce the log retention hours from default 168 hours to 24 hours
-        sed 's/log.retention.hours.*/log.retention.hours=24/' -i "$kafka_config_file"
 
-        # log.retention.bytes
-        # Set the log retention bytes to 1GB
-        sed 's/#log.retention.bytes=.*$/log.retention.bytes=1073741824/' -i "$kafka_config_file"
+        # Replication and ISR settings
+        sed 's/offsets.topic.replication.factor.*$/offsets.topic.replication.factor=1/' -i "$kafka_config_file"
+        sed 's/#*group.initial.rebalance.delay.ms.*$/group.initial.rebalance.delay.ms=0/' -i "$kafka_config_file"
+        sed 's/#*transaction.state.log.min.isr.*$/transaction.state.log.min.isr=1/' -i "$kafka_config_file"
+        sed 's/#*transaction.state.log.replication.factor.*$/transaction.state.log.replication.factor=1/' -i "$kafka_config_file"
 
-        # log.segment.bytes
-        # Set the log segment bytes to 128MB
-        sed 's/#log.segment.bytes=.*$/log.segment.bytes=134217728/' -i "$kafka_config_file"
+        # Transaction and offset retention
+        sed 's/#*transactional.id.expiration.ms.*$/transactional.id.expiration.ms=3600000/' -i "$kafka_config_file"
+        sed 's/#*offsets.retention.minutes.*$/offsets.retention.minutes=2880/' -i "$kafka_config_file"
 
-        # log.retention.check.interval.ms
-        # increase the retention check interval from default 5 minutes to 15 minutes
-        sed 's/log.retention.check.interval.ms.*$/log.retention.check.interval.ms=900000/' -i "$kafka_config_file"
+        # Replica settings for faster failure detection
+        sed 's/#*replica.lag.time.max.ms.*$/replica.lag.time.max.ms=10000/' -i "$kafka_config_file"
+        sed 's/#*replica.socket.timeout.ms.*$/replica.socket.timeout.ms=3000/' -i "$kafka_config_file"
+
+        # Log retention settings
+        sed 's/log.retention.hours.*$/log.retention.hours=24/' -i "$kafka_config_file"
+        sed 's/#*log.retention.bytes.*$/log.retention.bytes=1073741824/' -i "$kafka_config_file"
+        sed 's/#*log.retention.ms.*$/log.retention.ms=300000/' -i "$kafka_config_file"
+
+        # Log segment settings
+        sed 's/#*log.segment.bytes.*$/log.segment.bytes=16777216/' -i "$kafka_config_file"
+        sed 's/#*log.segment.ms.*$/log.segment.ms=30000/' -i "$kafka_config_file"
+
+        # Log cleanup settings
+        sed 's/#*log.cleanup.interval.ms.*$/log.cleanup.interval.ms=10000/' -i "$kafka_config_file"
+        sed 's/#*log.delete.delay.ms.*$/log.delete.delay.ms=1000/' -i "$kafka_config_file"
 
         # Comment out the advertised.listeners configuration
         sed -i 's/^advertised.listeners/#&/' "$kafka_config_file"
