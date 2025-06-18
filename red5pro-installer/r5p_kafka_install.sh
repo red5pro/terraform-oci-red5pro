@@ -80,6 +80,19 @@ download_kafka_archive() {
     fi
 }
 
+set_config() {
+    local key="$1"
+    local value="$2"
+
+    log_i "Setting configuration: $key=$value"
+
+    if grep -q "^[#]*\s*$key=" "$kafka_config_file"; then
+        sed -i "s|^[#]*\s*$key=.*|$key=$value|" "$kafka_config_file"
+    else
+        echo "$key=$value" >>"$kafka_config_file"
+    fi
+}
+
 install_kafka() {
     log_i "Kafka configuring..."
     tar -xzvf "${kafka_archive}" -C /usr/local/ >/dev/null 2>&1 # Extract the kafka archive without verbose output
@@ -94,59 +107,62 @@ install_kafka() {
         chmod 777 -R $kafka_log_dir/kafka-logs
 
         kafka_config_file="/usr/local/kafka/config/kraft/server.properties"
+
+        log_i "Setting up Kafka configuration file: $kafka_config_file"
+
+        # Set Kafka log directory to /var/log/kafka/kafka-logs
         sed 's/log.dirs=.*/log.dirs=\/var\/log\/kafka\/kafka-logs/' -i "$kafka_config_file"
 
-        # Replication and ISR settings
-        sed 's/offsets.topic.replication.factor.*$/offsets.topic.replication.factor=1/' -i "$kafka_config_file"
-        sed 's/#*group.initial.rebalance.delay.ms.*$/group.initial.rebalance.delay.ms=0/' -i "$kafka_config_file"
-        sed 's/#*transaction.state.log.min.isr.*$/transaction.state.log.min.isr=1/' -i "$kafka_config_file"
-        sed 's/#*transaction.state.log.replication.factor.*$/transaction.state.log.replication.factor=1/' -i "$kafka_config_file"
-
-        # Transaction and offset retention
-        sed 's/#*transactional.id.expiration.ms.*$/transactional.id.expiration.ms=3600000/' -i "$kafka_config_file"
-        sed 's/#*offsets.retention.minutes.*$/offsets.retention.minutes=2880/' -i "$kafka_config_file"
-
-        # Replica settings for faster failure detection
-        sed 's/#*replica.lag.time.max.ms.*$/replica.lag.time.max.ms=10000/' -i "$kafka_config_file"
-        sed 's/#*replica.socket.timeout.ms.*$/replica.socket.timeout.ms=3000/' -i "$kafka_config_file"
-
-        # Log retention settings
-        sed 's/log.retention.hours.*$/log.retention.hours=24/' -i "$kafka_config_file"
-        sed 's/#*log.retention.bytes.*$/log.retention.bytes=1073741824/' -i "$kafka_config_file"
-        sed 's/#*log.retention.ms.*$/log.retention.ms=300000/' -i "$kafka_config_file"
-
-        # Log segment settings
-        sed 's/#*log.segment.bytes.*$/log.segment.bytes=16777216/' -i "$kafka_config_file"
-        sed 's/#*log.segment.ms.*$/log.segment.ms=30000/' -i "$kafka_config_file"
-
-        # Log cleanup settings
-        sed 's/#*log.cleanup.interval.ms.*$/log.cleanup.interval.ms=10000/' -i "$kafka_config_file"
-        sed 's/#*log.delete.delay.ms.*$/log.delete.delay.ms=1000/' -i "$kafka_config_file"
-
-        # Comment out the advertised.listeners configuration
+        # Comment out the advertised.listeners setting. It will be copied from /home/ubuntu/red5pro-installer/server.properties.
         sed -i 's/^advertised.listeners/#&/' "$kafka_config_file"
 
-        # Static configuration for kafka
-        sed -i 's/broker.id=.*/broker.id=0/' "$kafka_config_file"
-        sed -i 's/inter.broker.listener.name=.*/inter.broker.listener.name=BROKER/' "$kafka_config_file"
-        sed -i 's/listener.security.protocol.map=.*/listener.security.protocol.map=BROKER:SASL_SSL,CONTROLLER:SASL_SSL,PLAINTEXT:PLAINTEXT,SSL:SSL,SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_SSL:SASL_SSL/' "$kafka_config_file"
-        # sed -i 's/controller.quorum.voters=.*/controller.quorum.voters=1/' "$kafka_config_file"
+        # Set the listeners to BROKER and CONTROLLER
         sed -i 's/listeners=.*/listeners=BROKER:\/\/:9092,CONTROLLER:\/\/:9093/' "$kafka_config_file"
 
-        {
-            echo 'ssl.keystore.type=PEM'
-            echo 'ssl.truststore.type=PEM'
-            echo 'ssl.endpoint.identification.algorithm='
-            echo 'sasl.enabled.mechanisms=PLAIN'
-            echo 'sasl.mechanism.controller.protocol=PLAIN'
-            echo 'sasl.mechanism.inter.broker.protocol=PLAIN'
-            echo 'max.request.size=52428800'
-            echo 'initial.broker.registration.timeout.ms=240000'
-        } >> "$kafka_config_file"
+        # Replication and ISR
+        set_config offsets.topic.replication.factor 1
+        set_config group.initial.rebalance.delay.ms 0
+        set_config transaction.state.log.min.isr 1
+        set_config transaction.state.log.replication.factor 1
+
+        # Retention settings
+        set_config transactional.id.expiration.ms 3600000
+        set_config offsets.retention.minutes 2880
+        set_config log.retention.hours 24
+        set_config log.retention.bytes 1073741824
+        set_config log.retention.ms 300000
+
+        # Replica settings
+        set_config replica.lag.time.max.ms 10000
+        set_config replica.socket.timeout.ms 3000
+
+        # Log segment configuration
+        set_config log.segment.bytes 16777216
+        set_config log.segment.ms 30000
+
+        # Log cleanup
+        set_config log.cleanup.interval.ms 10000
+        set_config log.delete.delay.ms 1000
+
+        # Listener and protocol settings
+        set_config inter.broker.listener.name BROKER
+        set_config listener.security.protocol.map "BROKER:SASL_SSL,CONTROLLER:SASL_SSL,PLAINTEXT:PLAINTEXT,SSL:SSL,SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_SSL:SASL_SSL"
+
+        # SSL/SASL settings
+        set_config ssl.keystore.type PEM
+        set_config ssl.truststore.type PEM
+        set_config ssl.endpoint.identification.algorithm ""
+        set_config sasl.enabled.mechanisms PLAIN
+        set_config sasl.mechanism.controller.protocol PLAIN
+        set_config sasl.mechanism.inter.broker.protocol PLAIN
+
+        # Broker settings
+        set_config max.request.size 52428800
+        set_config initial.broker.registration.timeout.ms 240000
 
         # Copy extra kafka configuration properties from /home/ubuntu/red5pro-installer/server.properties to "$kafka_config_file"
         if [[ -f "/home/ubuntu/red5pro-installer/server.properties" ]]; then
-            cat /home/ubuntu/red5pro-installer/server.properties >> "$kafka_config_file"
+            cat /home/ubuntu/red5pro-installer/server.properties >>"$kafka_config_file"
         else
             log_e "Extra kafka configuration properties file /home/ubuntu/red5pro-installer/server.properties does not exists"
             exit 1
@@ -170,9 +186,19 @@ install_kafka() {
         exit 1
     fi
 
-    # Set the kafka heap size to 6GB
+    # Check total memory in MB
+    total_memory_mb=$(free -m | awk '/^Mem:/{print $2}') # Value in MB
+
+    # Verify minimum memory requirement
+    if [ "$total_memory_mb" -lt 8192 ]; then
+        log_e "Kafka requires at least 8 GB of memory. Found ${total_memory_mb} MB. Exiting."
+        exit 1
+    fi
+
+    # Set Kafka heap size to 6GB
     mkdir -p /etc/sysconfig
-    echo 'KAFKA_HEAP_OPTS="-Xmx6g -Xms6g"' >> /etc/sysconfig/kafka
+    echo 'KAFKA_HEAP_OPTS="-Xmx6g -Xms6g"' >/etc/sysconfig/kafka
+    log_i "Kafka heap size set to 6 GB"
 }
 
 start_kafka() {
