@@ -24,6 +24,7 @@ locals {
   kafka_ssl_keystore_cert_chain = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", tls_locally_signed_cert.kafka_server_cert[0].cert_pem))) : "null"
   stream_manager_ssl            = local.autoscale ? "none" : var.https_ssl_certificate
   stream_manager_standalone     = local.autoscale ? false : true
+  r5as_traefik_host             = local.autoscale ? local.stream_manager_ip : var.https_ssl_certificate_domain_name
 }
 
 ################################################################################
@@ -440,7 +441,7 @@ resource "oci_core_instance" "red5pro_sm" {
           TF_VAR_oci_fingerprint=${var.oracle_fingerprint}
           TF_VAR_r5p_license_key=${var.red5pro_license_key}
           TRAEFIK_TLS_CHALLENGE=${local.stream_manager_ssl == "letsencrypt" ? "true" : "false"}
-          TRAEFIK_HOST=${var.https_ssl_certificate_domain_name}
+          TRAEFIK_HOST=${local.r5as_traefik_host}
           TRAEFIK_SSL_EMAIL=${var.https_ssl_certificate_email}
           TRAEFIK_CMD=${local.stream_manager_ssl == "imported" ? "--providers.file.filename=/scripts/traefik.yaml" : ""}
         EOF
