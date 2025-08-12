@@ -441,7 +441,6 @@ resource "oci_core_instance" "red5pro_sm" {
           TF_VAR_oci_fingerprint=${var.oracle_fingerprint}
           TF_VAR_r5p_license_key=${var.red5pro_license_key}
           TRAEFIK_TLS_CHALLENGE=${local.stream_manager_ssl == "letsencrypt" ? "true" : "false"}
-          TRAEFIK_HOST=${local.r5as_traefik_host}
           TRAEFIK_SSL_EMAIL=${var.https_ssl_certificate_email}
           TRAEFIK_CMD=${local.stream_manager_ssl == "imported" ? "--providers.file.filename=/scripts/traefik.yaml" : ""}
         EOF
@@ -476,6 +475,7 @@ resource "null_resource" "red5pro_sm" {
       "echo 'KAFKA_REPLICAS=${local.kafka_on_sm_replicas}' | sudo tee -a /usr/local/stream-manager/.env",
       "echo 'KAFKA_IP=${local.kafka_ip}' | sudo tee -a /usr/local/stream-manager/.env",
       "echo 'TRAEFIK_IP=${oci_core_instance.red5pro_sm[0].public_ip}' | sudo tee -a /usr/local/stream-manager/.env",
+      "echo 'TRAEFIK_HOST=${local.r5as_traefik_host}' | sudo tee -a /usr/local/stream-manager/.env",
       "export SM_SSL='${local.stream_manager_ssl}'",
       "export SM_STANDALONE='${local.stream_manager_standalone}'",
       "export SM_SSL_DOMAIN='${var.https_ssl_certificate_domain_name}'",
