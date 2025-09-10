@@ -1,21 +1,21 @@
 locals {
-  standalone                    = var.type == "standalone" ? true : false
-  cluster                       = var.type == "cluster" ? true : false
-  autoscale                     = var.type == "autoscale" ? true : false
-  vcn                           = var.type == "vcn" ? true : false
-  cluster_or_autoscale          = local.cluster || local.autoscale ? true : false
-  vcn_id                        = oci_core_vcn.red5pro_vcn.id
-  vcn_name                      = oci_core_vcn.red5pro_vcn.display_name
-  vcn_cidr_block                = oci_core_vcn.red5pro_vcn.cidr_block
-  subnet_id                     = oci_core_subnet.red5pro_vcn_subnet_public.id
-  subnet_name                   = oci_core_subnet.red5pro_vcn_subnet_public.display_name
-  stream_manager_ip             = local.autoscale ? var.load_balancer_reserved_ip_use_existing ? data.oci_core_public_ip.red5pro_reserved_ip[0].ip_address : oci_core_public_ip.red5pro_reserved_ip[0].ip_address : local.cluster ? oci_core_instance.red5pro_sm[0].public_ip : "null"
-  ssh_private_key_path          = var.ssh_key_use_existing ? var.ssh_key_existing_private_key_path : local_file.red5pro_ssh_key_pem[0].filename
-  ssh_public_key_path           = var.ssh_key_use_existing ? var.ssh_key_existing_public_key_path : local_file.red5pro_ssh_key_pub[0].filename
-  ssh_private_key               = var.ssh_key_use_existing ? file(var.ssh_key_existing_private_key_path) : tls_private_key.red5pro_ssh_key[0].private_key_pem
-  ssh_public_key                = var.ssh_key_use_existing ? file(var.ssh_key_existing_public_key_path) : tls_private_key.red5pro_ssh_key[0].public_key_openssh
-  load_balancer_reserved_ip_id  = local.autoscale ? var.load_balancer_reserved_ip_use_existing ? data.oci_core_public_ip.red5pro_reserved_ip[0].id : oci_core_public_ip.red5pro_reserved_ip[0].id : null
-  kafka_standalone_instance     = local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
+  standalone                   = var.type == "standalone" ? true : false
+  cluster                      = var.type == "cluster" ? true : false
+  autoscale                    = var.type == "autoscale" ? true : false
+  vcn                          = var.type == "vcn" ? true : false
+  cluster_or_autoscale         = local.cluster || local.autoscale ? true : false
+  vcn_id                       = oci_core_vcn.red5pro_vcn.id
+  vcn_name                     = oci_core_vcn.red5pro_vcn.display_name
+  vcn_cidr_block               = oci_core_vcn.red5pro_vcn.cidr_block
+  subnet_id                    = oci_core_subnet.red5pro_vcn_subnet_public.id
+  subnet_name                  = oci_core_subnet.red5pro_vcn_subnet_public.display_name
+  stream_manager_ip            = local.autoscale ? var.load_balancer_reserved_ip_use_existing ? data.oci_core_public_ip.red5pro_reserved_ip[0].ip_address : oci_core_public_ip.red5pro_reserved_ip[0].ip_address : local.cluster ? oci_core_instance.red5pro_sm[0].public_ip : "null"
+  ssh_private_key_path         = var.ssh_key_use_existing ? var.ssh_key_existing_private_key_path : local_file.red5pro_ssh_key_pem[0].filename
+  ssh_public_key_path          = var.ssh_key_use_existing ? var.ssh_key_existing_public_key_path : local_file.red5pro_ssh_key_pub[0].filename
+  ssh_private_key              = var.ssh_key_use_existing ? file(var.ssh_key_existing_private_key_path) : tls_private_key.red5pro_ssh_key[0].private_key_pem
+  ssh_public_key               = var.ssh_key_use_existing ? file(var.ssh_key_existing_public_key_path) : tls_private_key.red5pro_ssh_key[0].public_key_openssh
+  load_balancer_reserved_ip_id = local.autoscale ? var.load_balancer_reserved_ip_use_existing ? data.oci_core_public_ip.red5pro_reserved_ip[0].id : oci_core_public_ip.red5pro_reserved_ip[0].id : null
+  kafka_standalone_instance    = local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
   #kafka_ip                      = local.cluster_or_autoscale ? local.kafka_standalone_instance ? oci_core_instance.red5pro_kafka[0].private_ip : oci_core_instance.red5pro_sm[0].private_ip : "null"
   kafka_ip                      = local.cluster_or_autoscale ? (var.kafka_public_ip ? (local.kafka_standalone_instance ? oci_core_instance.red5pro_kafka[0].public_ip : oci_core_instance.red5pro_sm[0].public_ip) : (local.kafka_standalone_instance ? oci_core_instance.red5pro_kafka[0].private_ip : oci_core_instance.red5pro_sm[0].private_ip)) : "null"
   kafka_on_sm_replicas          = local.kafka_standalone_instance ? 0 : 1
@@ -420,12 +420,6 @@ resource "oci_core_instance" "red5pro_sm" {
           echo "${try(file(var.oracle_private_key_path), "")}" > /usr/local/stream-manager/keys/oracle_private_api_key.pem
           chmod 400 /usr/local/stream-manager/keys/privkey.pem
           chmod 400 /usr/local/stream-manager/keys/oracle_private_api_key.pem
-          # Get hostname and extract instance number
-          HOSTNAME=$(hostname)
-          # Extract instance number from hostname (e.g., "name-stream-manager-abc1" -> "abc1")
-          INSTANCE_NUMBER=$(echo $HOSTNAME | sed 's/.*-sm2-//')
-          # Append the R5AS_GROUP_INSTANCE_ID to the .env file
-          echo "R5AS_GROUP_INSTANCE_ID=$INSTANCE_NUMBER" >> /usr/local/stream-manager/.env
           ############################ .env file #########################################################
           cat >> /usr/local/stream-manager/.env <<- EOM
           KAFKA_CLUSTER_ID=${random_id.kafka_cluster_id[0].b64_std}
@@ -632,6 +626,22 @@ resource "oci_core_instance_configuration" "red5pro_instance_configuration" {
 
       metadata = {
         ssh_authorized_keys = local.ssh_public_key
+        user_data = base64encode(<<-EOF
+                #!/bin/bash
+            
+                # Get hostname and extract instance number
+                HOSTNAME=$(hostname)
+                # Extract instance number from hostname (e.g., "name-sm2-1" -> "1")
+                INSTANCE_NUMBER=$(echo $HOSTNAME | sed 's/.*-sm2-//')
+
+                # Append the R5AS_GROUP_INSTANCE_ID to the .env file
+                echo "R5AS_GROUP_INSTANCE_ID=$INSTANCE_NUMBER" >> /usr/local/stream-manager/.env
+
+                # Start SM2.0 service
+                systemctl enable sm.service
+                systemctl start sm.service
+            EOF
+        )
       }
     }
   }
@@ -726,7 +736,7 @@ resource "oci_autoscaling_auto_scaling_configuration" "red5pro_autoscaling_confi
 
 # Node instance for OCI Custom Image
 resource "oci_core_instance" "red5pro_node" {
-  count               = (local.cluster_or_autoscale || local.vcn) && var.node_image_create ? 1 : 0 
+  count               = (local.cluster_or_autoscale || local.vcn) && var.node_image_create ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   compartment_id      = var.oracle_compartment_id
   shape               = var.node_image_instance_type
