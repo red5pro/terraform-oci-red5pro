@@ -129,7 +129,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/admin/healthz"]
       start_period: 10s
     depends_on:
-      kafka0:
+      as-kafka-init:
         condition: service_healthy
       as-autoscale-service:
         condition: service_healthy
