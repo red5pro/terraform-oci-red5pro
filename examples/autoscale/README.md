@@ -3,6 +3,8 @@
 
 In the following example, Terraform module will automates the infrastructure provisioning of the Autoscale Stream Managers 2.0 with Red5 Pro (SM2.0) Autoscaling node group (origins, edges, transcoders, relays)
 
+**`stream_manager_public_hostname`:** Set this to the DNS name clients use for Stream Manager (e.g. `sm.example.com`). It sets Traefik’s host, the admin UI API base, and outputs such as `stream_manager_url_https`. Use a concrete FQDN, not a wildcard. Point DNS at the load balancer hostname from outputs. For TLS, `https_ssl_certificate_domain_name` may be a wildcard (e.g. `*.example.com`) or an ACM primary name if that certificate covers this hostname.
+
 ## Terraform Deployed Resources (autoscale)
 
 - VCN
@@ -34,6 +36,9 @@ terraform {
     oci = {
       source  = "oracle/oci"
       version = ">= 6.16"
+    }
+    random = {
+      source = "hashicorp/random"
     }
   }
 }
@@ -85,6 +90,7 @@ module "red5pro" {
   stream_manager_autoscaling_desired_capacity = 1                          # Desired capacity for Stream Manager autoscaling group
   stream_manager_autoscaling_minimum_capacity = 1                          # Min capacity for Stream Manager autoscaling group
   stream_manager_autoscaling_maximum_capacity = 2                          # Max capacity for Stream Manager autoscaling group
+  stream_manager_public_hostname              = "sm.example.com"           # Required: public FQDN for Traefik, admin UI, and HTTPS URLs (not a wildcard). Point DNS A/alias at the load balancer DNS name from outputs.
 
   # Kafka standalone instance configuration
   kafka_standalone_instance_type        = "VM.Standard.E4.Flex" # OCI Instance type for Kafka standalone instance
@@ -100,9 +106,9 @@ module "red5pro" {
 
   # Example of imported HTTPS/SSL certificate configuration - please uncomment and provide your domain name, certificate and key paths
   # https_ssl_certificate             = "imported"
-  # https_ssl_certificate_domain_name = "red5pro.example.com"
-  # https_ssl_certificate_cert_path   = "/PATH/TO/SSL/CERT/fullchain.pem"
-  # https_ssl_certificate_key_path    = "/PATH/TO/SSL/KEY/privkey.pem"
+  # https_ssl_certificate_domain_name = "sm.example.com"                     # Cert domain name (may be *.example.com); must cover stream_manager_public_hostname
+  # https_ssl_certificate_cert_path   = "/PATH/TO/SSL/CERT/fullchain.pem"    # Path to full chain file
+  # https_ssl_certificate_key_path    = "/PATH/TO/SSL/KEY/privkey.pem"       # Path to privkey file
 
   # Red5 Pro autoscaling Node image configuration
   node_image_create          = true                  # Default: true for Autoscaling and Cluster, true - create new Red5 Pro Node image, false - do not create new Red5 Pro Node image
@@ -143,7 +149,7 @@ module "red5pro" {
   }
 
   # Red5 Pro autoscaling Node group - (Optional) https://www.red5.net/docs/red5-pro/users-guide/stream-manager-2-0/stream-manager-2-node-group-config/
-  node_group_create                       = true                     # Linux or Mac OS only. true - create new Node group, false - not create new Node group
+  node_group_create                       = true                      # Linux or Mac OS only. true - create new Node group, false - not create new Node group
   
   node_group_origins_min                  = 1                         # Number of minimum Origins
   node_group_origins_max                  = 20                        # Number of maximum Origins
