@@ -61,3 +61,8 @@ output "manual_dns_record" {
     : "Please create DNS A record for Standalone Red5 Pro: '${var.https_ssl_certificate_domain_name}' -> '${oci_core_instance.red5pro_standalone[0].public_ip}'"
   ) : ""
 }
+
+output "r5as_conference_secret" {
+  description = "Auto-generated R5AS Conference secret (hex)"
+  value       = try(random_id.r5as_conference_secret[0].hex, "")
+}
