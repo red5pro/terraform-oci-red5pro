@@ -488,6 +488,7 @@ resource "null_resource" "red5pro_sm" {
       "echo 'AS_ADMIN_UI_OCI_SECURITY_GROUP=${local.red5pro_node_security_group_name}' | sudo tee -a /usr/local/stream-manager/.env",
       "export SM_SSL='${local.stream_manager_ssl}'",
       "export SM_STANDALONE='${local.stream_manager_standalone}'",
+      "export KAFKA_REPLICAS='${local.kafka_on_sm_replicas}'",
       "export SM_SSL_DOMAIN='${var.https_ssl_certificate_domain_name}'",
       "export CONTAINER_REGISTRY='${var.stream_manager_container_registry}'",
       "export CONTAINER_REGISTRY_USER='${var.stream_manager_container_registry_user}'",

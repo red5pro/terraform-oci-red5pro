@@ -181,6 +181,19 @@ config_sm() {
         fi
     fi
 
+    if [ "${KAFKA_REPLICAS:-0}" != "0" ]; then
+        log_i "KAFKA_REPLICAS=$KAFKA_REPLICAS - Kafka runs embedded in the SM compose stack, adding docker-compose.override.yml"
+        if [ -f "$CURRENT_DIRECTORY/docker-compose.embedded-kafka.yml" ]; then
+            cp "$CURRENT_DIRECTORY/docker-compose.embedded-kafka.yml" "$SM_HOME/docker-compose.override.yml"
+        else
+            log_e "File $CURRENT_DIRECTORY/docker-compose.embedded-kafka.yml not found"
+            ls -la "$CURRENT_DIRECTORY/"
+            exit 1
+        fi
+    else
+        log_i "KAFKA_REPLICAS=0 - Kafka runs on a standalone instance, no embedded kafka0 service"
+    fi
+
     # log_i "Debug info"
     # cat "$SM_HOME/.env"
 }
