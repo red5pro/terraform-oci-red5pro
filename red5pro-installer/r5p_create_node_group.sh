@@ -70,10 +70,6 @@ NODE_GROUP_WEBHOOK_TARGET_NODES="origin,edge,transcoder"
 # NODE_GROUP_SOCIAL_PUSHER_ENABLE=true
 NODE_GROUP_SOCIAL_PUSHER_TARGET_NODES="origin,edge,transcoder"
 
-# NODE_GROUP_RMQ_ENABLE=true
-# NODE_GROUP_ANALYTICS_ENABLE=true
-NODE_GROUP_ANALYTICS_ENABLE=${NODE_GROUP_ANALYTICS_ENABLE:-true}
-
 log_i() {
     log
     printf "\033[0;32m [INFO]  --- %s \033[0m\n" "${@}"
@@ -245,20 +241,6 @@ node_group_json_images_mixer=$(
         "image": "$NODE_GROUP_IMAGE_NAME",
         "cloudProperties": "instance_type=$NODE_GROUP_MIXER_INSTANCE_TYPE;volume_size=$NODE_GROUP_MIXER_VOLUME_SIZE"
     }
-}
-EOF
-)
-
-node_group_json_property_rmq=$(cat <<EOF
-{
-  "fileName": "conf/cluster-plugin.properties",
-  "properties": {
-    "msgsvc.enabled": "true",
-    "rmq1.address":  "$RMQ_HOST",
-    "rmq1.port":     "5672",
-    "rmq1.user":     "$RMQ_USER",
-    "rmq1.password": "$RMQ_PASSWORD"
-  }
 }
 EOF
 )
@@ -584,21 +566,6 @@ node_group_json_property_social_pusher=$(
 }
 EOF
 )
-node_group_json_property_analytics=$(
-    cat <<EOF
-{
-    "fileName": "conf/nodestats.properties",
-    "properties": {
-        "stats.enabled": "true",
-        "stats.host": "$SM_IP",
-        "stats.port": "8123",
-        "stats.username": "red5pro_admin",
-        "stats.password": "xyz123"
-    },
-    "blocks": []
-}
-EOF
-)
 
 # Generate property overrides for each node type
 generate_json_property_for_nodes() {
@@ -648,16 +615,6 @@ if [ "$NODE_GROUP_SOCIAL_PUSHER_ENABLE" = true ]; then
     log_i "Social Pusher enabled"
     generate_json_property_for_nodes "$NODE_GROUP_SOCIAL_PUSHER_TARGET_NODES" "$node_group_json_property_social_pusher"
 fi
-if [ "$NODE_GROUP_RMQ_ENABLE" = true ]; then
-    log_i "Gozerian propertyOverrides enabled for origin & edge"
-    generate_json_property_for_nodes "origin,edge" "$node_group_json_property_rmq"
-fi
-
-if [ "$NODE_GROUP_ANALYTICS_ENABLE" = true ]; then
-    log_i "Analytics propertyOverrides enabled"
-    generate_json_property_for_nodes "origin,edge,transcoder,mixer" "$node_group_json_property_analytics"
-fi
-
 # Merge property overrides with top level JSON
 if [ "$NODE_GROUP_ORIGINS_MIN" -gt 0 ]; then
     combined_json=$(echo "$combined_json" | jq --argjson origin "$(echo "$node_group_json_property_origin" | jq .)" '.roles.origin.propertyOverrides = $origin')
@@ -670,10 +627,6 @@ if [ "$NODE_GROUP_TRANSCODERS_MIN" -gt 0 ]; then
 fi
 if [ "$NODE_GROUP_RELAYS_MIN" -gt 0 ]; then
     combined_json=$(echo "$combined_json" | jq --argjson relay "$(echo "$node_group_json_property_relay" | jq .)" '.roles.relay.propertyOverrides = $relay')
-fi
-
-if [ "$NODE_GROUP_MIXER_MIN" -gt 0 ] && [ "$NODE_GROUP_ANALYTICS_ENABLE" = true ]; then
-    combined_json=$(echo "$combined_json" | jq --argjson mixer "$(echo "$node_group_json_property_mixer" | jq .)" '.roles.mixer.propertyOverrides += $mixer')
 fi
 
 log_d "Generated JSON:"
