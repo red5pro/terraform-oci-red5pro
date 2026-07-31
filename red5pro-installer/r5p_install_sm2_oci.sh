@@ -141,50 +141,39 @@ config_sm() {
         docker login "$CONTAINER_REGISTRY" -u "$CONTAINER_REGISTRY_USER" -p "$CONTAINER_REGISTRY_PASSWORD"
     fi
 
-    if [ "$SM_SSL" == "letsencrypt" ]; then
-        log_i "Stream Manager 2.0 with Let's Encrypt SSL"
-
+    if [ "$SM_SSL" == "letsencrypt" ] || [ "$SM_SSL" == "imported" ]; then
         mkdir -p "$SM_HOME/certs"
+    fi
 
-        # Copy docker-compose.yml
-        if [ -f "$CURRENT_DIRECTORY/autoscaling-without-ssl/docker-compose.yml" ]; then
-            cp -r "$CURRENT_DIRECTORY/autoscaling-without-ssl/docker-compose.yml" "$SM_HOME/"
+    log_i "Copy docker-compose.yml"
+    if [ -f "$CURRENT_DIRECTORY/docker-compose.yml" ]; then
+        cp "$CURRENT_DIRECTORY/docker-compose.yml" "$SM_HOME/"
+    else
+        log_e "File $CURRENT_DIRECTORY/docker-compose.yml not found"
+        ls -la "$CURRENT_DIRECTORY/"
+        exit 1
+    fi
+    compose_files="docker-compose.yml"
+
+    if [ "$SM_SSL" == "imported" ]; then
+        log_i "Stream Manager 2.0 with imported SSL - layering docker-compose.ssl.yml"
+        if [ -f "$CURRENT_DIRECTORY/docker-compose.ssl.yml" ]; then
+            cp "$CURRENT_DIRECTORY/docker-compose.ssl.yml" "$SM_HOME/"
+            compose_files="$compose_files:docker-compose.ssl.yml"
         else
-            log_e "File $CURRENT_DIRECTORY/autoscaling-without-ssl/docker-compose.yml not found"
-            ls -la "$CURRENT_DIRECTORY/autoscaling-without-ssl/"
-            exit 1
-        fi
-
-    elif [ "$SM_SSL" == "imported" ]; then
-        log_i "Stream Manager 2.0 with imported SSL"
-
-        mkdir -p "$SM_HOME/certs"
-
-        # Copy docker-compose.yml
-        if [ -f "$CURRENT_DIRECTORY/autoscaling-with-ssl/docker-compose.yml" ]; then
-            cp -r "$CURRENT_DIRECTORY/autoscaling-with-ssl/docker-compose.yml" "$SM_HOME/"
-        else
-            log_e "File $CURRENT_DIRECTORY/autoscaling-with-ssl/docker-compose.yml not found"
-            ls -la "$CURRENT_DIRECTORY/autoscaling-with-ssl/"
+            log_e "File $CURRENT_DIRECTORY/docker-compose.ssl.yml not found"
+            ls -la "$CURRENT_DIRECTORY/"
             exit 1
         fi
     else
-        log_i "Stream Manager 2.0 without SSL"
-
-        # Copy docker-compose.yml
-        if [ -f "$CURRENT_DIRECTORY/autoscaling-without-ssl/docker-compose.yml" ]; then
-            cp -r "$CURRENT_DIRECTORY/autoscaling-without-ssl/docker-compose.yml" "$SM_HOME/"
-        else
-            log_e "File $CURRENT_DIRECTORY/autoscaling-without-ssl/docker-compose.yml not found"
-            ls -la "$CURRENT_DIRECTORY/autoscaling-without-ssl/"
-            exit 1
-        fi
+        log_i "Stream Manager 2.0 with SSL=$SM_SSL - using base docker-compose.yml (plain HTTP Traefik entrypoint)"
     fi
 
     if [ "${KAFKA_REPLICAS:-0}" != "0" ]; then
-        log_i "KAFKA_REPLICAS=$KAFKA_REPLICAS - Kafka runs embedded in the SM compose stack, adding docker-compose.override.yml"
+        log_i "KAFKA_REPLICAS=$KAFKA_REPLICAS - Kafka runs embedded in the SM compose stack, layering docker-compose.embedded-kafka.yml"
         if [ -f "$CURRENT_DIRECTORY/docker-compose.embedded-kafka.yml" ]; then
-            cp "$CURRENT_DIRECTORY/docker-compose.embedded-kafka.yml" "$SM_HOME/docker-compose.override.yml"
+            cp "$CURRENT_DIRECTORY/docker-compose.embedded-kafka.yml" "$SM_HOME/"
+            compose_files="$compose_files:docker-compose.embedded-kafka.yml"
         else
             log_e "File $CURRENT_DIRECTORY/docker-compose.embedded-kafka.yml not found"
             ls -la "$CURRENT_DIRECTORY/"
@@ -193,6 +182,9 @@ config_sm() {
     else
         log_i "KAFKA_REPLICAS=0 - Kafka runs on a standalone instance, no embedded kafka0 service"
     fi
+
+    log_i "Compose files in use: $compose_files"
+    echo "COMPOSE_FILE=$compose_files" >>"$SM_HOME/.env"
 
     # log_i "Debug info"
     # cat "$SM_HOME/.env"

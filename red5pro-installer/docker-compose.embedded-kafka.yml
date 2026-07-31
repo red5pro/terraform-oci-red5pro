@@ -1,9 +1,9 @@
 ---
-# Loaded as docker-compose.override.yml only when Kafka runs embedded in the
-# Stream Manager compose stack (KAFKA_REPLICAS=1, see config_sm() in
-# r5p_install_sm2_oci.sh). When Kafka is a separate standalone instance
+# Loaded via COMPOSE_FILE (see config_sm() in r5p_install_sm2_oci.sh) only
+# when Kafka runs embedded in the Stream Manager compose stack
+# (KAFKA_REPLICAS=1). When Kafka is a separate standalone instance
 # (KAFKA_REPLICAS=0, the default for "autoscale" deployments), this file is
-# not copied and as-kafka-init connects straight to the external KAFKA_IP.
+# not loaded and as-kafka-init connects straight to the external KAFKA_IP.
 x-logging-config: &logging-config
   driver: "json-file"
   options:
