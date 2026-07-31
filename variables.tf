@@ -656,11 +656,6 @@ variable "stream_manager_public_hostname" {
   type        = string
   default     = ""
 }
-variable "node_group_origins_connection_limit" {
-  description = "Connection limit for Origins (maximum number of publishers to the origin server)"
-  type        = number
-  default     = 20
-}
 variable "node_group_edges_min" {
   description = "Number of minimum Edges"
   type        = number
@@ -685,11 +680,6 @@ variable "node_group_edges_volume_size" {
     error_message = "The node_group_edges_volume_size value must be a valid! Minimum 50"
   }
 }
-variable "node_group_edges_connection_limit" {
-  description = "Connection limit for Edges (maximum number of subscribers to the edge server)"
-  type        = number
-  default     = 200
-}
 variable "node_group_transcoders_min" {
   description = "Number of minimum Transcoders"
   type        = number
@@ -713,11 +703,6 @@ variable "node_group_transcoders_volume_size" {
     condition     = var.node_group_transcoders_volume_size >= 50
     error_message = "The node_group_transcoders_volume_size value must be a valid! Minimum 50"
   }
-}
-variable "node_group_transcoders_connection_limit" {
-  description = "Connection limit for Transcoders (maximum number of publishers to the transcoder server)"
-  type        = number
-  default     = 20
 }
 variable "node_group_relays_min" {
   description = "Number of minimum Relays"
