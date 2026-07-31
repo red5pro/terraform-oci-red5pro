@@ -70,12 +70,6 @@ NODE_GROUP_WEBHOOK_TARGET_NODES="origin,edge,transcoder"
 # NODE_GROUP_SOCIAL_PUSHER_ENABLE=true
 NODE_GROUP_SOCIAL_PUSHER_TARGET_NODES="origin,edge,transcoder"
 
-# NODE_GROUP_RESTREAMER_ENABLE=true
-NODE_GROUP_RESTREAMER_TARGET_NODES="origin,edge,transcoder"
-NODE_GROUP_RESTREAMER_TSINGEST=true
-NODE_GROUP_RESTREAMER_IPCAM=true
-NODE_GROUP_RESTREAMER_WHIP=true
-NODE_GROUP_RESTREAMER_SRTINGEST=true
 # NODE_GROUP_RMQ_ENABLE=true
 # NODE_GROUP_ANALYTICS_ENABLE=true
 NODE_GROUP_ANALYTICS_ENABLE=${NODE_GROUP_ANALYTICS_ENABLE:-true}
@@ -590,21 +584,6 @@ node_group_json_property_social_pusher=$(
 }
 EOF
 )
-# Restreamer
-node_group_json_property_restreamer=$(
-    cat <<EOF
-{
-    "fileName": "conf/restreamer-plugin.properties",
-    "properties": {
-        "enable.tsingest": "$NODE_GROUP_RESTREAMER_TSINGEST",
-        "enable.ipcam": "$NODE_GROUP_RESTREAMER_IPCAM",
-        "enable.whip": "$NODE_GROUP_RESTREAMER_WHIP",
-        "enable.srtingest": "$NODE_GROUP_RESTREAMER_SRTINGEST"
-    }
-}
-EOF
-)
-
 node_group_json_property_analytics=$(
     cat <<EOF
 {
@@ -668,10 +647,6 @@ fi
 if [ "$NODE_GROUP_SOCIAL_PUSHER_ENABLE" = true ]; then
     log_i "Social Pusher enabled"
     generate_json_property_for_nodes "$NODE_GROUP_SOCIAL_PUSHER_TARGET_NODES" "$node_group_json_property_social_pusher"
-fi
-if [ "$NODE_GROUP_RESTREAMER_ENABLE" = true ]; then
-    log_i "Restreamer enabled"
-    generate_json_property_for_nodes "$NODE_GROUP_RESTREAMER_TARGET_NODES" "$node_group_json_property_restreamer"
 fi
 if [ "$NODE_GROUP_RMQ_ENABLE" = true ]; then
     log_i "Gozerian propertyOverrides enabled for origin & edge"

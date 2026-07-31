@@ -305,15 +305,6 @@ module "red5pro" {
     auth_endpoint_validate   = "/validateCredentials",
     auth_endpoint_invalidate = "/invalidateCredentials"
   }
-  # Restreamer configuration - (Optional) https://www.red5.net/docs/special/restreamer/overview/
-  node_config_restreamer = {
-    enable               = false,
-    target_nodes         = ["origin", "transcoder"],
-    restreamer_tsingest  = true,
-    restreamer_ipcam     = true,
-    restreamer_whip      = true,
-    restreamer_srtingest = true
-  }
   # Social Pusher configuration - (Optional) https://www.red5.net/docs/development/social-media-plugin/rest-api/
   node_config_social_pusher = {
     enable       = false,
@@ -484,15 +475,6 @@ module "red5pro" {
     auth_protocol            = "https://",
     auth_endpoint_validate   = "/validateCredentials",
     auth_endpoint_invalidate = "/invalidateCredentials"
-  }
-  # Restreamer configuration - (Optional) https://www.red5.net/docs/special/restreamer/overview/
-  node_config_restreamer = {
-    enable               = false,
-    target_nodes         = ["origin", "transcoder"],
-    restreamer_tsingest  = true,
-    restreamer_ipcam     = true,
-    restreamer_whip      = true,
-    restreamer_srtingest = true
   }
   # Social Pusher configuration - (Optional) https://www.red5.net/docs/development/social-media-plugin/rest-api/
   node_config_social_pusher = {

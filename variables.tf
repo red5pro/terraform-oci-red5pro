@@ -784,25 +784,6 @@ variable "node_config_social_pusher" {
     target_nodes = []
   }
 }
-variable "node_config_restreamer" {
-  description = "Restreamer configuration - (Optional) https://www.red5.net/docs/special/restreamer/overview/"
-  type = object({
-    enable               = bool
-    target_nodes         = list(string)
-    restreamer_tsingest  = bool
-    restreamer_ipcam     = bool
-    restreamer_whip      = bool
-    restreamer_srtingest = bool
-  })
-  default = {
-    enable               = false
-    target_nodes         = []
-    restreamer_tsingest  = false
-    restreamer_ipcam     = false
-    restreamer_whip      = false
-    restreamer_srtingest = false
-  }
-}
 variable "stream_manager_container_registry" {
   description = "value to set the container registry for Stream Manager 2.0 (Optional) Example: container-registry/my-repo"
   type        = string
