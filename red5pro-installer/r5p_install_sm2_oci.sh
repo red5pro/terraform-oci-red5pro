@@ -15,6 +15,9 @@
 # CONTAINER_REGISTRY_USER=""
 # CONTAINER_REGISTRY_PASSWORD=""
 
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_SUSPEND=1
+
 SM_HOME="/usr/local/stream-manager"
 CURRENT_DIRECTORY=$(pwd)
 PACKAGES=(ca-certificates curl)
@@ -37,6 +40,21 @@ log_e() {
 }
 log() {
     echo -n "[$(date '+%Y-%m-%d %H:%M:%S')]"
+}
+
+wait_for_dns() {
+    log_i "Waiting for DNS resolution to become available"
+    local timeout=90
+    local elapsed=0
+    while ! getent hosts archive.ubuntu.com &>/dev/null; do
+        if [ "$elapsed" -ge "$timeout" ]; then
+            log_w "DNS still not resolving after ${timeout}s, proceeding anyway"
+            break
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+    log_i "DNS resolution check finished after ${elapsed}s"
 }
 
 install_pkg() {
@@ -173,9 +191,13 @@ pull_docker_images() {
     if docker compose pull >/dev/null 2>&1; then
         log_i "Docker images pulled"
     else
-        log_e "Docker images not pulled"
-        docker compose pull
-        exit 1
+        log_w "Silent pull failed, retrying with visible output"
+        if docker compose pull; then
+            log_i "Docker images pulled on retry"
+        else
+            log_e "Docker images not pulled"
+            exit 1
+        fi
     fi
 }
 
@@ -233,6 +255,11 @@ if [ "$EUID" -ne 0 ]; then
     log_e "Please run as root"
     exit 1
 fi
+
+wait_for_dns
+
+log_i "Forcing apt to use IPv4 (avoids slow/failed IPv6 attempts to Ubuntu mirrors on networks without IPv6 routing)"
+echo 'Acquire::ForceIPv4 "true";' >/etc/apt/apt.conf.d/99force-ipv4
 
 if command -v flock &>/dev/null; then
     log_i "Check if apt is locked"
