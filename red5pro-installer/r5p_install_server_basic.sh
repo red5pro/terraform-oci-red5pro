@@ -327,6 +327,13 @@ config_red5pro_api(){
     fi
 }
 
+# Use Google DNS instead of the OCI VCN resolver, which can be slow or
+# unresponsive right after boot and stall apt/curl for several minutes.
+log_i "Modify DNS servers in systemd-resolved"
+echo "DNS=8.8.8.8 8.8.4.4" >>/etc/systemd/resolved.conf
+echo "FallbackDNS=2001:4860:4860::8888 2001:4860:4860::8844" >>/etc/systemd/resolved.conf
+systemctl restart systemd-resolved
+
 wait_for_dns
 
 log_i "Forcing apt to use IPv4 (avoids slow/failed IPv6 attempts to Ubuntu mirrors on networks without IPv6 routing)"

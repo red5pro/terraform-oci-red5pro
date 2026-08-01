@@ -242,12 +242,6 @@ start_sm() {
                 exit 1
             fi
 
-            # Modify DNS servers in systemd-resolved to use Google DNS servers because of long propagation in OCI DNS servers
-            log_i "Modify DNS servers in systemd-resolved"
-            echo "DNS=8.8.8.8 8.8.4.4" >>/etc/systemd/resolved.conf
-            echo "FallbackDNS=2001:4860:4860::8888 2001:4860:4860::8844" >>/etc/systemd/resolved.conf
-            systemctl restart systemd-resolved
-
             log_i "Start SSL check script"
             export SM_SSL_DOMAIN="$SM_SSL_DOMAIN"
             nohup sudo -E "$CURRENT_DIRECTORY/r5p_ssl_check_sm2.sh" >>"$CURRENT_DIRECTORY/r5p_ssl_check_sm2.log" &
@@ -260,6 +254,13 @@ if [ "$EUID" -ne 0 ]; then
     log_e "Please run as root"
     exit 1
 fi
+
+# Use Google DNS instead of the OCI VCN resolver, which can be slow or
+# unresponsive right after boot and stall apt/curl for several minutes.
+log_i "Modify DNS servers in systemd-resolved"
+echo "DNS=8.8.8.8 8.8.4.4" >>/etc/systemd/resolved.conf
+echo "FallbackDNS=2001:4860:4860::8888 2001:4860:4860::8844" >>/etc/systemd/resolved.conf
+systemctl restart systemd-resolved
 
 wait_for_dns
 

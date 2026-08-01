@@ -470,7 +470,7 @@ resource "null_resource" "red5pro_sm" {
       KAFKA_IP=${local.kafka_ip}
       TRAEFIK_IP=${oci_core_instance.red5pro_sm[0].public_ip}
       TRAEFIK_HOST=${var.stream_manager_public_hostname}
-      AS_ADMIN_UI_VERSION=${var.stream_manager_admin_ui_version}
+      AS_ADMIN_UI_VERSION=${var.stream_manager_version}
       AS_ADMIN_UI_MAIN_REGION=${var.oracle_region}
       AS_ADMIN_UI_NODE_IMAGE_NAME=${local.red5pro_node_image_name}
       AS_ADMIN_UI_OCI_SUBNET=${local.subnet_name}

@@ -291,6 +291,14 @@ start_kafka() {
 
 check_not_already_installed
 check_memory_requirements
+
+# Use Google DNS instead of the OCI VCN resolver, which can be slow or
+# unresponsive right after boot and stall apt/curl for several minutes.
+log_i "Modify DNS servers in systemd-resolved"
+echo "DNS=8.8.8.8 8.8.4.4" >>/etc/systemd/resolved.conf
+echo "FallbackDNS=2001:4860:4860::8888 2001:4860:4860::8844" >>/etc/systemd/resolved.conf
+systemctl restart systemd-resolved
+
 wait_for_dns
 force_apt_ipv4
 install_pkg
