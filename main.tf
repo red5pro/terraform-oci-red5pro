@@ -481,7 +481,6 @@ resource "null_resource" "red5pro_sm" {
       "export SM_SSL='${local.stream_manager_ssl}'",
       "export SM_STANDALONE='${local.stream_manager_standalone}'",
       "export KAFKA_REPLICAS='${local.kafka_on_sm_replicas}'",
-      "export SM_SSL_DOMAIN='${var.https_ssl_certificate_domain_name}'",
       "export CONTAINER_REGISTRY='${var.stream_manager_container_registry}'",
       "export CONTAINER_REGISTRY_USER='${var.stream_manager_container_registry_user}'",
       "export CONTAINER_REGISTRY_PASSWORD='${var.stream_manager_container_registry_password}'",
@@ -530,6 +529,13 @@ resource "oci_load_balancer_load_balancer" "red5pro_lb" {
   }
   reserved_ips {
     id = local.load_balancer_reserved_ip_id
+  }
+
+  lifecycle {
+    precondition {
+      condition     = var.https_ssl_certificate != "letsencrypt"
+      error_message = "ERROR! https_ssl_certificate=letsencrypt is not supported for type=autoscale - the OCI load balancer only gets an HTTPS listener and certificate when https_ssl_certificate=imported. Use imported or none."
+    }
   }
 }
 
@@ -581,7 +587,7 @@ resource "oci_load_balancer_listener" "red5pro_lb_listener_https" {
 resource "oci_load_balancer_certificate" "red5pro_lb_ssl_cert" {
   count              = local.autoscale && var.https_ssl_certificate == "imported" ? 1 : 0
   load_balancer_id   = oci_load_balancer_load_balancer.red5pro_lb[0].id
-  certificate_name   = var.https_ssl_certificate_domain_name
+  certificate_name   = "${var.name}-lb-cert"
   private_key        = file(var.https_ssl_certificate_key_path)
   public_certificate = file(var.https_ssl_certificate_cert_path)
 

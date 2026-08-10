@@ -10,7 +10,6 @@
 # Variables
 # SM_STANDALONE=""
 # SM_SSL=""
-# SM_SSL_DOMAIN=""
 # CONTAINER_REGISTRY=""
 # CONTAINER_REGISTRY_USER=""
 # CONTAINER_REGISTRY_PASSWORD=""
@@ -155,7 +154,7 @@ config_sm() {
     fi
     compose_files="docker-compose.yml"
 
-    if [ "$SM_SSL" == "imported" ] || [ "$SM_SSL" == "letsencrypt" ]; then
+    if [ "$SM_SSL" == "imported" ]; then
         log_i "Stream Manager 2.0 with imported SSL - layering docker-compose.ssl.yml"
         if [ -f "$CURRENT_DIRECTORY/docker-compose.ssl.yml" ]; then
             cp "$CURRENT_DIRECTORY/docker-compose.ssl.yml" "$SM_HOME/"
@@ -166,7 +165,7 @@ config_sm() {
             exit 1
         fi
     else
-        log_i "Stream Manager 2.0 with SSL=$SM_SSL - using base docker-compose.yml (plain HTTP Traefik entrypoint)"
+        log_i "Stream Manager 2.0 with SSL=$SM_SSL - using base docker-compose.yml (plain HTTP Traefik entrypoint). For letsencrypt the SSL overlay is layered later by r5p_ssl_check_sm2.sh once the DNS record resolves."
     fi
 
     if [ "${KAFKA_REPLICAS:-0}" != "0" ]; then
@@ -179,12 +178,12 @@ config_sm() {
             ls -la "$CURRENT_DIRECTORY/"
             exit 1
         fi
-        else
+    else
         log_i "KAFKA_REPLICAS=0 - Kafka runs on a standalone instance, no embedded kafka0 service"
-        fi
+    fi
 
-       log_i "Compose files in use: $compose_files"
-       echo "COMPOSE_FILE=$compose_files" >>"$SM_HOME/.env"
+    log_i "Compose files in use: $compose_files"
+    echo "COMPOSE_FILE=$compose_files" >>"$SM_HOME/.env"
 
     # log_i "Debug info"
     # cat "$SM_HOME/.env"
@@ -231,8 +230,8 @@ start_sm() {
 
         if [ "$SM_SSL" == "letsencrypt" ]; then
 
-            if [ -z "$SM_SSL_DOMAIN" ]; then
-                log_e "Variable SM_SSL_DOMAIN is empty."
+            if ! grep -qE '^TRAEFIK_HOST=.+' "$SM_HOME/.env"; then
+                log_e "TRAEFIK_HOST is empty in $SM_HOME/.env - Let's Encrypt issues the certificate for that FQDN. Set stream_manager_public_hostname to the hostname clients use."
                 exit 1
             fi
 
@@ -243,7 +242,6 @@ start_sm() {
             fi
 
             log_i "Start SSL check script"
-            export SM_SSL_DOMAIN="$SM_SSL_DOMAIN"
             nohup sudo -E "$CURRENT_DIRECTORY/r5p_ssl_check_sm2.sh" >>"$CURRENT_DIRECTORY/r5p_ssl_check_sm2.log" &
         fi
 

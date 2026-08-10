@@ -1,11 +1,18 @@
 ---
-# Loaded via COMPOSE_FILE (see config_sm() in r5p_install_sm2_oci.sh) only
-# when SM_SSL=imported. Layers Traefik TLS termination on top of the base
+# Loaded via COMPOSE_FILE. Layers Traefik TLS termination on top of the base
 # docker-compose.yml: HTTPS entrypoint + Host()-restricted routing rules on
 # every router, plus a static TLS config sourced from imported cert files
-# (./certs/cert.pem + ./certs/privkey.pem). When SM_SSL is "none" or
-# "letsencrypt", this file is not loaded and services keep the base file's
-# plain "web" entrypoint with no Host() restriction.
+# (./certs/cert.pem + ./certs/privkey.pem, only wired up when TRAEFIK_CMD
+# points Traefik at the file provider, i.e. SM_SSL=imported).
+#
+# When SM_SSL=imported, config_sm() in r5p_install_sm2_oci.sh adds this file
+# to COMPOSE_FILE at install time. When SM_SSL=letsencrypt, the stack first
+# comes up on plain HTTP and r5p_ssl_check_sm2.sh appends this file to
+# COMPOSE_FILE and restarts sm.service once the DNS record for
+# SM_SSL_DOMAIN resolves, so that the ACME tls-challenge can succeed; the
+# certificate then comes from the myresolver ACME resolver, not from
+# ./certs. When SM_SSL=none, this file is never loaded and services keep
+# the base file's plain "web" entrypoint with no Host() restriction.
 #
 # Only the keys that actually differ from docker-compose.yml are listed
 # here (Compose merges "labels" as a map by key); "command" and "configs"
