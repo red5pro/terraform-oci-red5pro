@@ -26,7 +26,7 @@ if [ "$SM_SSL" == "letsencrypt" ]; then
     while true; do
         if [[ "$(dig +short "$SM_SSL_DOMAIN")" ]]; then
             log_i "DNS record for domain: $SM_SSL_DOMAIN was found."
-            if [ -f "$HOME/autoscaling-with-ssl/docker-compose.yml" ]; then
+            if [ -f "$HOME/docker-compose.ssl.yml" ]; then
                 log_i "Waiting 5 minutes for Stream Manager service to initialize..."
                 sleep 300
                 log_i "Waiting for Stream Manager service to be active..."
@@ -36,14 +36,23 @@ if [ "$SM_SSL" == "letsencrypt" ]; then
                 done
                 log_i "Stream Manager service is active. Applying SSL configuration."
                 rm -rf "$SM_HOME/docker-compose.yml"
-                cp -r "$HOME/autoscaling-with-ssl/docker-compose.yml" "$SM_HOME/"
+                cp -r "$HOME/docker-compose.ssl.yml" "$SM_HOME/"
+                log_i "Updating COMPOSE_FILE for SSL"
+
+                if [ "${KAFKA_REPLICAS:-0}" != "0" ]; then
+                    compose_files="docker-compose.yml:docker-compose.ssl.yml:docker-compose.embedded-kafka.yml"
+                else
+                    compose_files="docker-compose.yml:docker-compose.ssl.yml"
+                fi
+
+                sed -i "s|^COMPOSE_FILE=.*|COMPOSE_FILE=$compose_files|" "$SM_HOME/.env"
                 log_i "Restarting Stream Manager service to apply SSL configuration"
                 systemctl restart sm.service
                 log_i "Stream Manager service restarted"
                 break
             else
-                log_e "File $HOME/autoscaling-with-ssl/docker-compose.yml not found"
-                ls -la "$HOME/autoscaling-with-ssl/"
+                log_e "File $HOME/docker-compose.ssl.yml not found"
+                ls -la "$HOME/"
                 exit 1
             fi
         else
