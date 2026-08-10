@@ -572,7 +572,7 @@ resource "oci_load_balancer_listener" "red5pro_lb_listener_https" {
     certificate_name        = oci_load_balancer_certificate.red5pro_lb_ssl_cert[0].certificate_name
     verify_peer_certificate = false
     cipher_suite_name       = var.lb_https_certificate_cipher_suite_name
-    protocols               = ["TLSv1.1", "TLSv1.2"]
+    protocols               = ["TLSv1.2"]
     server_order_preference = "ENABLED"
   }
 }
