@@ -155,7 +155,7 @@ config_sm() {
     fi
     compose_files="docker-compose.yml"
 
-    if [ "$SM_SSL" == "imported" ]; then
+    if [ "$SM_SSL" == "imported" ] || [ "$SM_SSL" == "letsencrypt" ]; then
         log_i "Stream Manager 2.0 with imported SSL - layering docker-compose.ssl.yml"
         if [ -f "$CURRENT_DIRECTORY/docker-compose.ssl.yml" ]; then
             cp "$CURRENT_DIRECTORY/docker-compose.ssl.yml" "$SM_HOME/"
@@ -179,12 +179,12 @@ config_sm() {
             ls -la "$CURRENT_DIRECTORY/"
             exit 1
         fi
-    else
+        else
         log_i "KAFKA_REPLICAS=0 - Kafka runs on a standalone instance, no embedded kafka0 service"
-    fi
+        fi
 
-    log_i "Compose files in use: $compose_files"
-    echo "COMPOSE_FILE=$compose_files" >>"$SM_HOME/.env"
+       log_i "Compose files in use: $compose_files"
+       echo "COMPOSE_FILE=$compose_files" >>"$SM_HOME/.env"
 
     # log_i "Debug info"
     # cat "$SM_HOME/.env"
