@@ -131,14 +131,12 @@ module "red5pro" {
   # Stream Manager 2.0 server HTTPS (SSL) certificate configuration
   https_ssl_certificate = "none" # none - do not use HTTPS/SSL certificate, letsencrypt - create new Let's Encrypt HTTPS/SSL certificate, imported - use existing HTTPS/SSL certificate
 
-  # Example of Let's Encrypt HTTPS/SSL certificate configuration - please uncomment and provide your domain name and email
+  # Example of Let's Encrypt HTTPS/SSL certificate configuration - please uncomment and provide your email
   # https_ssl_certificate = "letsencrypt"
-  # https_ssl_certificate_domain_name = "red5pro.example.com"
   # https_ssl_certificate_email = "email@example.com"
 
-  # Example of imported HTTPS/SSL certificate configuration - please uncomment and provide your domain name, certificate and key paths
+  # Example of imported HTTPS/SSL certificate configuration - please uncomment and provide your certificate and key paths
   # https_ssl_certificate             = "imported"
-  # https_ssl_certificate_domain_name = "red5pro.example.com"
   # https_ssl_certificate_cert_path   = "/PATH/TO/SSL/CERT/fullchain.pem"
   # https_ssl_certificate_key_path    = "/PATH/TO/SSL/KEY/privkey.pem"
 

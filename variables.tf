@@ -545,7 +545,7 @@ variable "red5pro_api_key" {
 
 # HTTPS/SSL variables for standalone/cluster/autoscale
 variable "https_ssl_certificate" {
-  description = "Enable SSL (HTTPS) on the Standalone Red5 Pro server,  Stream Manager 2.0 server or Stream Manager 2.0 Load Balancer"
+  description = "Enable SSL (HTTPS) on the Standalone Red5 Pro server, Stream Manager 2.0 server or Stream Manager 2.0 Load Balancer. For type=autoscale only none and imported are supported - the load balancer gets an HTTPS listener and certificate for imported only, so letsencrypt is rejected by a precondition."
   type        = string
   default     = "none"
   validation {
@@ -554,7 +554,7 @@ variable "https_ssl_certificate" {
   }
 }
 variable "https_ssl_certificate_domain_name" {
-  description = "Certificate identity for Let's Encrypt, imported cert, or ACM lookup (existing). May be a wildcard (e.g. *.example.com). For cluster/autoscale, user-facing URLs and Traefik use stream_manager_public_hostname (a concrete FQDN covered by that cert), not this value."
+  description = "Certificate identity for the Standalone Red5 Pro server: the certbot domain when https_ssl_certificate=letsencrypt, and the FQDN in the HTTPS URL outputs. Wildcards (e.g. *.example.com) are only valid with https_ssl_certificate=imported - Let's Encrypt here uses HTTP-01, which cannot issue a wildcard. For cluster/autoscale this value is not the certificate subject: Traefik and the ACME challenge use stream_manager_public_hostname (TRAEFIK_HOST) instead."
   type        = string
   default     = ""
 }
@@ -575,9 +575,9 @@ variable "https_ssl_certificate_key_path" {
 }
 
 variable "lb_https_certificate_cipher_suite_name" {
-  description = "The name of the cipher suite to use for HTTPS or SSL connections. RSA use oci-default-ssl-cipher-suite-v1, ECDSA use oci-modern-ssl-cipher-suite-v1 https://docs.oracle.com/en-us/iaas/Content/Balance/Tasks/managingciphersuites_topic-Predefined_Cipher_Suites.htm"
+  description = "The name of the cipher suite to use for HTTPS or SSL connections. Must support TLSv1.3 to match the listener's ssl_configuration.protocols. https://docs.oracle.com/en-us/iaas/Content/Balance/Tasks/managingciphersuites_topic-Predefined_Cipher_Suites.htm"
   type        = string
-  default     = "oci-modern-ssl-cipher-suite-v1"
+  default     = "oci-default-http2-tls-12-13-ssl-cipher-suite-v1"
 }
 
 # Red5 Pro Node image configuration
@@ -646,20 +646,10 @@ variable "node_group_origins_volume_size" {
     error_message = "The node_group_origins_volume_size value must be a valid! Minimum 50"
   }
 }
-variable "stream_manager_admin_ui_version" {
-  description = "value to set the version for Stream Manager 2.0 Admin UI image (Optional) - if not set it will use version from stream_manager_version variable"
-  type        = string
-  default     = ""
-}
 variable "stream_manager_public_hostname" {
-  description = "Public FQDN for Stream Manager 2.0 (cluster/autoscale): TRAEFIK_HOST, admin UI API base, stream_manager_url_https, etc. Must be a real hostname (e.g. sm.example.com), not a wildcard. https_ssl_certificate_domain_name may still be *.example.com if this host is under that zone."
+  description = "Public FQDN for Stream Manager 2.0 (cluster/autoscale): TRAEFIK_HOST, admin UI API base, stream_manager_url_https, etc. Must be a real hostname (e.g. sm.example.com), not a wildcard. It is also the certificate subject - with letsencrypt the ACME challenge is issued for this hostname, and with imported the certificate must cover it."
   type        = string
   default     = ""
-}
-variable "node_group_origins_connection_limit" {
-  description = "Connection limit for Origins (maximum number of publishers to the origin server)"
-  type        = number
-  default     = 20
 }
 variable "node_group_edges_min" {
   description = "Number of minimum Edges"
@@ -685,11 +675,6 @@ variable "node_group_edges_volume_size" {
     error_message = "The node_group_edges_volume_size value must be a valid! Minimum 50"
   }
 }
-variable "node_group_edges_connection_limit" {
-  description = "Connection limit for Edges (maximum number of subscribers to the edge server)"
-  type        = number
-  default     = 200
-}
 variable "node_group_transcoders_min" {
   description = "Number of minimum Transcoders"
   type        = number
@@ -713,11 +698,6 @@ variable "node_group_transcoders_volume_size" {
     condition     = var.node_group_transcoders_volume_size >= 50
     error_message = "The node_group_transcoders_volume_size value must be a valid! Minimum 50"
   }
-}
-variable "node_group_transcoders_connection_limit" {
-  description = "Connection limit for Transcoders (maximum number of publishers to the transcoder server)"
-  type        = number
-  default     = 20
 }
 variable "node_group_relays_min" {
   description = "Number of minimum Relays"
@@ -797,25 +777,6 @@ variable "node_config_social_pusher" {
   default = {
     enable       = false
     target_nodes = []
-  }
-}
-variable "node_config_restreamer" {
-  description = "Restreamer configuration - (Optional) https://www.red5.net/docs/special/restreamer/overview/"
-  type = object({
-    enable               = bool
-    target_nodes         = list(string)
-    restreamer_tsingest  = bool
-    restreamer_ipcam     = bool
-    restreamer_whip      = bool
-    restreamer_srtingest = bool
-  })
-  default = {
-    enable               = false
-    target_nodes         = []
-    restreamer_tsingest  = false
-    restreamer_ipcam     = false
-    restreamer_whip      = false
-    restreamer_srtingest = false
   }
 }
 variable "stream_manager_container_registry" {
