@@ -372,6 +372,13 @@ resource "random_password" "r5as_auth_secret" {
   special = false
 }
 
+# Generate the AS-Admin secrets store encryption key. as-admin/as-streams/as-proxy/as-terraform
+# all need the same key to decrypt secrets from the shared Kafka-backed secret store.
+resource "random_id" "r5as_secrets_key" {
+  count       = local.cluster_or_autoscale ? 1 : 0
+  byte_length = 32
+}
+
 resource "oci_core_instance" "red5pro_sm" {
   count               = local.cluster_or_autoscale ? 1 : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
@@ -406,8 +413,10 @@ resource "oci_core_instance" "red5pro_sm" {
           echo "${try(file(var.https_ssl_certificate_key_path), "")}" > /usr/local/stream-manager/certs/privkey.pem
           echo -n "${local.ssh_public_key}" > /usr/local/stream-manager/keys/red5pro_ssh_public_key.pub
           echo "${try(file(var.oracle_private_key_path), "")}" > /usr/local/stream-manager/keys/oracle_private_api_key.pem
+          echo "${random_id.r5as_secrets_key[0].b64_std}" > /usr/local/stream-manager/keys/r5as-secrets.key
           chmod 400 /usr/local/stream-manager/keys/privkey.pem
           chmod 400 /usr/local/stream-manager/keys/oracle_private_api_key.pem
+          chmod 400 /usr/local/stream-manager/keys/r5as-secrets.key
           ############################ .env file #########################################################
           cat >> /usr/local/stream-manager/.env <<- EOM
           KAFKA_CLUSTER_ID=${random_id.kafka_cluster_id[0].b64_std}
