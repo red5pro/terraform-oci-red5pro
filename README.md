@@ -169,7 +169,7 @@ module "red5pro" {
 }
 
 output "module_output" {
-  value = module.red5pro
+  value = { for k, v in module.red5pro : k => v if !contains(["rabbitmq_password", "stream_manager_intent_password"], k) }
 }
 ```
 
@@ -355,7 +355,7 @@ module "red5pro" {
 }
 
 output "module_output" {
-  value = module.red5pro
+  value = { for k, v in module.red5pro : k => v if !contains(["rabbitmq_password", "stream_manager_intent_password"], k) }
 }
 ```
 
@@ -540,7 +540,7 @@ module "red5pro" {
 }
 
 output "module_output" {
-  value = module.red5pro
+  value = { for k, v in module.red5pro : k => v if !contains(["rabbitmq_password", "stream_manager_intent_password"], k) }
 }
 ```
 
@@ -700,7 +700,7 @@ module "red5pro" {
 }
 
 output "module_output" {
-  value = module.red5pro
+  value = { for k, v in module.red5pro : k => v if !contains(["rabbitmq_password", "stream_manager_intent_password"], k) }
 }
 
 ######################################################################
@@ -740,7 +740,7 @@ module "red5pro_eu-frankfurt-1" {
 }
 
 output "module_output_eu-frankfurt-1" {
-  value = module.red5pro_eu-frankfurt-1
+  value = { for k, v in module.red5pro_eu-frankfurt-1 : k => v if !contains(["rabbitmq_password", "stream_manager_intent_password"], k) }
 }
 ```
 
