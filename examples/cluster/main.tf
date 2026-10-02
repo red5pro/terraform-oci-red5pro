@@ -58,6 +58,8 @@ module "red5pro" {
   stream_manager_proxy_password       = "example_proxy_password"   # Stream Manager 2.0 proxy password
   stream_manager_spatial_user         = "example_spatial_user"     # Stream Manager 2.0 spatial user name
   stream_manager_spatial_password     = "example_spatial_password" # Stream Manager 2.0 spatial password
+  stream_manager_intent_user          = "intent_admin"             # Stream Manager 2.0 intent API user name
+  stream_manager_intent_password      = ""                         # Stream Manager 2.0 intent API password (generated when empty)
   stream_manager_version              = "latest"                   # Stream Manager 2.0 docker images version (latest, 14.1.0, 14.1.1, etc.) - https://hub.docker.com/r/red5pro/as-admin/tags
   stream_manager_public_hostname      = "sm.example.com"           # Required: public FQDN for Traefik, admin UI, and HTTPS URLs (not a wildcard). Point DNS A record at the Stream Manager IP from outputs.
 
@@ -67,6 +69,21 @@ module "red5pro" {
   kafka_standalone_instance_ocpu        = 1                     # OCI Instance OCPU Count for Kafka standalone instance(1 OCPU = 2 vCPU)
   kafka_standalone_instance_memory      = 16                    # OCI Instance Memory size in GB for Kafka standalone instance
   kafka_standalone_instance_volume_size = 50                    # Volume size in GB for Kafka standalone instance (minimum 50GB)
+
+  # RabbitMQ configuration - (Optional)
+  rabbitmq_create               = false                       # true - create RabbitMQ instances, false - do not create RabbitMQ
+  rabbitmq_mode                 = "single"                    # single - one instance, cluster - 3 instances in a RabbitMQ cluster
+  rabbitmq_image                = "rabbitmq:4.3.6-management" # RabbitMQ Docker image
+  rabbitmq_instance_type        = "VM.Standard.E4.Flex"       # OCI Instance type for RabbitMQ instances
+  rabbitmq_instance_ocpu        = 1                           # OCI Instance OCPU Count for RabbitMQ instances(1 OCPU = 2 vCPU)
+  rabbitmq_instance_memory      = 4                           # OCI Instance Memory size in GB for RabbitMQ instances
+  rabbitmq_instance_volume_size = 50                          # Volume size in GB for RabbitMQ instances (minimum 50GB)
+  rabbitmq_user                 = "red5pro"                   # RabbitMQ user name
+  rabbitmq_password             = ""                          # RabbitMQ user password, empty value - generate a random password
+
+  # Red5 Pro Stream Proxy configuration - (Optional, cluster only)
+  stream_proxy_enable  = false # true - deploy Red5 Pro Stream Proxy on the Stream Manager 2.0 instance (cluster only)
+  stream_proxy_version = ""    # Red5 Pro Stream Proxy docker image version, required when stream_proxy_enable = true. Example: main.b41
 
   # Stream Manager 2.0 server HTTPS (SSL) certificate configuration
   https_ssl_certificate = "none" # none - do not use HTTPS/SSL certificate, letsencrypt - create new Let's Encrypt HTTPS/SSL certificate, imported - use existing HTTPS/SSL certificate
@@ -134,5 +151,5 @@ module "red5pro" {
 }
 
 output "module_output" {
-  value = module.red5pro
+  value = { for k, v in module.red5pro : k => v if !contains(["rabbitmq_password", "stream_manager_intent_password"], k) }
 }
