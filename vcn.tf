@@ -33,7 +33,7 @@ resource "oci_core_route_table" "red5pro_route_table" {
 }
 
 # Default VCN Network Security List
-resource "oci_core_security_list" "red5pro_security_list" { 
+resource "oci_core_security_list" "red5pro_security_list" {
   compartment_id = var.oracle_compartment_id
   display_name   = "${var.name}-security-list"
   vcn_id         = local.vcn_id
@@ -222,4 +222,109 @@ resource "oci_core_network_security_group_security_rule" "red5pro_kafka_nsg_secu
   # lifecycle {
   #   ignore_changes = [direction, protocol, source, source_type, tcp_options]
   # }
+}
+
+# Ports of the Red5 Pro Stream Proxy, added only when stream_proxy_enable = true
+resource "oci_core_network_security_group_security_rule" "red5pro_stream_manager_nsg_security_rule_stream_proxy_ingress" {
+  count                     = local.stream_proxy_enable ? length(var.network_security_group_stream_proxy_ingress) : 0
+  network_security_group_id = oci_core_network_security_group.red5pro_stream_manager_network_security_group[0].id
+  direction                 = "INGRESS"
+  protocol                  = var.network_security_group_stream_proxy_ingress[count.index].protocol
+  description               = var.network_security_group_stream_proxy_ingress[count.index].description
+  source                    = var.network_security_group_stream_proxy_ingress[count.index].source
+  source_type               = "CIDR_BLOCK"
+  stateless                 = false
+  dynamic "tcp_options" {
+    for_each = var.network_security_group_stream_proxy_ingress[count.index].protocol == "6" ? [1] : []
+    content {
+      destination_port_range {
+        min = var.network_security_group_stream_proxy_ingress[count.index].port_min
+        max = var.network_security_group_stream_proxy_ingress[count.index].port_max
+      }
+    }
+  }
+  dynamic "udp_options" {
+    for_each = var.network_security_group_stream_proxy_ingress[count.index].protocol == "17" ? [1] : []
+    content {
+      destination_port_range {
+        min = var.network_security_group_stream_proxy_ingress[count.index].port_min
+        max = var.network_security_group_stream_proxy_ingress[count.index].port_max
+      }
+    }
+  }
+}
+
+# Network Security group for RabbitMQ servers
+resource "oci_core_network_security_group" "red5pro_rabbitmq_network_security_group" {
+  count          = local.rabbitmq_create ? 1 : 0
+  compartment_id = var.oracle_compartment_id
+  vcn_id         = local.vcn_id
+  display_name   = "${var.name}-rabbitmq-nsg"
+}
+
+resource "oci_core_network_security_group_security_rule" "red5pro_rabbitmq_nsg_security_rule_ingress_amqp" {
+  count                     = local.rabbitmq_create ? 1 : 0
+  network_security_group_id = oci_core_network_security_group.red5pro_rabbitmq_network_security_group[0].id
+  direction                 = "INGRESS"
+  protocol                  = "6"
+  description               = "RabbitMQ AMQP from VCN"
+  source                    = local.vcn_cidr_block
+  source_type               = "CIDR_BLOCK"
+  stateless                 = false
+  tcp_options {
+    destination_port_range {
+      min = 5672
+      max = 5672
+    }
+  }
+}
+
+resource "oci_core_network_security_group_security_rule" "red5pro_rabbitmq_nsg_security_rule_ingress_cluster" {
+  for_each = local.rabbitmq_node_count > 1 ? {
+    epmd = { port_min = 4369, port_max = 4369, description = "RabbitMQ epmd between cluster nodes" }
+    dist = { port_min = 25672, port_max = 25672, description = "RabbitMQ inter-node traffic" }
+    cli  = { port_min = 35672, port_max = 35682, description = "RabbitMQ CLI tools between cluster nodes" }
+  } : {}
+  network_security_group_id = oci_core_network_security_group.red5pro_rabbitmq_network_security_group[0].id
+  direction                 = "INGRESS"
+  protocol                  = "6"
+  description               = each.value.description
+  source                    = oci_core_network_security_group.red5pro_rabbitmq_network_security_group[0].id
+  source_type               = "NETWORK_SECURITY_GROUP"
+  stateless                 = false
+  tcp_options {
+    destination_port_range {
+      min = each.value.port_min
+      max = each.value.port_max
+    }
+  }
+}
+
+resource "oci_core_network_security_group_security_rule" "red5pro_rabbitmq_nsg_security_rule_ingress" {
+  count                     = local.rabbitmq_create ? length(var.network_security_group_rabbitmq_ingress) : 0
+  network_security_group_id = oci_core_network_security_group.red5pro_rabbitmq_network_security_group[0].id
+  direction                 = "INGRESS"
+  protocol                  = var.network_security_group_rabbitmq_ingress[count.index].protocol
+  description               = var.network_security_group_rabbitmq_ingress[count.index].description
+  source                    = var.network_security_group_rabbitmq_ingress[count.index].source
+  source_type               = "CIDR_BLOCK"
+  stateless                 = false
+  dynamic "tcp_options" {
+    for_each = var.network_security_group_rabbitmq_ingress[count.index].protocol == "6" ? [1] : []
+    content {
+      destination_port_range {
+        min = var.network_security_group_rabbitmq_ingress[count.index].port_min
+        max = var.network_security_group_rabbitmq_ingress[count.index].port_max
+      }
+    }
+  }
+  dynamic "udp_options" {
+    for_each = var.network_security_group_rabbitmq_ingress[count.index].protocol == "17" ? [1] : []
+    content {
+      destination_port_range {
+        min = var.network_security_group_rabbitmq_ingress[count.index].port_min
+        max = var.network_security_group_rabbitmq_ingress[count.index].port_max
+      }
+    }
+  }
 }

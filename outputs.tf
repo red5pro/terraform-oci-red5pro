@@ -61,6 +61,32 @@ output "manual_dns_record" {
     : "Please create DNS A record for Standalone Red5 Pro: '${var.https_ssl_certificate_domain_name}' -> '${oci_core_instance.red5pro_standalone[0].public_ip}'"
   ) : ""
 }
+output "rabbitmq_private_ips" {
+  description = "RabbitMQ instances private IPs (use as rmq1.address, rmq2.address for nodes in the same VCN)"
+  value       = oci_core_instance.red5pro_rabbitmq[*].private_ip
+}
+output "rabbitmq_public_ips" {
+  description = "RabbitMQ instances public IPs"
+  value       = oci_core_instance.red5pro_rabbitmq[*].public_ip
+}
+output "rabbitmq_user" {
+  description = "RabbitMQ user name"
+  value       = local.rabbitmq_create ? var.rabbitmq_user : ""
+}
+output "rabbitmq_password" {
+  description = "RabbitMQ user password"
+  value       = local.rabbitmq_password
+  sensitive   = true
+}
+output "stream_manager_intent_user" {
+  description = "Stream Manager 2.0 intent API user name"
+  value       = local.cluster_or_autoscale ? var.stream_manager_intent_user : ""
+}
+output "stream_manager_intent_password" {
+  description = "Stream Manager 2.0 intent API user password"
+  value       = local.stream_manager_intent_password
+  sensitive   = true
+}
 
 output "r5as_conference_secret" {
   description = "Auto-generated R5AS Conference secret (hex)"

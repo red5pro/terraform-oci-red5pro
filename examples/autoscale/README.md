@@ -14,9 +14,11 @@ In the following example, Terraform module will automates the infrastructure pro
 - Security list
 - Security group for Stream Manager 2.0
 - Security group for Kafka
+- Security group for RabbitMQ (optional)
 - Security group for Red5 Pro (SM2.0) Autoscaling nodes
 - SSH key pair (use existing or create a new one)
 - Standalone Kafka instance
+- RabbitMQ in Docker (optional): one instance (`rabbitmq_mode = "single"`) or a 3 node RabbitMQ cluster (`rabbitmq_mode = "cluster"`). AMQP port `5672` is open only for the VCN CIDR, nodes connect to the private IPs.
 - Stream Manager 2.0 instance image
 - Instance poll for Stream Manager 2.0 instances
 - Autoscaling configuration for Stream Manager 2.0 instances
@@ -86,6 +88,8 @@ module "red5pro" {
   stream_manager_proxy_password               = "example_proxy_password"   # Stream Manager 2.0 proxy password
   stream_manager_spatial_user                 = "example_spatial_user"     # Stream Manager 2.0 spatial user name
   stream_manager_spatial_password             = "example_spatial_password" # Stream Manager 2.0 spatial password
+  stream_manager_intent_user                  = "intent_admin"             # Stream Manager 2.0 intent API user name
+  stream_manager_intent_password              = ""                         # Stream Manager 2.0 intent API password (generated when empty)
   stream_manager_version                      = "latest"                   # Stream Manager 2.0 docker images version (latest, 14.1.0, 14.1.1, etc.) - https://hub.docker.com/r/red5pro/as-admin/tags
   stream_manager_autoscaling_desired_capacity = 1                          # Desired capacity for Stream Manager autoscaling group
   stream_manager_autoscaling_minimum_capacity = 1                          # Min capacity for Stream Manager autoscaling group
@@ -97,6 +101,17 @@ module "red5pro" {
   kafka_standalone_instance_ocpu        = 1                     # OCI Instance OCPU Count for Kafka standalone instance(1 OCPU = 2 vCPU)
   kafka_standalone_instance_memory      = 16                    # OCI Instance Memory size in GB for Kafka standalone instance
   kafka_standalone_instance_volume_size = 50                    # Volume size in GB for Kafka standalone instance (minimum 50GB)
+
+  # RabbitMQ configuration - (Optional)
+  rabbitmq_create               = false                       # true - create RabbitMQ instances, false - do not create RabbitMQ
+  rabbitmq_mode                 = "single"                    # single - one instance, cluster - 3 instances in a RabbitMQ cluster
+  rabbitmq_image                = "rabbitmq:4.3.6-management" # RabbitMQ Docker image
+  rabbitmq_instance_type        = "VM.Standard.E4.Flex"       # OCI Instance type for RabbitMQ instances
+  rabbitmq_instance_ocpu        = 1                           # OCI Instance OCPU Count for RabbitMQ instances(1 OCPU = 2 vCPU)
+  rabbitmq_instance_memory      = 4                           # OCI Instance Memory size in GB for RabbitMQ instances
+  rabbitmq_instance_volume_size = 50                          # Volume size in GB for RabbitMQ instances (minimum 50GB)
+  rabbitmq_user                 = "red5pro"                   # RabbitMQ user name
+  rabbitmq_password             = ""                          # RabbitMQ user password, empty value - generate a random password
 
   load_balancer_reserved_ip_use_existing = false     # true - use existing reserved IP for Load Balancer, false - create new reserved IP for Load Balancer, 
   load_balancer_reserved_ip_existing     = "1.2.3.4" # Reserved IP for Load Balancer

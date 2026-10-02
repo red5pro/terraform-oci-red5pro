@@ -219,6 +219,46 @@ variable "network_security_group_stream_manager_ingress" {
     }
   ]
 }
+variable "network_security_group_stream_proxy_ingress" {
+  description = "List of ports for security group ingress rules for Stream Manager 2.0 - Stream Proxy, used only when stream_proxy_enable = true"
+  type = list(object({
+    description = string
+    protocol    = string
+    source      = string
+    port_min    = number
+    port_max    = number
+  }))
+  default = [
+    {
+      description = "Stream Proxy - RTMP and RTMPS (TCP)"
+      protocol    = "6"
+      source      = "0.0.0.0/0"
+      port_min    = 1935
+      port_max    = 1944
+    },
+    {
+      description = "Stream Proxy - RTSP and RTSPS (TCP)"
+      protocol    = "6"
+      source      = "0.0.0.0/0"
+      port_min    = 8554
+      port_max    = 8563
+    },
+    {
+      description = "Stream Proxy - RTSP (UDP)"
+      protocol    = "17"
+      source      = "0.0.0.0/0"
+      port_min    = 8554
+      port_max    = 8558
+    },
+    {
+      description = "Stream Proxy - SRT (UDP)"
+      protocol    = "17"
+      source      = "0.0.0.0/0"
+      port_min    = 10100
+      port_max    = 10149
+    }
+  ]
+}
 
 variable "network_security_group_node_ingress" {
   description = "List of ports for security group ingress rules for Red5 Pro SM2.0 Nodes"
@@ -312,6 +352,25 @@ variable "network_security_group_kafka_ingress" {
       source      = "0.0.0.0/0"
       port_min    = 9092
       port_max    = 9092
+    }
+  ]
+}
+variable "network_security_group_rabbitmq_ingress" {
+  description = "List of ports for security group ingress rules for RabbitMQ instances. AMQP port 5672 is always allowed from the VCN CIDR, cluster ports between RabbitMQ instances"
+  type = list(object({
+    description = string
+    protocol    = string
+    source      = string
+    port_min    = number
+    port_max    = number
+  }))
+  default = [
+    {
+      description = "RabbitMQ - SSH (TCP)"
+      protocol    = "6"
+      source      = "0.0.0.0/0"
+      port_min    = 22
+      port_max    = 22
     }
   ]
 }
@@ -452,6 +511,17 @@ variable "stream_manager_spatial_password" {
   type        = string
   default     = ""
 }
+variable "stream_manager_intent_user" {
+  description = "value to set the user name for Stream Manager 2.0 intent API (ROLE_INTENT)"
+  type        = string
+  default     = "intent_admin"
+}
+variable "stream_manager_intent_password" {
+  description = "value to set the user password for Stream Manager 2.0 intent API (ROLE_INTENT). Generated when empty"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
 variable "stream_manager_version" {
   description = "value to set the version for Stream Manager 2.0"
   type        = string
@@ -471,6 +541,18 @@ variable "stream_manager_autoscaling_maximum_capacity" {
   description = "value to set the maximum capacity for Stream Manager 2.0 autoscaling"
   type        = number
   default     = 2
+}
+
+# Red5 Pro Stream Proxy configuration
+variable "stream_proxy_enable" {
+  description = "Deploy Red5 Pro Stream Proxy alongside the Stream Manager 2.0 services. Supported for deployment type cluster only. It publishes RTMP/RTMPS 1935-1944, RTSP/RTSPS 8554-8563 and SRT 10100-10149 on the Stream Manager instance, and the matching rules are added to the Stream Manager network security group."
+  type        = bool
+  default     = false
+}
+variable "stream_proxy_version" {
+  description = "Red5 Pro Stream Proxy docker image version, used only when stream_proxy_enable = true. Example: main.b41"
+  type        = string
+  default     = ""
 }
 
 variable "kafka_standalone_instance_create" {
@@ -515,6 +597,70 @@ variable "kafka_public_ip" {
   description = "Expose Kafka on public ip true/false"
   type        = bool
   default     = false
+}
+
+# RabbitMQ configuration
+variable "rabbitmq_create" {
+  description = "Create RabbitMQ instances (cluster/autoscale only) true/false"
+  type        = bool
+  default     = false
+}
+variable "rabbitmq_mode" {
+  description = "RabbitMQ deployment mode: single - one instance, cluster - 3 instances in a RabbitMQ cluster"
+  type        = string
+  default     = "single"
+  validation {
+    condition     = contains(["single", "cluster"], var.rabbitmq_mode)
+    error_message = "The rabbitmq_mode value must be single or cluster"
+  }
+}
+variable "rabbitmq_image" {
+  description = "RabbitMQ Docker image"
+  type        = string
+  default     = "rabbitmq:4.3.6-management"
+}
+variable "rabbitmq_instance_type" {
+  description = "RabbitMQ instance type"
+  type        = string
+  default     = "VM.Standard.E4.Flex"
+}
+variable "rabbitmq_instance_ocpu" {
+  description = "RabbitMQ instance cpu count(1 OCPU = 2vCPU)"
+  type        = number
+  default     = 1
+}
+variable "rabbitmq_instance_memory" {
+  description = "RabbitMQ instance memory in GB"
+  type        = number
+  default     = 4
+}
+variable "rabbitmq_instance_volume_size" {
+  description = "Volume size in GB for RabbitMQ instances"
+  type        = number
+  default     = 50
+  validation {
+    condition     = var.rabbitmq_instance_volume_size >= 50
+    error_message = "The rabbitmq_instance_volume_size value must be a valid! Minimum 50"
+  }
+}
+variable "rabbitmq_user" {
+  description = "RabbitMQ user name"
+  type        = string
+  default     = "red5pro"
+  validation {
+    condition     = can(regex("^[A-Za-z0-9_-]+$", var.rabbitmq_user))
+    error_message = "The rabbitmq_user value must contain only letters, digits, '_' and '-'"
+  }
+}
+variable "rabbitmq_password" {
+  description = "RabbitMQ user password, empty value - generate a random password"
+  type        = string
+  default     = ""
+  sensitive   = true
+  validation {
+    condition     = can(regex("^[A-Za-z0-9_-]*$", var.rabbitmq_password))
+    error_message = "The rabbitmq_password value must contain only letters, digits, '_' and '-'"
+  }
 }
 
 variable "load_balancer_reserved_ip_use_existing" {
