@@ -124,17 +124,6 @@ config_sm() {
         exit 1
     fi
 
-    log_i "Copy update_run.sh file to $CURRENT_DIRECTORY/update_run.sh"
-    if [ -f "$CURRENT_DIRECTORY/update_run.sh" ]; then
-        mkdir -p "$SM_HOME/scripts"
-        cp "$CURRENT_DIRECTORY/update_run.sh" "$SM_HOME/scripts/update_run.sh"
-        chmod +x "$SM_HOME/scripts/update_run.sh"
-    else
-        log_e "File $CURRENT_DIRECTORY/update_run.sh not found"
-        ls -la "$CURRENT_DIRECTORY/"
-        exit 1
-    fi
-
     if [[ -n "$CONTAINER_REGISTRY" && -n "$CONTAINER_REGISTRY_USER" && -n "$CONTAINER_REGISTRY_PASSWORD" ]]; then
         log_i "Login to container registry $CONTAINER_REGISTRY"
         docker login "$CONTAINER_REGISTRY" -u "$CONTAINER_REGISTRY_USER" -p "$CONTAINER_REGISTRY_PASSWORD"

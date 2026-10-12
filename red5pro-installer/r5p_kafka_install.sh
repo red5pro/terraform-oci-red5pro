@@ -2,14 +2,12 @@
 ######################################
 # Install and configure Kafka Server
 ######################################
-# KAFKA_ARCHIVE_URL="https://downloads.apache.org/kafka/3.8.0/kafka_2.13-3.8.0.tgz"
 # KAFKA_CLUSTER_ID="kafka-id"
 
 set -euo pipefail
 
 CURRENT_DIRECTORY=$(pwd)
-packages=(ripgrep kafkacat)
-kafka_log_dir="/var/log/kafka"
+packages=(ca-certificates curl)
 
 export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_SUSPEND=1
@@ -62,21 +60,28 @@ install_pkg() {
     done
 }
 
-install_jdk() {
-    for attempt in {1..5}; do
-        if wget -O - https://apt.corretto.aws/corretto.key | sudo gpg --dearmor -o /usr/share/keyrings/corretto-keyring.gpg &&
-            echo "deb [signed-by=/usr/share/keyrings/corretto-keyring.gpg] https://apt.corretto.aws stable main" | sudo tee /etc/apt/sources.list.d/corretto.list &&
-            apt-get update &&
-            apt-get install -y java-17-amazon-corretto-jdk; then
-            return 0
-        fi
+install_docker() {
+    log_i "Install Docker"
 
-        log_w "JDK installation attempt ${attempt} failed, retrying in 20s..."
-        sleep 20
-    done
+    # Add Docker's official GPG key:
+    install -m 0755 -d /etc/apt/keyrings
+    curl -4fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    chmod a+r /etc/apt/keyrings/docker.asc
 
-    log_e "Failed to install JDK after 5 attempts. Exiting."
-    exit 1
+    # Add the repository to Apt sources:
+    echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" |
+        tee /etc/apt/sources.list.d/docker.list >/dev/null
+
+    # Install Docker
+    packages=(docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin)
+    install_pkg
+
+    systemctl enable --now docker
+
+    # Add user to the docker group
+    usermod -aG docker ubuntu
 }
 
 check_memory_requirements() {
@@ -85,13 +90,6 @@ check_memory_requirements() {
 
     if [ "$total_memory_mb" -lt 8192 ]; then
         log_e "Kafka requires at least 8 GB of memory. Found ${total_memory_mb} MB. Exiting."
-        exit 1
-    fi
-}
-
-check_not_already_installed() {
-    if [[ -d "/usr/local/kafka" ]]; then
-        log_e "/usr/local/kafka already exists; this installer is meant to run once against a fresh instance. Exiting."
         exit 1
     fi
 }
@@ -116,180 +114,25 @@ wait_for_dns() {
     log_i "DNS resolution check finished after ${elapsed}s"
 }
 
-download_kafka_archive() {
-    log_i "Download Kafka archive: $KAFKA_ARCHIVE_URL"
-    local downloaded=0
-    for attempt in {1..5}; do
-        if wget "$KAFKA_ARCHIVE_URL"; then
-            downloaded=1
-            break
-        fi
-        log_w "Kafka archive download attempt ${attempt} failed, retrying in 15s..."
-        rm -f kafka_*.tgz
-        sleep 15
-    done
-    if [ "$downloaded" -eq 0 ]; then
-        log_e "Failed to download Kafka archive from $KAFKA_ARCHIVE_URL after 5 attempts. Exiting."
-        exit 1
-    fi
-    if ls kafka_*.tgz 1>/dev/null 2>&1; then
-        log_i "File matching kafka_*.tgz exists."
-        kafka_archive=$(ls kafka_*.tgz | xargs -n 1 basename)
-        log_i "Kafka archive: $kafka_archive"
-    else
-        log_e "No file matching kafka_*.tgz found. Exiting."
-        ls -lo
-        exit 1
-    fi
-}
-
-set_config() {
-    local key="$1"
-    local value="$2"
-
-    log_i "Setting configuration: $key=$value"
-
-    local escaped_value
-    escaped_value=$(printf '%s' "$value" | sed -e 's/[\&|]/\\&/g')
-
-    if grep -q "^[#]*\s*$key=" "$kafka_config_file"; then
-        sed -i "s|^[#]*\s*$key=.*|$key=$escaped_value|" "$kafka_config_file"
-    else
-        echo "$key=$value" >>"$kafka_config_file"
-    fi
-}
-
-install_kafka() {
-    log_i "Kafka configuring..."
-
-    if ! tar -xzvf "${kafka_archive}" -C /usr/local/ >/dev/null 2>&1; then # Extract the kafka archive without verbose output
-        log_e "Failed to extract Kafka archive ${kafka_archive}. Exiting."
-        exit 1
-    fi
-
-    if ! mv /usr/local/kafka_* /usr/local/kafka; then
-        log_e "Failed to move extracted Kafka directory to /usr/local/kafka. Exiting."
-        exit 1
-    fi
-
-    mkdir -p $kafka_log_dir
-    if [[ -d "/usr/local/kafka" ]]; then
-        # Set kafka log location to /var/log/kafka/kafka-logs
-        if [[ ! -d "$kafka_log_dir/kafka-logs" ]]; then
-            log_i "Kafka log directory doesn't exists, creating $kafka_log_dir/kafka-logs"
-            mkdir -p $kafka_log_dir/kafka-logs
-        fi
-
-        if ! id -u kafka &>/dev/null; then
-            log_i "Creating dedicated system user 'kafka'"
-            useradd --system --no-create-home --shell /usr/sbin/nologin kafka
-        fi
-
-        local kafka_config_file="/usr/local/kafka/config/kraft/server.properties"
-
-        log_i "Setting up Kafka configuration file: $kafka_config_file"
-
-        # Set Kafka log directory to /var/log/kafka/kafka-logs
-        set_config log.dirs "/var/log/kafka/kafka-logs"
-
-        # Comment out the advertised.listeners setting. It will be copied from ${CURRENT_DIRECTORY}/server.properties.
-        sed -i 's/^advertised.listeners/#&/' "$kafka_config_file"
-
-        # Set the listeners to BROKER and CONTROLLER
-        set_config listeners "BROKER://:9092,CONTROLLER://:9093"
-
-        # Replication and ISR
-        set_config offsets.topic.replication.factor 1
-        set_config group.initial.rebalance.delay.ms 0
-        set_config transaction.state.log.min.isr 1
-        set_config transaction.state.log.replication.factor 1
-
-        # Retention settings
-        set_config transactional.id.expiration.ms 3600000
-        set_config offsets.retention.minutes 2880
-        set_config log.retention.hours 24
-        set_config log.retention.bytes 1073741824
-
-        # Replica settings
-        set_config replica.lag.time.max.ms 10000
-        set_config replica.socket.timeout.ms 3000
-
-        # Log segment configuration
-        set_config log.segment.bytes 16777216
-        set_config log.segment.ms 30000
-
-        # Log cleanup
-        set_config log.cleanup.interval.ms 10000
-        set_config log.delete.delay.ms 1000
-
-        # Listener and protocol settings
-        set_config inter.broker.listener.name BROKER
-        set_config listener.security.protocol.map "BROKER:SASL_SSL,CONTROLLER:SASL_SSL,PLAINTEXT:PLAINTEXT,SSL:SSL,SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_SSL:SASL_SSL"
-
-        # SSL/SASL settings
-        set_config ssl.keystore.type PEM
-        set_config ssl.truststore.type PEM
-        set_config ssl.endpoint.identification.algorithm ""
-        set_config sasl.enabled.mechanisms PLAIN
-        set_config sasl.mechanism.controller.protocol PLAIN
-        set_config sasl.mechanism.inter.broker.protocol PLAIN
-
-        # Broker settings
-        set_config max.request.size 52428800
-        set_config initial.broker.registration.timeout.ms 240000
-
-        # Copy extra kafka configuration properties from ${CURRENT_DIRECTORY}/server.properties to "$kafka_config_file"
-        if [[ -f "${CURRENT_DIRECTORY}/server.properties" ]]; then
-            cat "${CURRENT_DIRECTORY}/server.properties" >>"$kafka_config_file"
-        else
-            log_e "Extra kafka configuration properties file ${CURRENT_DIRECTORY}/server.properties does not exists"
-            exit 1
-        fi
-
-        log_i "Format Kafka storage with KAFKA_CLUSTER_ID"
-        if ! /usr/local/kafka/bin/kafka-storage.sh format -t "$KAFKA_CLUSTER_ID" -c "$kafka_config_file"; then
-            log_e "kafka-storage.sh format failed. Exiting."
-            exit 1
-        fi
-
-        log_i "Restricting ownership/permissions of Kafka install and data to the 'kafka' user"
-        chown -R kafka:kafka /usr/local/kafka "$kafka_log_dir"
-        chmod -R 750 "$kafka_log_dir"
-        chmod 600 "$kafka_config_file"
-
-    else
-        log_e "Kafka server does not exists at path /usr/local/kafka"
-        exit 1
-    fi
-
-    if [[ -f "${CURRENT_DIRECTORY}/kafka.service" ]]; then
-        log_i "Kafka service file exists, configuring..."
-        cp "${CURRENT_DIRECTORY}/kafka.service" /etc/systemd/system/kafka.service
-        systemctl daemon-reload
-        systemctl enable kafka.service
-    else
-        log_e "Kafka service file does not exists"
-        exit 1
-    fi
-
-    # Set Kafka heap size to 6GB
-    mkdir -p /etc/sysconfig
-    echo 'KAFKA_HEAP_OPTS="-Xmx6g -Xms6g"' >/etc/sysconfig/kafka
-    log_i "Kafka heap size set to 6 GB"
-}
-
 start_kafka() {
-    log_i "Start Kafka service"
-    if systemctl restart kafka.service; then
-        log_i "Kafka service started!"
+    log_i "Start Kafka Docker container"
+
+    cd "$CURRENT_DIRECTORY"
+
+    if [[ ! -f ".env" ]]; then
+        log_e "Kafka .env file does not exist"
+        exit 1
+    fi
+
+    if docker compose -f docker-compose.embedded-kafka.yml config --quiet &&
+        docker compose -f docker-compose.embedded-kafka.yml up -d --no-deps kafka0; then
+        log_i "Kafka Docker container started!"
     else
-        log_e "Kafka service didn't started!"
-        log_e "Job for kafka.service failed, See systemctl status kafka.service and journalctl -xe for details."
+        log_e "Kafka Docker container failed to start!"
         exit 1
     fi
 }
 
-check_not_already_installed
 check_memory_requirements
 
 # Use Google DNS instead of the OCI VCN resolver, which can be slow or
@@ -302,7 +145,5 @@ systemctl restart systemd-resolved
 wait_for_dns
 force_apt_ipv4
 install_pkg
-install_jdk
-download_kafka_archive
-install_kafka
+install_docker
 start_kafka
