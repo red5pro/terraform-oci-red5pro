@@ -1,21 +1,32 @@
 locals {
-  standalone                       = var.type == "standalone"
-  cluster                          = var.type == "cluster"
-  autoscale                        = var.type == "autoscale"
-  vcn                              = var.type == "vcn"
-  cluster_or_autoscale             = local.cluster || local.autoscale
-  vcn_id                           = oci_core_vcn.red5pro_vcn.id
-  vcn_name                         = oci_core_vcn.red5pro_vcn.display_name
-  vcn_cidr_block                   = oci_core_vcn.red5pro_vcn.cidr_block
-  subnet_id                        = oci_core_subnet.red5pro_vcn_subnet_public.id
-  subnet_name                      = oci_core_subnet.red5pro_vcn_subnet_public.display_name
-  stream_manager_ip                = local.autoscale ? var.load_balancer_reserved_ip_use_existing ? data.oci_core_public_ip.red5pro_reserved_ip[0].ip_address : oci_core_public_ip.red5pro_reserved_ip[0].ip_address : local.cluster ? oci_core_instance.red5pro_sm[0].public_ip : "null"
-  ssh_private_key_path             = var.ssh_key_use_existing ? var.ssh_key_existing_private_key_path : local_file.red5pro_ssh_key_pem[0].filename
-  ssh_public_key_path              = var.ssh_key_use_existing ? var.ssh_key_existing_public_key_path : local_file.red5pro_ssh_key_pub[0].filename
-  ssh_private_key                  = var.ssh_key_use_existing ? file(var.ssh_key_existing_private_key_path) : tls_private_key.red5pro_ssh_key[0].private_key_pem
-  ssh_public_key                   = var.ssh_key_use_existing ? file(var.ssh_key_existing_public_key_path) : tls_private_key.red5pro_ssh_key[0].public_key_openssh
-  load_balancer_reserved_ip_id     = local.autoscale ? var.load_balancer_reserved_ip_use_existing ? data.oci_core_public_ip.red5pro_reserved_ip[0].id : oci_core_public_ip.red5pro_reserved_ip[0].id : null
-  kafka_standalone_instance        = local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
+  standalone                   = var.type == "standalone"
+  cluster                      = var.type == "cluster"
+  autoscale                    = var.type == "autoscale"
+  vcn                          = var.type == "vcn"
+  cluster_or_autoscale         = local.cluster || local.autoscale
+  vcn_id                       = oci_core_vcn.red5pro_vcn.id
+  vcn_name                     = oci_core_vcn.red5pro_vcn.display_name
+  vcn_cidr_block               = oci_core_vcn.red5pro_vcn.cidr_block
+  subnet_id                    = oci_core_subnet.red5pro_vcn_subnet_public.id
+  subnet_name                  = oci_core_subnet.red5pro_vcn_subnet_public.display_name
+  stream_manager_ip            = local.autoscale ? var.load_balancer_reserved_ip_use_existing ? data.oci_core_public_ip.red5pro_reserved_ip[0].ip_address : oci_core_public_ip.red5pro_reserved_ip[0].ip_address : local.cluster ? oci_core_instance.red5pro_sm[0].public_ip : "null"
+  ssh_private_key_path         = var.ssh_key_use_existing ? var.ssh_key_existing_private_key_path : local_file.red5pro_ssh_key_pem[0].filename
+  ssh_public_key_path          = var.ssh_key_use_existing ? var.ssh_key_existing_public_key_path : local_file.red5pro_ssh_key_pub[0].filename
+  ssh_private_key              = var.ssh_key_use_existing ? file(var.ssh_key_existing_private_key_path) : tls_private_key.red5pro_ssh_key[0].private_key_pem
+  ssh_public_key               = var.ssh_key_use_existing ? file(var.ssh_key_existing_public_key_path) : tls_private_key.red5pro_ssh_key[0].public_key_openssh
+  load_balancer_reserved_ip_id = local.autoscale ? var.load_balancer_reserved_ip_use_existing ? data.oci_core_public_ip.red5pro_reserved_ip[0].id : oci_core_public_ip.red5pro_reserved_ip[0].id : null
+  kafka_standalone_instance    = local.autoscale ? true : local.cluster && var.kafka_standalone_instance_create ? true : false
+  kafka_certificate_count      = local.cluster_or_autoscale ? (local.kafka_standalone_instance ? var.kafka_standalone_instance_count : 1) : 0
+  kafka_private_ips = [
+    for instance in oci_core_instance.red5pro_kafka : instance.private_ip
+  ]
+  kafka_cluster_brokers = join(",", [
+    for ip in local.kafka_private_ips : "${ip}:9092"
+  ])
+  kafka_cluster_controllers = join(",", [
+    for i, ip in local.kafka_private_ips : "${i + 1}@${ip}:9093"
+  ])
+  kafka_bootstrap_servers = local.kafka_standalone_instance && var.kafka_standalone_instance_count == 3 ? local.kafka_cluster_brokers : "${local.kafka_ip}:9092"
   kafka_ip                         = local.cluster_or_autoscale ? (var.kafka_public_ip ? (local.kafka_standalone_instance ? oci_core_instance.red5pro_kafka[0].public_ip : oci_core_instance.red5pro_sm[0].public_ip) : (local.kafka_standalone_instance ? oci_core_instance.red5pro_kafka[0].private_ip : oci_core_instance.red5pro_sm[0].private_ip)) : "null"
   kafka_on_sm_replicas             = local.kafka_standalone_instance ? 0 : 1
   kafka_ssl_keystore_key           = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", trimspace(tls_private_key.kafka_server_key[0].private_key_pem_pkcs8)))) : "null"
@@ -222,9 +233,9 @@ resource "tls_private_key" "ca_private_key" {
   rsa_bits  = 4096
 }
 
-# Create private key for kafka server certificate 
+# Create private key for kafka server certificate
 resource "tls_private_key" "kafka_server_key" {
-  count     = local.cluster_or_autoscale ? 1 : 0
+  count     = local.kafka_certificate_count
   algorithm = "RSA"
   rsa_bits  = 4096
 }
@@ -253,12 +264,18 @@ resource "tls_self_signed_cert" "ca_cert" {
   ]
 }
 
-# Create CSR for server certificate 
+# Create CSR for server certificate
 resource "tls_cert_request" "kafka_server_csr" {
-  count           = local.cluster_or_autoscale ? 1 : 0
-  private_key_pem = tls_private_key.kafka_server_key[0].private_key_pem
-  ip_addresses    = [local.kafka_ip]
-  dns_names       = ["kafka0"]
+  count           = local.kafka_certificate_count
+  private_key_pem = tls_private_key.kafka_server_key[count.index].private_key_pem
+
+  ip_addresses = [
+    local.kafka_standalone_instance
+    ? oci_core_instance.red5pro_kafka[count.index].private_ip
+    : local.kafka_ip
+  ]
+
+  dns_names = local.kafka_standalone_instance ? [] : ["kafka0"]
 
   subject {
     country             = "US"
@@ -267,19 +284,18 @@ resource "tls_cert_request" "kafka_server_csr" {
     organizational_unit = "Development"
   }
 
-  depends_on = [oci_core_instance.red5pro_sm, oci_core_instance.red5pro_kafka]
 }
 
-# Sign kafka server Certificate by Private CA 
+# Sign kafka server Certificate by Private CA
 resource "tls_locally_signed_cert" "kafka_server_cert" {
-  count = local.cluster_or_autoscale ? 1 : 0
+  count = local.kafka_certificate_count
+
   # CSR by the development servers
-  cert_request_pem = tls_cert_request.kafka_server_csr[0].cert_request_pem
-  # CA Private key 
+  cert_request_pem = tls_cert_request.kafka_server_csr[count.index].cert_request_pem
+  # CA Private key
   ca_private_key_pem = tls_private_key.ca_private_key[0].private_key_pem
   # CA certificate
-  ca_cert_pem = tls_self_signed_cert.ca_cert[0].cert_pem
-
+  ca_cert_pem           = tls_self_signed_cert.ca_cert[0].cert_pem
   validity_period_hours = 365 * 24
 
   allowed_uses = [
@@ -294,11 +310,11 @@ resource "tls_locally_signed_cert" "kafka_server_cert" {
 # Kafka server - (OCI Instance)
 ################################################################################
 resource "oci_core_instance" "red5pro_kafka" {
-  count               = local.kafka_standalone_instance ? 1 : 0
+  count               = local.kafka_standalone_instance ? var.kafka_standalone_instance_count : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   compartment_id      = var.oracle_compartment_id
   shape               = var.kafka_standalone_instance_type
-  display_name        = "${var.name}-kafka"
+  display_name        = var.kafka_standalone_instance_count == 1 ? "${var.name}-kafka" : "${var.name}-kafka-${count.index + 1}"
 
   shape_config {
     ocpus         = var.kafka_standalone_instance_ocpu
@@ -325,10 +341,10 @@ resource "oci_core_instance" "red5pro_kafka" {
 }
 
 resource "null_resource" "red5pro_kafka" {
-  count = local.kafka_standalone_instance ? 1 : 0
+  count = local.kafka_standalone_instance ? var.kafka_standalone_instance_count : 0
 
   connection {
-    host        = oci_core_instance.red5pro_kafka[0].public_ip
+    host        = oci_core_instance.red5pro_kafka[count.index].public_ip
     type        = "ssh"
     user        = "ubuntu"
     private_key = local.ssh_private_key
@@ -344,14 +360,26 @@ resource "null_resource" "red5pro_kafka" {
       "sudo iptables -F",
       "sudo netfilter-persistent save",
       "sudo cloud-init status --wait",
-      "echo 'ssl.keystore.key=${local.kafka_ssl_keystore_key}' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties >/dev/null",
-      "echo 'ssl.truststore.certificates=${local.kafka_ssl_truststore_cert}' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties >/dev/null",
-      "echo 'ssl.keystore.certificate.chain=${local.kafka_ssl_keystore_cert_chain}' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties >/dev/null",
-      "echo 'listener.name.broker.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${nonsensitive(random_string.kafka_admin_username[0].result)}\" password=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_admin_username[0].result)}=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_client_username[0].result)}=\"${nonsensitive(random_id.kafka_client_password[0].id)}\";' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties >/dev/null",
-      "echo 'listener.name.controller.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${nonsensitive(random_string.kafka_admin_username[0].result)}\" password=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_admin_username[0].result)}=\"${nonsensitive(random_id.kafka_admin_password[0].id)}\" user_${nonsensitive(random_string.kafka_client_username[0].result)}=\"${nonsensitive(random_id.kafka_client_password[0].id)}\";' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties >/dev/null",
-      "echo 'advertised.listeners=BROKER://${local.kafka_ip}:9092' | sudo tee -a /home/ubuntu/red5pro-installer/server.properties",
-      "export KAFKA_ARCHIVE_URL='${var.kafka_standalone_instance_arhive_url}'",
-      "export KAFKA_CLUSTER_ID='${random_id.kafka_cluster_id[0].b64_std}'",
+      <<-EOT
+      sudo tee /home/ubuntu/red5pro-installer/.env >/dev/null <<'EOM'
+      APACHE_KAFKA_VERSION=4.3.1
+      KAFKA_CLUSTER_ID=${random_id.kafka_cluster_id[0].b64_std}
+      KAFKA_NODE_ID=${count.index + 1}
+      KAFKA_IP=${oci_core_instance.red5pro_kafka[count.index].private_ip}
+      KAFKA_CONTROLLER_QUORUM_VOTERS=${local.kafka_cluster_controllers}
+      KAFKA_REPLICATION_FACTOR=${var.kafka_standalone_instance_count}
+      KAFKA_MIN_INSYNC_REPLICAS=${var.kafka_standalone_instance_count == 3 ? 2 : 1}
+      KAFKA_ADMIN_USERNAME=${random_string.kafka_admin_username[0].result}
+      KAFKA_ADMIN_PASSWORD=${random_id.kafka_admin_password[0].id}
+      KAFKA_CLIENT_USERNAME=${random_string.kafka_client_username[0].result}
+      KAFKA_CLIENT_PASSWORD=${random_id.kafka_client_password[0].id}
+      KAFKA_SSL_KEYSTORE_KEY="${nonsensitive(join("\\n", split("\n", trimspace(tls_private_key.kafka_server_key[count.index].private_key_pem_pkcs8))))}"
+      KAFKA_SSL_TRUSTSTORE_CERTIFICATES="${local.kafka_ssl_truststore_cert}"
+      KAFKA_SSL_KEYSTORE_CERTIFICATE_CHAIN="${nonsensitive(join("\\n", split("\n", tls_locally_signed_cert.kafka_server_cert[count.index].cert_pem)))}"
+      EOM
+      sudo chmod 600 /home/ubuntu/red5pro-installer/.env
+      EOT
+      ,
       "cd /home/ubuntu/red5pro-installer/",
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_kafka_install.sh",
@@ -420,6 +448,7 @@ resource "oci_core_instance" "red5pro_sm" {
           ############################ .env file #########################################################
           cat >> /usr/local/stream-manager/.env <<- EOM
           KAFKA_CLUSTER_ID=${random_id.kafka_cluster_id[0].b64_std}
+          APACHE_KAFKA_VERSION=4.3.1
           KAFKA_ADMIN_USERNAME=${random_string.kafka_admin_username[0].result}
           KAFKA_ADMIN_PASSWORD=${random_id.kafka_admin_password[0].id}
           KAFKA_CLIENT_USERNAME=${random_string.kafka_client_username[0].result}
@@ -477,6 +506,8 @@ resource "null_resource" "red5pro_sm" {
       sudo tee -a /usr/local/stream-manager/.env <<'EOM'
       KAFKA_REPLICAS=${local.kafka_on_sm_replicas}
       KAFKA_IP=${local.kafka_ip}
+      KAFKA_BOOTSTRAP_SERVERS=${local.kafka_bootstrap_servers}
+      R5AS_REPLICATION_FACTOR=${local.kafka_standalone_instance && var.kafka_standalone_instance_count == 3 ? 3 : 1}
       TRAEFIK_IP=${oci_core_instance.red5pro_sm[0].public_ip}
       TRAEFIK_HOST=${var.stream_manager_public_hostname}
       AS_ADMIN_UI_VERSION=${var.stream_manager_version}

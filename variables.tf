@@ -312,6 +312,13 @@ variable "network_security_group_kafka_ingress" {
       source      = "0.0.0.0/0"
       port_min    = 9092
       port_max    = 9092
+    },
+    {
+      description = "Kafka standalone instance - KRaft controller (TCP)"
+      protocol    = "6"
+      source      = "10.5.0.0/16"
+      port_min    = 9093
+      port_max    = 9093
     }
   ]
 }
@@ -477,6 +484,16 @@ variable "kafka_standalone_instance_create" {
   description = "Create a new Kafka standalone instance true/false"
   type        = bool
   default     = false
+}
+variable "kafka_standalone_instance_count" {
+  description = "Number of standalone Kafka instances (1 or 3)"
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = contains([1, 3], var.kafka_standalone_instance_count)
+    error_message = "Kafka standalone instance count must be 1 or 3."
+  }
 }
 variable "kafka_standalone_instance_type" {
   description = "Kafka standalone instance type"
