@@ -124,13 +124,37 @@ start_kafka() {
         exit 1
     fi
 
-    if docker compose -f docker-compose.embedded-kafka.yml config --quiet &&
-        docker compose -f docker-compose.embedded-kafka.yml up -d --no-deps kafka0; then
-        log_i "Kafka Docker container started!"
-    else
-        log_e "Kafka Docker container failed to start!"
+    if ! docker compose -f docker-compose.embedded-kafka.yml config --quiet; then
+        log_e "Invalid Kafka Docker Compose configuration"
         exit 1
     fi
+
+    if ! docker compose -f docker-compose.embedded-kafka.yml up -d --no-deps kafka0; then
+        log_e "Kafka Docker container failed to start"
+        exit 1
+    fi
+
+    log_i "Waiting for Kafka broker to become healthy"
+
+    for i in {1..60}; do
+        status=$(docker inspect --format '{{.State.Status}}' kafka0 2>/dev/null || true)
+        health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' kafka0 2>/dev/null || true)
+
+        if [[ "$status" == "running" && "$health" == "healthy" ]]; then
+            log_i "Kafka broker is healthy"
+            return 0
+        fi
+
+        if [[ "$status" == "exited" || "$status" == "restarting" ]]; then
+            log_w "Kafka container status: $status"
+        fi
+
+        sleep 10
+    done
+
+    log_e "Kafka broker did not become healthy within 600 seconds"
+    docker logs --tail 100 kafka0 || true
+    exit 1
 }
 
 check_memory_requirements

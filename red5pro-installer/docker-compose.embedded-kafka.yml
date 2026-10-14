@@ -18,14 +18,22 @@ services:
     restart: unless-stopped
     hostname: kafka0
     container_name: kafka0
+    entrypoint: ["/bin/bash", "-ec"]
+    command:
+      - |
+        export KAFKA_JVM_PERFORMANCE_OPTS="-Xshare:off"
+        if [ ! -f /var/lib/kafka/data/meta.properties ]; then
+          /opt/kafka/bin/kafka-storage.sh format \
+            --ignore-formatted \
+            --cluster-id "$${CLUSTER_ID}" \
+            --config /mnt/shared/config/server.properties
+        fi
+        exec /opt/kafka/bin/kafka-server-start.sh /mnt/shared/config/server.properties
     ports:
       - 9092:9092
       - 9093:9093
     environment:
       KAFKA_LOG_DIRS: /var/lib/kafka/data
-      KAFKA_SSL_TRUSTSTORE_CERTIFICATES: ${KAFKA_SSL_TRUSTSTORE_CERTIFICATES}
-      KAFKA_SSL_KEYSTORE_KEY: ${KAFKA_SSL_KEYSTORE_KEY}
-      KAFKA_SSL_KEYSTORE_CERTIFICATE_CHAIN: ${KAFKA_SSL_KEYSTORE_CERTIFICATE_CHAIN}
       KAFKA_LISTENER_NAME_CONTROLLER_PLAIN_SASL_JAAS_CONFIG: org.apache.kafka.common.security.plain.PlainLoginModule required username="${KAFKA_ADMIN_USERNAME:-admin}" password="${KAFKA_ADMIN_PASSWORD}" user_${KAFKA_ADMIN_USERNAME:-admin}="${KAFKA_ADMIN_PASSWORD}" user_${KAFKA_CLIENT_USERNAME:-client}="${KAFKA_CLIENT_PASSWORD}";
       KAFKA_LISTENER_NAME_BROKER_PLAIN_SASL_JAAS_CONFIG: org.apache.kafka.common.security.plain.PlainLoginModule required username="${KAFKA_ADMIN_USERNAME:-admin}" password="${KAFKA_ADMIN_PASSWORD}" user_${KAFKA_ADMIN_USERNAME:-admin}="${KAFKA_ADMIN_PASSWORD}" user_${KAFKA_CLIENT_USERNAME:-client}="${KAFKA_CLIENT_PASSWORD}";
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: BROKER:SASL_SSL,CONTROLLER:SASL_SSL
@@ -83,6 +91,7 @@ services:
       CLUSTER_ID: ${KAFKA_CLUSTER_ID:?Kafka cluster ID must be set}
     volumes:
       - kafka-data:/var/lib/kafka/data
+      - ./server.properties:/mnt/shared/config/server.properties:ro
     healthcheck:
       test: ["CMD", "bash", "-c", "timeout 10 bash -c '</dev/tcp/localhost/9092' || exit 1"]
       interval: 10s
