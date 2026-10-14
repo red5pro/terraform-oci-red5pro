@@ -495,6 +495,12 @@ variable "kafka_standalone_instance_count" {
     error_message = "Kafka standalone instance count must be 1 or 3."
   }
 }
+
+variable "apache_kafka_version" {
+  description = "Apache Kafka Docker image version."
+  type        = string
+  default     = "4.3.1"
+}
 variable "kafka_standalone_instance_type" {
   description = "Kafka standalone instance type"
   type        = string
@@ -524,9 +530,9 @@ variable "kafka_standalone_instance_volume_size" {
   }
 }
 variable "kafka_standalone_instance_arhive_url" {
-  description = "Kafka standalone instance - archive URL"
+  description = "DEPRECATED: No longer used. Kafka is deployed using Docker Compose."
   type        = string
-  default     = "https://archive.apache.org/dist/kafka/3.9.2/kafka_2.13-3.9.2.tgz"
+  default     = null
 }
 variable "kafka_public_ip" {
   description = "Expose Kafka on public ip true/false"

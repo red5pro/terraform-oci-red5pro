@@ -66,3 +66,13 @@ output "r5as_conference_secret" {
   description = "Auto-generated R5AS Conference secret (hex)"
   value       = try(random_id.r5as_conference_secret[0].hex, "")
 }
+
+output "kafka_private_ips" {
+  description = "Private IP addresses of standalone Kafka brokers"
+  value       = local.kafka_standalone_instance ? local.kafka_private_ips : []
+}
+
+output "kafka_bootstrap_servers" {
+  description = "Kafka bootstrap servers used by Stream Manager 2.0"
+  value       = local.cluster_or_autoscale ? local.kafka_bootstrap_servers : ""
+}
