@@ -340,6 +340,44 @@ output "module_output" {
 }
 ```
 
+### Apache Kafka Deployment Configuration
+
+Stream Manager 2.0 uses Apache Kafka 4.3.1 with KRaft mode and SASL_SSL authentication. Kafka runs in Docker Compose using the `apache/kafka` image, with persistent storage at `/var/lib/kafka/data`.
+
+The Terraform module supports the following Kafka deployment modes:
+
+| Deployment mode | Configuration | Description |
+|---|---|---|
+| Embedded Kafka | `kafka_standalone_instance_create = false` | Runs a single Kafka broker on the Stream Manager instance. |
+| Standalone Kafka — Single Node | `kafka_standalone_instance_create = true` and `kafka_standalone_instance_count = 1` | Provisions one dedicated OCI Kafka instance. |
+| Standalone Kafka — Three Nodes | `kafka_standalone_instance_create = true` and `kafka_standalone_instance_count = 3` | Provisions three dedicated Kafka instances with KRaft controller quorum and replicated Kafka topics. |
+
+For autoscale deployments, Kafka runs on dedicated instances, with the number of brokers controlled by `kafka_standalone_instance_count`.
+
+#### Terraform Configuration
+
+```hcl
+apache_kafka_version              = "4.3.1"
+kafka_standalone_instance_create  = true
+kafka_standalone_instance_count   = 3
+kafka_standalone_instance_memory  = 16
+```
+
+Set `kafka_standalone_instance_count = 1` for a single standalone broker. For embedded Kafka in a cluster deployment, set `kafka_standalone_instance_create = false`.
+
+#### Kafka Cluster Configuration
+
+- Apache Kafka 4.3.1 runs in KRaft mode without ZooKeeper.
+- Kafka broker and controller listeners use SASL_SSL with PLAIN authentication and PEM certificates.
+- Each standalone broker receives a unique node ID and a certificate containing its private IP address.
+- Three-node mode configures replication factor 3 and minimum in-sync replicas 2.
+- Kafka broker communication uses TCP port 9092, while KRaft controllers use TCP port 9093.
+- Standalone Kafka requires at least 8 GB of instance memory; the configured JVM heap defaults to 6 GB.
+
+Ensure that the OCI network security rules permit the required private-network communication between Kafka brokers, controllers, and Stream Manager instances.
+
+**Validation:** Embedded Kafka has been verified with Stream Manager 2.0 and WebRTC publish/subscribe. Standalone single-node and three-node Kafka deployments require separate runtime validation, including broker-failure recovery testing.
+
 ### Autoscaling Stream Managers 2.0 with autoscaling nodes (autoscale) - [Example](https://github.com/red5pro/terraform-oci-red5pro/tree/master/examples/autoscale)
 
 In the following example, Terraform module will automates the infrastructure provisioning of the Autoscale Stream Managers 2.0 with Red5 Pro (SM2.0) Autoscaling node group (origins, edges, transcoders, relays)

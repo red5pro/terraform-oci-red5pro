@@ -65,6 +65,7 @@ module "red5pro" {
   stream_manager_public_hostname              = "sm.example.com"           # Required: public FQDN for Traefik, admin UI, and HTTPS URLs (not a wildcard). Point DNS A/alias at the load balancer DNS name from outputs.
 
   # Kafka standalone instance configuration
+  kafka_standalone_instance_count       = 1                     # Number of Kafka standalone instances: 1 or 3 (3 = KRaft cluster with replication factor 3)
   kafka_standalone_instance_type        = "VM.Standard.E4.Flex" # OCI Instance type for Kafka standalone instance
   kafka_standalone_instance_ocpu        = 1                     # OCI Instance OCPU Count for Kafka standalone instance(1 OCPU = 2 vCPU)
   kafka_standalone_instance_memory      = 16                    # OCI Instance Memory size in GB for Kafka standalone instance

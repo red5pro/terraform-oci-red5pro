@@ -63,6 +63,7 @@ module "red5pro" {
 
   # Kafka standalone instance configuration - (Optional)
   kafka_standalone_instance_create      = false                 # true - create new Kafka standalone instance, false - not create new Kafka standalone instance and use Kafka on the Stream Manager 2.0 instance
+  kafka_standalone_instance_count       = 1                     # Number of Kafka standalone instances: 1 or 3 (used only when kafka_standalone_instance_create = true)
   kafka_standalone_instance_type        = "VM.Standard.E4.Flex" # OCI Instance type for Kafka standalone instance
   kafka_standalone_instance_ocpu        = 1                     # OCI Instance OCPU Count for Kafka standalone instance(1 OCPU = 2 vCPU)
   kafka_standalone_instance_memory      = 16                    # OCI Instance Memory size in GB for Kafka standalone instance
