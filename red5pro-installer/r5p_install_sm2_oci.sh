@@ -167,6 +167,15 @@ config_sm() {
             ls -la "$CURRENT_DIRECTORY/"
             exit 1
         fi
+        # Copy dynamically generated Kafka configuration for embedded mode
+    if [ -f "$CURRENT_DIRECTORY/server.properties" ]; then
+        install -m 600 -o 1000 -g 1000 \
+            "$CURRENT_DIRECTORY/server.properties" \
+            "$SM_HOME/server.properties"
+    else
+        log_e "Embedded Kafka server.properties not found"
+        exit 1
+    fi
     else
         log_i "KAFKA_REPLICAS=0 - Kafka runs on a standalone instance, no embedded kafka0 service"
     fi
