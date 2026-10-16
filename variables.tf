@@ -309,14 +309,14 @@ variable "network_security_group_kafka_ingress" {
     {
       description = "Kafka standalone instance - Kafka (TCP)"
       protocol    = "6"
-      source      = "10.5.0.0/16"
+      source      = null
       port_min    = 9092
       port_max    = 9092
     },
     {
       description = "Kafka standalone instance - KRaft controller (TCP)"
       protocol    = "6"
-      source      = "10.5.0.0/16"
+      source      = null
       port_min    = 9093
       port_max    = 9093
     }
