@@ -33,7 +33,7 @@ resource "oci_core_route_table" "red5pro_route_table" {
 }
 
 # Default VCN Network Security List
-resource "oci_core_security_list" "red5pro_security_list" { 
+resource "oci_core_security_list" "red5pro_security_list" {
   compartment_id = var.oracle_compartment_id
   display_name   = "${var.name}-security-list"
   vcn_id         = local.vcn_id
@@ -198,9 +198,13 @@ resource "oci_core_network_security_group_security_rule" "red5pro_kafka_nsg_secu
   direction                 = "INGRESS"
   protocol                  = var.network_security_group_kafka_ingress[count.index].protocol
   description               = var.network_security_group_kafka_ingress[count.index].description
-  source                    = var.network_security_group_kafka_ingress[count.index].source
-  source_type               = "CIDR_BLOCK"
-  stateless                 = false
+  source = (
+    contains([9092, 9093], var.network_security_group_kafka_ingress[count.index].port_min)
+    ? var.vcn_cidr_block
+    : var.network_security_group_kafka_ingress[count.index].source
+  )
+  source_type = "CIDR_BLOCK"
+  stateless   = false
   dynamic "tcp_options" {
     for_each = var.network_security_group_kafka_ingress[count.index].protocol == "6" ? [1] : []
     content {

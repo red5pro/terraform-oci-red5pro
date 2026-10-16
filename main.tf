@@ -269,10 +269,12 @@ resource "tls_cert_request" "kafka_server_csr" {
   count           = local.kafka_certificate_count
   private_key_pem = tls_private_key.kafka_server_key[count.index].private_key_pem
 
-  ip_addresses = [
-    local.kafka_standalone_instance
-    ? oci_core_instance.red5pro_kafka[count.index].private_ip
-    : local.kafka_ip
+  ip_addresses = local.kafka_standalone_instance ? [
+    oci_core_instance.red5pro_kafka[count.index].private_ip,
+    oci_core_instance.red5pro_kafka[count.index].public_ip
+    ] : [
+    oci_core_instance.red5pro_sm[0].private_ip,
+    oci_core_instance.red5pro_sm[0].public_ip
   ]
 
   dns_names = local.kafka_standalone_instance ? [] : ["kafka0"]
@@ -312,6 +314,7 @@ resource "tls_locally_signed_cert" "kafka_server_cert" {
 resource "oci_core_instance" "red5pro_kafka" {
   count               = local.kafka_standalone_instance ? var.kafka_standalone_instance_count : 0
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
+  fault_domain        = "FAULT-DOMAIN-${(count.index % 3) + 1}"
   compartment_id      = var.oracle_compartment_id
   shape               = var.kafka_standalone_instance_type
   display_name        = var.kafka_standalone_instance_count == 1 ? "${var.name}-kafka" : "${var.name}-kafka-${count.index + 1}"
@@ -355,41 +358,6 @@ resource "null_resource" "red5pro_kafka" {
     destination = "/home/ubuntu"
   }
 
-  provisioner "file" {
-    content = <<-EOF
-      process.roles=broker,controller
-      node.id=${count.index + 1}
-      controller.quorum.voters=${var.kafka_standalone_instance_count == 1 ? "1@kafka0:9093" : local.kafka_cluster_controllers}
-      controller.listener.names=CONTROLLER
-      listeners=BROKER://:9092,CONTROLLER://:9093
-      advertised.listeners=BROKER://${oci_core_instance.red5pro_kafka[count.index].private_ip}:9092
-      listener.security.protocol.map=BROKER:SASL_SSL,CONTROLLER:SASL_SSL
-      inter.broker.listener.name=BROKER
-
-      log.dirs=/var/lib/kafka/data
-      offsets.topic.replication.factor=${var.kafka_standalone_instance_count}
-      transaction.state.log.replication.factor=${var.kafka_standalone_instance_count}
-      transaction.state.log.min.isr=${var.kafka_standalone_instance_count == 3 ? 2 : 1}
-      min.insync.replicas=${var.kafka_standalone_instance_count == 3 ? 2 : 1}
-      group.initial.rebalance.delay.ms=0
-
-      sasl.enabled.mechanisms=PLAIN
-      sasl.mechanism.controller.protocol=PLAIN
-      sasl.mechanism.inter.broker.protocol=PLAIN
-      listener.name.controller.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="${random_string.kafka_admin_username[0].result}" password="${random_id.kafka_admin_password[0].id}" user_${random_string.kafka_admin_username[0].result}="${random_id.kafka_admin_password[0].id}" user_${random_string.kafka_client_username[0].result}="${random_id.kafka_client_password[0].id}";
-      listener.name.broker.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="${random_string.kafka_admin_username[0].result}" password="${random_id.kafka_admin_password[0].id}" user_${random_string.kafka_admin_username[0].result}="${random_id.kafka_admin_password[0].id}" user_${random_string.kafka_client_username[0].result}="${random_id.kafka_client_password[0].id}";
-
-      ssl.keystore.type=PEM
-      ssl.truststore.type=PEM
-      ssl.keystore.key=${nonsensitive(join("\\n", split("\n", trimspace(tls_private_key.kafka_server_key[count.index].private_key_pem_pkcs8))))}
-      ssl.truststore.certificates=${nonsensitive(join("\\n", split("\n", trimspace(tls_self_signed_cert.ca_cert[0].cert_pem))))}
-      ssl.keystore.certificate.chain=${nonsensitive(join("\\n", split("\n", trimspace(tls_locally_signed_cert.kafka_server_cert[count.index].cert_pem))))}
-      ssl.endpoint.identification.algorithm=
-    EOF
-
-    destination = "/home/ubuntu/red5pro-installer/server.properties"
-  }
-
   provisioner "remote-exec" {
     inline = [
       "sudo iptables -F",
@@ -398,9 +366,10 @@ resource "null_resource" "red5pro_kafka" {
       <<-EOT
       sudo tee /home/ubuntu/red5pro-installer/.env >/dev/null <<'EOM'
       APACHE_KAFKA_VERSION=${var.apache_kafka_version}
+      KAFKA_HEAP_OPTS=-Xms6g -Xmx6g
       KAFKA_CLUSTER_ID=${trim(random_id.kafka_cluster_id[0].b64_url, "=")}
       KAFKA_NODE_ID=${count.index + 1}
-      KAFKA_IP=${oci_core_instance.red5pro_kafka[count.index].private_ip}
+      KAFKA_IP=${var.kafka_public_ip ? oci_core_instance.red5pro_kafka[count.index].public_ip : oci_core_instance.red5pro_kafka[count.index].private_ip}
       KAFKA_CONTROLLER_QUORUM_VOTERS=${var.kafka_standalone_instance_count == 1 ? "1@kafka0:9093" : local.kafka_cluster_controllers}
       KAFKA_REPLICATION_FACTOR=${var.kafka_standalone_instance_count}
       KAFKA_MIN_INSYNC_REPLICAS=${var.kafka_standalone_instance_count == 3 ? 2 : 1}
@@ -408,13 +377,14 @@ resource "null_resource" "red5pro_kafka" {
       KAFKA_ADMIN_PASSWORD=${random_id.kafka_admin_password[0].id}
       KAFKA_CLIENT_USERNAME=${random_string.kafka_client_username[0].result}
       KAFKA_CLIENT_PASSWORD=${random_id.kafka_client_password[0].id}
+      KAFKA_SSL_KEYSTORE_KEY=${nonsensitive(join("\\\\n", split("\n", trimspace(tls_private_key.kafka_server_key[count.index].private_key_pem_pkcs8))))}
+      KAFKA_SSL_TRUSTSTORE_CERTIFICATES=${nonsensitive(join("\\\\n", split("\n", trimspace(tls_self_signed_cert.ca_cert[0].cert_pem))))}
+      KAFKA_SSL_KEYSTORE_CERTIFICATE_CHAIN=${nonsensitive(join("\\\\n", split("\n", trimspace(tls_locally_signed_cert.kafka_server_cert[count.index].cert_pem))))}
       EOM
       sudo chmod 600 /home/ubuntu/red5pro-installer/.env
       EOT
       ,
       "cd /home/ubuntu/red5pro-installer/",
-      "sudo chown 1000:1000 /home/ubuntu/red5pro-installer/server.properties",
-      "sudo chmod 600 /home/ubuntu/red5pro-installer/server.properties",
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_kafka_install.sh",
     ]
@@ -526,41 +496,6 @@ resource "null_resource" "red5pro_sm" {
   provisioner "file" {
     source      = "${abspath(path.module)}/red5pro-installer"
     destination = "/home/ubuntu"
-  }
-
-  # Generate server.properties for embedded Kafka on the Stream Manager.
-  provisioner "file" {
-    content = <<-EOF
-      process.roles=broker,controller
-      node.id=1
-      controller.quorum.voters=1@kafka0:9093
-      controller.listener.names=CONTROLLER
-      listeners=BROKER://:9092,CONTROLLER://:9093
-      advertised.listeners=BROKER://${local.kafka_ip}:9092
-      listener.security.protocol.map=BROKER:SASL_SSL,CONTROLLER:SASL_SSL
-      inter.broker.listener.name=BROKER
-
-      log.dirs=/var/lib/kafka/data
-      offsets.topic.replication.factor=1
-      transaction.state.log.replication.factor=1
-      transaction.state.log.min.isr=1
-      group.initial.rebalance.delay.ms=0
-
-      sasl.enabled.mechanisms=PLAIN
-      sasl.mechanism.controller.protocol=PLAIN
-      sasl.mechanism.inter.broker.protocol=PLAIN
-      listener.name.controller.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="${random_string.kafka_admin_username[0].result}" password="${random_id.kafka_admin_password[0].id}" user_${random_string.kafka_admin_username[0].result}="${random_id.kafka_admin_password[0].id}" user_${random_string.kafka_client_username[0].result}="${random_id.kafka_client_password[0].id}";
-      listener.name.broker.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="${random_string.kafka_admin_username[0].result}" password="${random_id.kafka_admin_password[0].id}" user_${random_string.kafka_admin_username[0].result}="${random_id.kafka_admin_password[0].id}" user_${random_string.kafka_client_username[0].result}="${random_id.kafka_client_password[0].id}";
-
-      ssl.keystore.type=PEM
-      ssl.truststore.type=PEM
-      ssl.keystore.key=${nonsensitive(join("\\n", split("\n", trimspace(tls_private_key.kafka_server_key[0].private_key_pem_pkcs8))))}
-      ssl.truststore.certificates=${nonsensitive(join("\\n", split("\n", trimspace(tls_self_signed_cert.ca_cert[0].cert_pem))))}
-      ssl.keystore.certificate.chain=${nonsensitive(join("\\n", split("\n", trimspace(tls_locally_signed_cert.kafka_server_cert[0].cert_pem))))}
-      ssl.endpoint.identification.algorithm=
-    EOF
-
-    destination = "/home/ubuntu/red5pro-installer/server.properties"
   }
 
   provisioner "remote-exec" {
@@ -972,16 +907,15 @@ resource "time_sleep" "wait_for_delete_nodegroup" {
   count = local.cluster_or_autoscale && var.node_group_create ? 1 : 0
   depends_on = [
     null_resource.red5pro_sm[0],
-    null_resource.red5pro_kafka[0],
+    null_resource.red5pro_kafka,
     oci_core_instance.red5pro_sm[0],
-    oci_core_instance.red5pro_kafka[0],
+    oci_core_instance.red5pro_kafka,
     oci_load_balancer_load_balancer.red5pro_lb[0],
     oci_core_instance_pool.red5pro_instance_pool[0],
     oci_core_network_security_group.red5pro_stream_manager_network_security_group[0],
     oci_core_network_security_group_security_rule.red5pro_stream_manager_nsg_security_rule_ingress[0],
-    oci_core_network_security_group.red5pro_kafka_network_security_group[0],
-    oci_core_network_security_group_security_rule.red5pro_kafka_nsg_security_rule_ingress[0],
-    oci_core_network_security_group_security_rule.red5pro_kafka_nsg_security_rule_ingress[1],
+    oci_core_network_security_group.red5pro_kafka_network_security_group,
+    oci_core_network_security_group_security_rule.red5pro_kafka_nsg_security_rule_ingress,
     oci_core_route_table_attachment.red5pro_route_table_attachment,
     oci_core_vcn.red5pro_vcn,
     oci_core_network_security_group.red5pro_node_network_security_group[0],
