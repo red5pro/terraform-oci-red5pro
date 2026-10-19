@@ -29,9 +29,9 @@ locals {
   kafka_bootstrap_servers          = local.kafka_standalone_instance && var.kafka_standalone_instance_count == 3 ? local.kafka_cluster_brokers : "${local.kafka_ip}:9092"
   kafka_ip                         = local.cluster_or_autoscale ? (var.kafka_public_ip ? (local.kafka_standalone_instance ? oci_core_instance.red5pro_kafka[0].public_ip : oci_core_instance.red5pro_sm[0].public_ip) : (local.kafka_standalone_instance ? oci_core_instance.red5pro_kafka[0].private_ip : oci_core_instance.red5pro_sm[0].private_ip)) : "null"
   kafka_on_sm_replicas             = local.kafka_standalone_instance ? 0 : 1
-  kafka_ssl_keystore_key           = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", trimspace(tls_private_key.kafka_server_key[0].private_key_pem_pkcs8)))) : "null"
-  kafka_ssl_truststore_cert        = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", tls_self_signed_cert.ca_cert[0].cert_pem))) : "null"
-  kafka_ssl_keystore_cert_chain    = local.cluster_or_autoscale ? nonsensitive(join("\\\\n", split("\n", tls_locally_signed_cert.kafka_server_cert[0].cert_pem))) : "null"
+  kafka_ssl_keystore_key           = local.cluster_or_autoscale ? nonsensitive(jsonencode(replace(trimspace(tls_private_key.kafka_server_key[0].private_key_pem_pkcs8), "\n", "\\n"))) : "null"
+  kafka_ssl_truststore_cert        = local.cluster_or_autoscale ? nonsensitive(jsonencode(replace(trimspace(tls_self_signed_cert.ca_cert[0].cert_pem), "\n", "\\n"))) : "null"
+  kafka_ssl_keystore_cert_chain    = local.cluster_or_autoscale ? nonsensitive(jsonencode(replace(trimspace(tls_locally_signed_cert.kafka_server_cert[0].cert_pem), "\n", "\\n"))) : "null"
   stream_manager_ssl               = local.autoscale ? "none" : var.https_ssl_certificate
   stream_manager_standalone        = local.autoscale ? false : true
   red5pro_node_image_name          = local.cluster_or_autoscale && var.node_image_create ? "${var.name}-node-image-${random_id.node_image_suffix[0].hex}" : ""
@@ -277,7 +277,7 @@ resource "tls_cert_request" "kafka_server_csr" {
     oci_core_instance.red5pro_sm[0].public_ip
   ]
 
-  dns_names = local.kafka_standalone_instance ? [] : ["kafka0"]
+  dns_names = ["kafka0"]
 
   subject {
     country             = "US"
@@ -377,9 +377,9 @@ resource "null_resource" "red5pro_kafka" {
       KAFKA_ADMIN_PASSWORD=${random_id.kafka_admin_password[0].id}
       KAFKA_CLIENT_USERNAME=${random_string.kafka_client_username[0].result}
       KAFKA_CLIENT_PASSWORD=${random_id.kafka_client_password[0].id}
-      KAFKA_SSL_KEYSTORE_KEY=${nonsensitive(join("\\\\n", split("\n", trimspace(tls_private_key.kafka_server_key[count.index].private_key_pem_pkcs8))))}
-      KAFKA_SSL_TRUSTSTORE_CERTIFICATES=${nonsensitive(join("\\\\n", split("\n", trimspace(tls_self_signed_cert.ca_cert[0].cert_pem))))}
-      KAFKA_SSL_KEYSTORE_CERTIFICATE_CHAIN=${nonsensitive(join("\\\\n", split("\n", trimspace(tls_locally_signed_cert.kafka_server_cert[count.index].cert_pem))))}
+      KAFKA_SSL_KEYSTORE_KEY=${nonsensitive(jsonencode(replace(trimspace(tls_private_key.kafka_server_key[count.index].private_key_pem_pkcs8), "\n", "\\n")))}
+      KAFKA_SSL_TRUSTSTORE_CERTIFICATES=${nonsensitive(jsonencode(replace(trimspace(tls_self_signed_cert.ca_cert[0].cert_pem), "\n", "\\n")))}
+      KAFKA_SSL_KEYSTORE_CERTIFICATE_CHAIN=${nonsensitive(jsonencode(replace(trimspace(tls_locally_signed_cert.kafka_server_cert[count.index].cert_pem), "\n", "\\n")))}
       EOM
       sudo chmod 600 /home/ubuntu/red5pro-installer/.env
       EOT
