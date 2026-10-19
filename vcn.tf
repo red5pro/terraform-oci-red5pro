@@ -200,7 +200,9 @@ resource "oci_core_network_security_group_security_rule" "red5pro_kafka_nsg_secu
   description               = var.network_security_group_kafka_ingress[count.index].description
   source = coalesce(
     var.network_security_group_kafka_ingress[count.index].source,
-    var.vcn_cidr_block
+    var.kafka_public_ip && var.network_security_group_kafka_ingress[count.index].port_min == 9092
+    ? "0.0.0.0/0"
+    : var.vcn_cidr_block
   )
   source_type = "CIDR_BLOCK"
   stateless   = false
