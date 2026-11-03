@@ -812,6 +812,8 @@ resource "oci_core_instance" "red5pro_node" {
       "sudo chmod +x /home/ubuntu/red5pro-installer/*.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_install_server_basic.sh",
       "sudo -E /home/ubuntu/red5pro-installer/r5p_config_node.sh",
+      "sudo systemctl disable red5pro",
+      "sudo rm -f /usr/local/red5pro/LICENSE.KEY",
     ]
   }
 }
