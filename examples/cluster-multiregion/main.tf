@@ -129,8 +129,12 @@ module "red5pro_eu-frankfurt-1" {
   path_to_red5pro_build = local.path_to_red5pro_build # Absolute path or relative path to Red5 Pro server ZIP file
 
   # Oracle Cloud Account Details
-  oracle_compartment_id = local.compartment_id
-  oracle_region         = "eu-frankfurt-1"
+  oracle_compartment_id   = local.compartment_id   # Compartment OCID of Oracle Cloud Account
+  oracle_tenancy_ocid     = local.tenancy_ocid     # Tenancy OCID of Oracle Cloud Account
+  oracle_user_ocid        = local.user_ocid        # User OCID of Oracle Cloud Account
+  oracle_fingerprint      = local.fingerprint      # SSH based API key fingerprint of Oracle Cloud Account
+  oracle_private_key_path = local.private_key_path # Path to SSH private key of Oracle Cloud Account
+  oracle_region           = "eu-frankfurt-1"       # Current region code name of Oracle Cloud Account, https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm
 
   # SSH key configuration
   ssh_key_use_existing              = true                       # true - use existing SSH key, false - create new SSH key
@@ -147,7 +151,6 @@ module "red5pro_eu-frankfurt-1" {
   node_image_instance_type   = "VM.Standard.E4.Flex" # Instance type for Red5 Pro Node image
   node_image_instance_ocpu   = 1                     # OCI Instance OCPU Count for Red5 Pro Node image (1 OCPU = 2 vCPU)
   node_image_instance_memory = 4                     # OCI Instance Memory size in GB for Red5 Pro Node image
-  node_image_stop_instance   = false
 
   providers = {
     oci = oci.eu-frankfurt-1
